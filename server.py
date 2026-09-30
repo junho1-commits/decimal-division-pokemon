@@ -16,12 +16,13 @@ PORT = 8200  # Dedicated port for Pokemon Math Game
 # Change to the script's directory
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# Detect Local IP (School Wi-Fi IP)
-hostname = socket.gethostname()
+# Select the address used by the default network route (without sending data).
 try:
-    ip = socket.gethostbyname(hostname)
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+        probe.connect(("1.1.1.1", 80))
+        ip = probe.getsockname()[0]
 except Exception:
-    ip = "127.0.0.1"
+    ip = socket.gethostbyname(socket.gethostname())
 
 # Check if port 8200 is available, if not find next
 def get_free_port(start_port):
@@ -38,16 +39,13 @@ print("  🎮 포켓몬 GO : 소수의 나눗셈 대모험 (실시간 학급 멀
 print("=" * 65)
 print(f"  [1] 교실 Wi-Fi 내부 IP : {ip}")
 print(f"  [2] 전용 통신 포트     : {PORT}")
-print(f"  [3] 학생 기기 접속 주소 : http://{ip}:{PORT}/index.html")
+print("  [3] 학생 참여: 교사 화면의 [실시간 학생 참여] QR을 스캔하세요.")
 print(f"  [4] 칠판 화면(선생님용) : http://localhost:{PORT}/index.html")
 print("=" * 65)
 print("  ✔ [중요] 학생 스마트폰/태블릿도 교실 Wi-Fi에 연결되어 있어야 합니다.")
 print("  ✔ 포켓몬 나눗셈 게임이 브라우저에서 자동으로 실행됩니다.")
 print("  ✔ 수업을 마치실 때 이 검은 창을 닫아주시면 서버가 종료됩니다.")
 print("=" * 65 + "\n")
-
-# Open Browser with hostIp parameter
-webbrowser.open(f"http://localhost:{PORT}/index.html?hostIp={ip}&port={PORT}")
 
 # Multi-threaded HTTP Server Handler
 class MyHandler(SimpleHTTPRequestHandler):
@@ -66,6 +64,8 @@ ThreadingHTTPServer.allow_reuse_address = True
 
 try:
     with ThreadingHTTPServer(("", PORT), MyHandler) as httpd:
+        # Open only after the port has been bound successfully.
+        webbrowser.open(f"http://localhost:{PORT}/index.html?hostIp={ip}&port={PORT}")
         httpd.serve_forever()
 except KeyboardInterrupt:
     print("\n서버가 종료되었습니다.")
