@@ -1793,8 +1793,8 @@
     }
 
   </style>
-  <!-- PeerJS WebRTC P2P & QRCode CDN -->
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- Paho MQTT WebSocket & QRCode CDN (망분리/방화벽/LTE 완벽 대응) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -4722,22 +4722,33 @@
 
 
     /* =========================================================
-       P. 실시간 학급 P2P 멀티플레이 컨트롤러 (PeerJS WebRTC)
+       P. 실시간 학급 클라우드 멀티플레이 컨트롤러 (MQTT over WSS)
+       - 교육청/학교 스쿨넷 망분리 및 LTE 완벽 대응 (무서버 WSS 초고속 통신)
        ========================================================= */
-    const DEFAULT_ROOM_PREFIX = "MODEUK";
-    let hostPeer = null;
-    let studentPeer = null;
-    let studentConn = null;
-    let connectedStudents = new Map(); // conn.peer -> { name, conn, score }
+    const MQTT_BROKERS = [
+      { host: "broker.hivemq.com", port: 8884, path: "/mqtt", desc: "HiveMQ Cloud" },
+      { host: "broker.emqx.io", port: 8084, path: "/mqtt", desc: "EMQX Cloud" }
+    ];
+    let currentHostBrokerIdx = 0;
+    let currentStudentBrokerIdx = 0;
+    let mqttHostClient = null;
+    let mqttStudentClient = null;
+    let hostRoomCode = "MODEUK63";
+    let myStudentId = "";
     let myStudentName = "";
     let myStudentXP = 0;
     let studentInputVal = "";
-    let hostRoomCode = "MODEUK63";
+    let connectedStudents = new Map(); // studentId -> { name, score, lastSeen }
+
+    function getTopicPrefix() {
+      return `modeuk63/pokemon-math-2026/${hostRoomCode}`;
+    }
 
     function initMultiplayerSystem() {
       const urlParams = new URLSearchParams(window.location.search);
       const isStudent = (urlParams.get("role") === "student");
       const targetRoom = urlParams.get("room") || hostRoomCode;
+      hostRoomCode = targetRoom;
 
       if (isStudent) {
         // 학생 모드 시작
@@ -4748,119 +4759,78 @@
         if (savedName) document.getElementById("studentJoinName").value = savedName;
       } else {
         // 교사용 호스트 모드 시작
-        initHostPeer();
+        initHostMQTT();
       }
     }
 
-    /* --- [교사 호스트 로직] --- */
-    function initHostPeer() {
-      if (typeof Peer === "undefined") {
-        console.warn("PeerJS not loaded yet.");
+    /* --- [교사용 호스트 MQTT 연결] --- */
+    function initHostMQTT() {
+      if (typeof Paho === "undefined" || !Paho.MQTT) {
+        console.warn("Paho MQTT library loading...");
+        setTimeout(initHostMQTT, 500);
         return;
       }
-      try {
-        hostPeer = new Peer(hostRoomCode);
-        hostPeer.on("open", (id) => {
-          console.log("Teacher Host Peer Open with ID:", id);
-          document.getElementById("hostStatusBadge").textContent = "접속 대기 중 🟢";
-        });
 
-        hostPeer.on("error", (err) => {
-          if (err.type === "unavailable-id") {
-            // ID 충돌 시 랜덤 ID 생성
-            hostRoomCode = "POKE" + Math.floor(1000 + Math.random() * 9000);
-            hostPeer = new Peer(hostRoomCode);
-            document.getElementById("displayRoomCode").textContent = hostRoomCode;
+      const broker = MQTT_BROKERS[currentHostBrokerIdx];
+      const clientId = "host_" + Math.random().toString(36).substring(2, 10);
+      try {
+        mqttHostClient = new Paho.MQTT.Client(broker.host, broker.port, broker.path, clientId);
+
+        mqttHostClient.onConnectionLost = (resp) => {
+          console.warn("Host MQTT Lost:", resp.errorMessage);
+          const badge = document.getElementById("hostStatusBadge");
+          if (badge) badge.textContent = "재연결 중... 🟡";
+          setTimeout(initHostMQTT, 2000);
+        };
+
+        mqttHostClient.onMessageArrived = (msg) => {
+          try {
+            const data = JSON.parse(msg.payloadString);
+            handleHostIncomingMessage(data);
+          } catch (e) {
+            console.error("Host JSON parse error:", e);
+          }
+        };
+
+        mqttHostClient.connect({
+          useSSL: true,
+          timeout: 5,
+          keepAliveInterval: 30,
+          cleanSession: true,
+          onSuccess: () => {
+            console.log("Teacher Host MQTT Connected:", broker.desc);
+            const badge = document.getElementById("hostStatusBadge");
+            if (badge) badge.textContent = "접속 대기 중 🟢";
+            // 학생들의 행동(참여, 정답제출) 토픽 구독
+            mqttHostClient.subscribe(`${getTopicPrefix()}/to_host`);
+          },
+          onFailure: (err) => {
+            console.warn("Host broker fail:", broker.desc, err);
+            currentHostBrokerIdx = (currentHostBrokerIdx + 1) % MQTT_BROKERS.length;
+            setTimeout(initHostMQTT, 1500);
           }
         });
-
-        hostPeer.on("connection", (conn) => {
-          conn.on("open", () => {
-            conn.on("data", (data) => handleHostIncomingData(conn, data));
-          });
-
-          conn.on("close", () => {
-            connectedStudents.delete(conn.peer);
-            updateConnectedStudentsUI();
-          });
-        });
       } catch (e) {
-        console.error("Host Peer Init Error:", e);
+        console.error("Host init error:", e);
       }
     }
 
-    function handleHostIncomingData(conn, data) {
+    function handleHostIncomingMessage(data) {
       if (!data || !data.type) return;
 
       if (data.type === "JOIN") {
-        connectedStudents.set(conn.peer, { name: data.name, conn: conn, score: 0 });
+        connectedStudents.set(data.studentId, { name: data.name, score: 0, lastSeen: Date.now() });
         updateConnectedStudentsUI();
-        showAttackToast(`👋 ${data.name} 학생이 배틀에 참가했습니다!`, "#38bdf8");
+        showAttackToast(`👋 <b>${data.name}</b> 학생이 배틀에 참가했습니다!`, "#38bdf8");
         sound.playKey();
-        broadcastCurrentStateToStudent(conn);
+        // 입장한 학생에게 현재 문제 즉시 동기화
+        sendProblemToSingleStudent(data.studentId);
       } else if (data.type === "ANSWER") {
-        handleStudentAnswerSubmit(conn, data);
+        handleStudentAnswerSubmit(data);
       }
     }
 
-    function handleStudentAnswerSubmit(conn, data) {
-      const studentName = data.name || "학생";
-      const studentAns = String(data.answer).trim();
-
-      // 현재 문제 정답 판별
-      let targetAns = "";
-      if (gameState.isRaidMode) {
-        const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
-        const phaseData = boss.phases[gameState.currentRaidPhase];
-        targetAns = phaseData.ansMain;
-      } else {
-        const stage = STAGES_DATA.find(s => s.stageId === gameState.currentStageIndex);
-        const poke = stage.pokemons[gameState.currentPokeIndex];
-        targetAns = poke.ansMain;
-      }
-
-      const isCorrect = (Math.abs(parseFloat(studentAns) - parseFloat(targetAns)) < 0.001);
-
-      if (isCorrect) {
-        // 정답! 피드백 전송
-        conn.send({ type: "RESULT", isCorrect: true, earnedXP: 100, dmg: 25 });
-        showAttackToast(`⚡ ${studentName} 정답 적중! (+25 DMG)`, "#4ade80");
-        sound.playCatchSuccess();
-
-        // 실시간 보스 레이저 피격 연출
-        const arena = document.querySelector(".poke-stage-arena");
-        if (arena) {
-          const beam = document.createElement("div");
-          beam.className = "laser-beam-anim";
-          arena.appendChild(beam);
-          setTimeout(() => beam.remove(), 600);
-        }
-
-        const pokeImg = document.getElementById("battlePokeImg");
-        if (pokeImg) {
-          pokeImg.classList.add("boss-raid-hit");
-          setTimeout(() => pokeImg.classList.remove("boss-raid-hit"), 600);
-        }
-
-        // 레이드 모드 시 실시간 HP 차감
-        if (gameState.isRaidMode) {
-          const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
-          const curHpText = document.getElementById("raidHpText").textContent;
-          const curHp = Math.max(0, parseInt(curHpText) - 25);
-          document.getElementById("raidHpText").textContent = `${curHp} / ${boss.maxHp}`;
-          document.getElementById("raidBossHpBar").style.width = `${(curHp / boss.maxHp) * 100}%`;
-          if (curHp <= 0) {
-            handleRaidVictory(boss);
-          }
-        }
-      } else {
-        conn.send({ type: "RESULT", isCorrect: false });
-        showAttackToast(`❌ ${studentName} 계산 불일치 (다시 계산 중)`, "#f87171");
-        sound.playError();
-      }
-    }
-
-    function broadcastCurrentStateToStudent(conn) {
+    function getCurrentProblemPayload() {
       let formula = "", question = "", pokeName = "";
       if (gameState.isRaidMode) {
         const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
@@ -4875,22 +4845,94 @@
         question = poke.question;
         pokeName = poke.name;
       }
-      conn.send({
+      return {
         type: "SYNC_PROBLEM",
         formula: formula,
         question: question,
         pokeName: pokeName,
         stageId: gameState.currentStageIndex,
         isRaid: gameState.isRaidMode
-      });
+      };
+    }
+
+    function sendProblemToSingleStudent(studentId) {
+      if (!mqttHostClient || !mqttHostClient.isConnected()) return;
+      const payload = getCurrentProblemPayload();
+      const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+      msg.destinationName = `${getTopicPrefix()}/to_student/${studentId}`;
+      mqttHostClient.send(msg);
     }
 
     function broadcastProblemToAllStudents() {
-      connectedStudents.forEach(info => {
-        if (info.conn && info.conn.open) {
-          broadcastCurrentStateToStudent(info.conn);
+      if (!mqttHostClient || !mqttHostClient.isConnected()) return;
+      const payload = getCurrentProblemPayload();
+      const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+      msg.destinationName = `${getTopicPrefix()}/broadcast`;
+      mqttHostClient.send(msg);
+    }
+
+    function handleStudentAnswerSubmit(data) {
+      const studentId = data.studentId;
+      const studentName = data.name || "학생";
+      const studentAns = String(data.answer).trim();
+
+      let targetAns = "";
+      if (gameState.isRaidMode) {
+        const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+        const phaseData = boss.phases[gameState.currentRaidPhase];
+        targetAns = phaseData.ansMain;
+      } else {
+        const stage = STAGES_DATA.find(s => s.stageId === gameState.currentStageIndex);
+        const poke = stage.pokemons[gameState.currentPokeIndex];
+        targetAns = poke.ansMain;
+      }
+
+      const isCorrect = (Math.abs(parseFloat(studentAns) - parseFloat(targetAns)) < 0.001);
+
+      if (mqttHostClient && mqttHostClient.isConnected()) {
+        const resultPayload = {
+          type: "RESULT",
+          isCorrect: isCorrect,
+          earnedXP: isCorrect ? 100 : 0
+        };
+        const msg = new Paho.MQTT.Message(JSON.stringify(resultPayload));
+        msg.destinationName = `${getTopicPrefix()}/to_student/${studentId}`;
+        mqttHostClient.send(msg);
+      }
+
+      if (isCorrect) {
+        showAttackToast(`⚡ <b>${studentName}</b> 정답 적중! (+25 DMG)`, "#4ade80");
+        sound.playCatchSuccess();
+
+        // 칠판 보스 피격 애니메이션
+        const arena = document.querySelector(".poke-stage-arena");
+        if (arena) {
+          const beam = document.createElement("div");
+          beam.className = "laser-beam-anim";
+          arena.appendChild(beam);
+          setTimeout(() => beam.remove(), 600);
         }
-      });
+
+        const pokeImg = document.getElementById("battlePokeImg");
+        if (pokeImg) {
+          pokeImg.classList.add("boss-raid-hit");
+          setTimeout(() => pokeImg.classList.remove("boss-raid-hit"), 600);
+        }
+
+        if (gameState.isRaidMode) {
+          const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+          const curHpText = document.getElementById("raidHpText").textContent;
+          const curHp = Math.max(0, parseInt(curHpText) - 25);
+          document.getElementById("raidHpText").textContent = `${curHp} / ${boss.maxHp}`;
+          document.getElementById("raidBossHpBar").style.width = `${(curHp / boss.maxHp) * 100}%`;
+          if (curHp <= 0) {
+            handleRaidVictory(boss);
+          }
+        }
+      } else {
+        showAttackToast(`❌ <b>${studentName}</b> 계산 불일치 (다시 계산 중)`, "#f87171");
+        sound.playError();
+      }
     }
 
     function showAttackToast(msg, borderColor = "#38bdf8") {
@@ -4927,8 +4969,8 @@
       if (window.location.protocol.startsWith("http") && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
         joinUrl = `${window.location.origin}${window.location.pathname}?role=student&room=${hostRoomCode}`;
       } else {
-        const hostIp = urlParams.get("hostIp") || "10.34.1.65";
-        const port = urlParams.get("port") || window.location.port || "8200";
+        const hostIp = "10.34.1.65";
+        const port = window.location.port || "8200";
         joinUrl = `http://${hostIp}:${port}/index.html?role=student&room=${hostRoomCode}`;
       }
 
@@ -4964,34 +5006,77 @@
       }
 
       myStudentName = nameInput;
+      hostRoomCode = roomCode || "MODEUK63";
       localStorage.setItem("pokemon_student_name", myStudentName);
+
+      if (!myStudentId) {
+        myStudentId = "stu_" + Math.random().toString(36).substring(2, 9);
+      }
 
       document.getElementById("studentConnStatus").textContent = "연결 시도 중... 🟡";
 
-      studentPeer = new Peer();
-      studentPeer.on("open", () => {
-        studentConn = studentPeer.connect(roomCode);
+      connectStudentMQTT();
+    }
 
-        studentConn.on("open", () => {
-          document.getElementById("studentConnStatus").textContent = "선생님 화면과 연결됨 🟢";
-          document.getElementById("studentWelcomeName").textContent = `🎒 ${myStudentName}`;
-          document.getElementById("studentJoinBox").style.display = "none";
-          document.getElementById("studentBattleBox").style.display = "flex";
+    function connectStudentMQTT() {
+      if (typeof Paho === "undefined" || !Paho.MQTT) {
+        alert("통신 라이브러리를 불러오는 중입니다. 1~2초 후 다시 눌러주세요!");
+        return;
+      }
 
-          studentConn.send({ type: "JOIN", name: myStudentName });
+      const broker = MQTT_BROKERS[currentStudentBrokerIdx];
+      try {
+        mqttStudentClient = new Paho.MQTT.Client(broker.host, broker.port, broker.path, myStudentId);
+
+        mqttStudentClient.onConnectionLost = (resp) => {
+          console.warn("Student MQTT Lost:", resp.errorMessage);
+          document.getElementById("studentConnStatus").textContent = "연결 끊김 재시도 중 🔴";
+          setTimeout(connectStudentMQTT, 2000);
+        };
+
+        mqttStudentClient.onMessageArrived = (msg) => {
+          try {
+            const data = JSON.parse(msg.payloadString);
+            handleStudentIncomingData(data);
+          } catch (e) {
+            console.error("Student JSON error:", e);
+          }
+        };
+
+        mqttStudentClient.connect({
+          useSSL: true,
+          timeout: 5,
+          keepAliveInterval: 30,
+          cleanSession: true,
+          onSuccess: () => {
+            document.getElementById("studentConnStatus").textContent = "선생님 화면과 연결됨 🟢";
+            document.getElementById("studentWelcomeName").textContent = `🎒 ${myStudentName}`;
+            document.getElementById("studentJoinBox").style.display = "none";
+            document.getElementById("studentBattleBox").style.display = "flex";
+
+            // 브로드캐스트 토픽 & 개인 피드백 토픽 구독
+            mqttStudentClient.subscribe(`${getTopicPrefix()}/broadcast`);
+            mqttStudentClient.subscribe(`${getTopicPrefix()}/to_student/${myStudentId}`);
+
+            // 선생님 칠판에 참여 신호 전송
+            const joinMsg = new Paho.MQTT.Message(JSON.stringify({
+              type: "JOIN",
+              studentId: myStudentId,
+              name: myStudentName
+            }));
+            joinMsg.destinationName = `${getTopicPrefix()}/to_host`;
+            mqttStudentClient.send(joinMsg);
+          },
+          onFailure: (err) => {
+            console.warn("Student broker fail:", broker.desc, err);
+            currentStudentBrokerIdx = (currentStudentBrokerIdx + 1) % MQTT_BROKERS.length;
+            document.getElementById("studentConnStatus").textContent = "대체 서버 연결 중... 🟡";
+            setTimeout(connectStudentMQTT, 1000);
+          }
         });
-
-        studentConn.on("data", (data) => handleStudentIncomingData(data));
-
-        studentConn.on("close", () => {
-          document.getElementById("studentConnStatus").textContent = "연결 끊김 🔴";
-          alert("선생님 화면과의 연결이 끊어졌습니다.");
-        });
-
-        studentConn.on("error", (e) => {
-          alert("방에 연결할 수 없습니다. 방 코드를 확인하세요!");
-        });
-      });
+      } catch (e) {
+        console.error("Student connect error:", e);
+      }
     }
 
     function handleStudentIncomingData(data) {
@@ -5035,7 +5120,7 @@
     }
 
     function sendStudentAnswerToHost() {
-      if (!studentConn || !studentConn.open) {
+      if (!mqttStudentClient || !mqttStudentClient.isConnected()) {
         alert("선생님 화면과 연결되어 있지 않습니다!");
         return;
       }
@@ -5043,11 +5128,14 @@
         alert("계산 정답을 입력해주세요!");
         return;
       }
-      studentConn.send({
+      const ansMsg = new Paho.MQTT.Message(JSON.stringify({
         type: "ANSWER",
+        studentId: myStudentId,
         name: myStudentName,
         answer: studentInputVal
-      });
+      }));
+      ansMsg.destinationName = `${getTopicPrefix()}/to_host`;
+      mqttStudentClient.send(ansMsg);
     }
 
   </script>
