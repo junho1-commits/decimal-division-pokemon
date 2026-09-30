@@ -1792,6 +1792,85 @@
       transform: scale(0.95);
     }
 
+    /* 차시별 개별 게임 탭 및 포켓몬 카드 */
+    .student-stage-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+    }
+    .student-stage-tab {
+      flex: 1;
+      min-width: 58px;
+      padding: 8px 4px;
+      font-size: 13px;
+      font-weight: 800;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: #1e293b;
+      color: #94a3b8;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .student-stage-tab.active {
+      background: #38bdf8;
+      color: #0f172a;
+      border-color: #38bdf8;
+      font-weight: 900;
+    }
+    .student-poke-card {
+      background: #0f172a;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .student-poke-card img {
+      width: 76px;
+      height: 76px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+      animation: pokeFloat 2s ease-in-out infinite alternate;
+    }
+    @keyframes pokeFloat {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-6px); }
+    }
+    .student-raid-alert-banner {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      color: #ffffff;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 900;
+      text-align: center;
+      animation: alertPulse 1.2s infinite;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.6);
+    }
+    @keyframes alertPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.02); opacity: 0.9; }
+    }
+    .student-raid-hp-wrap {
+      width: 100%;
+      height: 18px;
+      background: #334155;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.2);
+      margin: 6px 0;
+    }
+    .student-raid-hp-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #f59e0b);
+      width: 100%;
+      transition: width 0.3s ease;
+    }
+
   </style>
   <!-- Paho MQTT WebSocket & QRCode CDN (망분리/방화벽/LTE 완벽 대응) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
@@ -1806,19 +1885,9 @@
       <!-- 실시간 학생 공격 토스트 컨테이너 -->
       <div id="liveAttackToastContainer"></div>
 
-      <!-- 전자칠판 전면 드로잉 캔버스 -->
-      <canvas id="drawCanvas" width="1600" height="900"></canvas>
-
-      <!-- 캔버스 판서 플로팅 툴바 -->
-      <div id="canvasToolbar" class="canvas-toolbar">
-        <span style="font-size: 15px; font-weight: 700; color: #94a3b8; margin-right: 4px;">판서 펜:</span>
-        <div class="color-dot active" style="background: #facc15;" onclick="setPenColor('#facc15', this)"></div>
-        <div class="color-dot" style="background: #38bdf8;" onclick="setPenColor('#38bdf8', this)"></div>
-        <div class="color-dot" style="background: #ef4444;" onclick="setPenColor('#ef4444', this)"></div>
-        <div class="color-dot" style="background: #4ade80;" onclick="setPenColor('#4ade80', this)"></div>
-        <div class="color-dot" style="background: #ffffff;" onclick="setPenColor('#ffffff', this)"></div>
-        <button class="btn-action" style="padding: 3px 8px; font-size: 13px;" onclick="clearCanvas()">전체 지우기</button>
-      </div>
+      <!-- 전자칠판 전면 드로잉 캔버스 (판서 비활성화) -->
+      <canvas id="drawCanvas" width="1600" height="900" style="display: none;"></canvas>
+      <div id="canvasToolbar" class="canvas-toolbar" style="display: none;"></div>
 
       <!-- 상단 헤더 -->
       <header>
@@ -1851,9 +1920,6 @@
         <div class="top-actions">
           <button class="btn-action memo-btn" onclick="openScratchpad()" id="btnScratchpad" title="펜으로 계산할 수 있는 모눈 메모장 (N)">
             <span>📝</span> 계산 메모장
-          </button>
-          <button class="btn-action" onclick="togglePenMode()" id="btnPen" title="전자칠판 전체화면 판서">
-            <span>✎</span> 판서
           </button>
           <button class="btn-action active-toggle" onclick="toggleBGM()" id="btnBgm" title="배경음악 켜기/끄기 (M)">
             <span id="bgmIcon">🎵</span> BGM
@@ -2340,14 +2406,19 @@
   <!-- =========================================================
        학생용 모바일/태블릿 원격 컨트롤러 화면 (?role=student)
        ========================================================= -->
+  <!-- =========================================================
+       학생용 모바일/태블릿 원격 컨트롤러 화면 (?role=student)
+       - 평소: 1~6차시별 포켓몬 포획 수학 게임
+       - 교사 레이드 시작 시: 실시간 협동 보스전 모드로 자동 전환!
+       ========================================================= -->
   <div id="viewStudentController">
     <!-- 학생 헤더 -->
     <div class="student-app-header">
       <div style="display: flex; align-items: center; gap: 8px;">
-        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" style="width: 32px; height: 32px;" alt="볼">
-        <span style="font-size: 20px; font-weight: 900; font-family: var(--font-game); color: #facc15;">POKÉMON GO</span>
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" style="width: 28px; height: 28px;" alt="볼">
+        <span style="font-size: 18px; font-weight: 900; font-family: var(--font-game); color: #facc15;">POKÉMON GO</span>
       </div>
-      <div id="studentConnStatus" style="font-size: 14px; font-weight: 800; color: #4ade80;">
+      <div id="studentConnStatus" style="font-size: 13px; font-weight: 800; color: #4ade80;">
         ● 연결 대기 중
       </div>
     </div>
@@ -2357,8 +2428,8 @@
       <h2 style="font-size: 26px; font-weight: 900; text-align: center; color: #38bdf8; margin: 0;">
         ⚡ 배틀 참가하기
       </h2>
-      <div style="font-size: 16px; color: #cbd5e1; text-align: center;">
-        내 번호와 이름을 입력하고 선생님 칠판에 접속하세요!
+      <div style="font-size: 15px; color: #cbd5e1; text-align: center;">
+        내 번호와 이름을 입력하고 포켓몬 모험을 시작하세요!
       </div>
       <div>
         <label style="font-size: 14px; font-weight: 800; color: #94a3b8;">방 코드:</label>
@@ -2369,68 +2440,190 @@
         <input type="text" id="studentJoinName" class="student-input" placeholder="예: 3번 홍길동" onkeydown="if(event.key==='Enter') joinClassroomBattle()">
       </div>
       <button class="btn-student-primary" onclick="joinClassroomBattle()">
-        🚀 배틀 방 입장하기!
+        🚀 모험 시작하기!
       </button>
     </div>
 
-    <!-- 2단계: 실시간 배틀 컨트롤러 (연결 후 표시) -->
-    <div class="student-box" id="studentBattleBox" style="display: none;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div style="font-size: 16px; font-weight: 800; color: #38bdf8;" id="studentWelcomeName">
+    <!-- 2단계 A: [차시별 개별 게임 모드] (기본 화면) -->
+    <div class="student-box" id="studentSoloBox" style="display: none;">
+      <!-- 학생 정보 바 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+        <div style="font-size: 15px; font-weight: 800; color: #38bdf8;" id="studentWelcomeName">
           🎒 내 이름
         </div>
-        <div style="font-size: 16px; font-weight: 800; color: #facc15;" id="studentMyXP">
-          ⭐ 0 XP
+        <div style="display: flex; gap: 12px; font-size: 15px; font-weight: 800;">
+          <span style="color: #facc15;" id="studentMyXP">⭐ 0 XP</span>
+          <span style="color: #4ade80;" id="studentMyCaught">🔴 도감 0/36</span>
         </div>
       </div>
 
-      <!-- 실시간 문제 수식 카드 -->
+      <!-- 차시 선택 탭 바 (1차시 ~ 6차시) -->
+      <div>
+        <div style="font-size: 12px; font-weight: 800; color: #94a3b8; margin-bottom: 4px;">학습할 차시 선택:</div>
+        <div class="student-stage-tabs" id="studentStageTabs">
+          <!-- JS에서 1~6차시 버튼 렌더링 -->
+        </div>
+      </div>
+
+      <!-- 현재 차시 개념 안내 배지 -->
+      <div id="studentStageConceptBadge" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; border-radius: 10px; padding: 6px 10px; font-size: 13px; font-weight: 800; color: #7dd3fc; text-align: center;">
+        📌 1차시: (소수 한 자리) ÷ (소수 한 자리)
+      </div>
+
+      <!-- 출현한 야생 포켓몬 카드 -->
+      <div class="student-poke-card">
+        <img id="studentSoloPokeImg" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="포켓몬">
+        <div style="flex: 1;">
+          <div style="font-size: 18px; font-weight: 900; color: #facc15;" id="studentSoloPokeName">
+            피카츄
+          </div>
+          <div style="font-size: 12px; font-weight: 700; color: #94a3b8; margin-top: 2px;" id="studentSoloPokeProgress">
+            포획 진행: 1 / 6
+          </div>
+        </div>
+      </div>
+
+      <!-- 나눗셈 퀴즈 수식 카드 -->
       <div class="student-formula-card">
-        <div style="font-size: 14px; font-weight: 800; color: #94a3b8;" id="studentStageTag">
-          🎯 실시간 칠판 동기화
+        <div style="font-size: 30px; font-weight: 900; color: #facc15; font-family: var(--font-game);" id="studentSoloFormula">
+          4.8 ÷ 0.6 = ?
         </div>
-        <div style="font-size: 32px; font-weight: 900; color: #facc15; margin: 8px 0; font-family: var(--font-game);" id="studentLiveFormula">
-          문제를 준비 중입니다...
-        </div>
-        <div style="font-size: 15px; color: #e2e8f0;" id="studentLiveQuestion">
-          칠판에서 배틀이 시작되면 문제가 자동으로 나타납니다!
+        <div style="font-size: 14px; color: #cbd5e1; margin-top: 4px;" id="studentSoloQuestion">
+          소수점을 옮겨 나눗셈의 몫을 구하세요!
         </div>
       </div>
 
       <!-- 정답 입력창 -->
       <div style="text-align: center;">
-        <div style="font-size: 14px; font-weight: 800; color: #94a3b8; margin-bottom: 4px;">내가 계산한 정답 몫:</div>
-        <div id="studentInputDisplay" style="font-size: 34px; font-weight: 900; color: #ffffff; background: #0f172a; padding: 10px; border-radius: 12px; border: 2px solid #38bdf8; min-height: 48px;">
+        <div style="font-size: 13px; font-weight: 800; color: #94a3b8; margin-bottom: 2px;">계산한 정답 몫:</div>
+        <div id="studentSoloInputDisplay" style="font-size: 32px; font-weight: 900; color: #ffffff; background: #0f172a; padding: 8px; border-radius: 12px; border: 2px solid #38bdf8; min-height: 44px;">
           _
         </div>
       </div>
 
       <!-- 터치 키패드 -->
       <div class="student-keypad-grid">
-        <button class="student-key-btn" onclick="pressStudentKey('7')">7</button>
-        <button class="student-key-btn" onclick="pressStudentKey('8')">8</button>
-        <button class="student-key-btn" onclick="pressStudentKey('9')">9</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('7')">7</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('8')">8</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('9')">9</button>
 
-        <button class="student-key-btn" onclick="pressStudentKey('4')">4</button>
-        <button class="student-key-btn" onclick="pressStudentKey('5')">5</button>
-        <button class="student-key-btn" onclick="pressStudentKey('6')">6</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('4')">4</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('5')">5</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('6')">6</button>
 
-        <button class="student-key-btn" onclick="pressStudentKey('1')">1</button>
-        <button class="student-key-btn" onclick="pressStudentKey('2')">2</button>
-        <button class="student-key-btn" onclick="pressStudentKey('3')">3</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('1')">1</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('2')">2</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('3')">3</button>
 
-        <button class="student-key-btn" onclick="pressStudentKey('.')">·</button>
-        <button class="student-key-btn" onclick="pressStudentKey('0')">0</button>
-        <button class="student-key-btn" style="color: #f87171;" onclick="pressStudentKey('CLEAR')">C</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('.')">·</button>
+        <button class="student-key-btn" onclick="pressStudentSoloKey('0')">0</button>
+        <button class="student-key-btn" style="color: #f87171;" onclick="pressStudentSoloKey('CLEAR')">C</button>
       </div>
 
-      <!-- 공격 발사 버튼 -->
-      <button class="btn-student-primary" style="background: linear-gradient(135deg, #ef4444, #dc2626);" onclick="sendStudentAnswerToHost()">
-        💥 칠판으로 정답 발사!
+      <!-- 몬스터볼 던지기 버튼 -->
+      <button class="btn-student-primary" onclick="sendStudentSoloAnswer()">
+        ⚾ 몬스터볼 던져서 포획하기!
       </button>
 
-      <!-- 결과 피드백 배너 -->
-      <div id="studentFeedbackNotice" style="display: none; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: 800; text-align: center;">
+      <!-- 피드백 배너 -->
+      <div id="studentSoloFeedback" style="display: none; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 800; text-align: center;">
+      </div>
+    </div>
+
+    <!-- 2단계 B: [실시간 협동 보스전 모드] (교사가 레이드 열면 자동 전환) -->
+    <div class="student-box" id="studentRaidBox" style="display: none; border-color: #ef4444;">
+      <!-- 비상 레이드 소환 배너 -->
+      <div class="student-raid-alert-banner">
+        🚨 [긴급 보스전 소환] 선생님이 전설의 보스를 소환했습니다!<br>우리 반 전원 합동 레이저 공격!
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 15px; font-weight: 800; color: #38bdf8;" id="studentRaidPlayerName">
+          🎒 내 이름
+        </div>
+        <div style="font-size: 15px; font-weight: 800; color: #facc15;" id="studentRaidMyXP">
+          ⭐ 0 XP
+        </div>
+      </div>
+
+      <!-- 전설 보스 정보 & 체력 게이지 -->
+      <div class="student-poke-card" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+        <img id="studentRaidBossImg" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png" alt="보스">
+        <div style="flex: 1;">
+          <div style="font-size: 18px; font-weight: 900; color: #f87171;" id="studentRaidBossName">
+            👑 전설의 보스: 뮤츠
+          </div>
+          <div class="student-raid-hp-wrap">
+            <div class="student-raid-hp-bar" id="studentRaidHpBar"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #cbd5e1;">
+            <span id="studentRaidHpText">6000 / 6000 HP</span>
+            <span id="studentRaidPhaseTag" style="color: #facc15;">PHASE 1 / 3</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 보스전 문제 수식 카드 -->
+      <div class="student-formula-card" style="border-color: #ef4444;">
+        <div style="font-size: 30px; font-weight: 900; color: #facc15; font-family: var(--font-game);" id="studentRaidFormula">
+          문제를 준비 중입니다...
+        </div>
+        <div style="font-size: 14px; color: #cbd5e1; margin-top: 4px;" id="studentRaidQuestion">
+          칠판에 표시된 보스 문제를 풀고 공격을 발사하세요!
+        </div>
+      </div>
+
+      <!-- 보스전 정답 입력창 -->
+      <div style="text-align: center;">
+        <div style="font-size: 13px; font-weight: 800; color: #94a3b8; margin-bottom: 2px;">내가 계산한 공격 몫:</div>
+        <div id="studentRaidInputDisplay" style="font-size: 32px; font-weight: 900; color: #ffffff; background: #0f172a; padding: 8px; border-radius: 12px; border: 2px solid #ef4444; min-height: 44px;">
+          _
+        </div>
+      </div>
+
+      <!-- 보스전 터치 키패드 -->
+      <div class="student-keypad-grid">
+        <button class="student-key-btn" onclick="pressStudentRaidKey('7')">7</button>
+        <button class="student-key-btn" onclick="pressStudentRaidKey('8')">8</button>
+        <button class="student-key-btn" onclick="pressStudentRaidKey('9')">9</button>
+
+        <button class="student-key-btn" onclick="pressStudentRaidKey('4')">4</button>
+        <button class="student-key-btn" onclick="pressStudentRaidKey('5')">5</button>
+        <button class="student-key-btn" onclick="pressStudentRaidKey('6')">6</button>
+
+        <button class="student-key-btn" onclick="pressStudentRaidKey('1')">1</button>
+        <button class="student-key-btn" onclick="pressStudentRaidKey('2')">2</button>
+        <button class="student-key-btn" onclick="pressStudentRaidKey('3')">3</button>
+
+        <button class="student-key-btn" onclick="pressStudentRaidKey('.')">·</button>
+        <button class="student-key-btn" onclick="pressStudentRaidKey('0')">0</button>
+        <button class="student-key-btn" style="color: #f87171;" onclick="pressStudentRaidKey('CLEAR')">C</button>
+      </div>
+
+      <!-- 보스 공격 발사 버튼 -->
+      <button class="btn-student-primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c);" onclick="sendStudentRaidAnswer()">
+        💥 칠판 보스에게 합동 레이저 발사!
+      </button>
+
+      <!-- 보스전 피드백 배너 -->
+      <div id="studentRaidFeedback" style="display: none; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 800; text-align: center;">
+      </div>
+    </div>
+
+    <!-- 레이드 토벌 성공 모달 (학생 화면) -->
+    <div id="studentRaidVictoryModal" class="modal-overlay" style="display: none;">
+      <div class="student-box" style="text-align: center; border-color: #facc15; max-width: 400px;">
+        <div style="font-size: 48px;">🏆</div>
+        <h3 style="font-size: 24px; font-weight: 900; color: #facc15; margin: 4px 0;">
+          전설의 보스 토벌 성공!
+        </h3>
+        <p style="font-size: 16px; color: #e2e8f0; line-height: 1.5;">
+          우리 반 모든 친구들의 힘으로 보스를 무찔렀습니다!<br>
+          <b style="color: #4ade80;">+500 보너스 XP 획득! ⭐</b>
+        </p>
+        <button class="btn-student-primary" onclick="returnToStudentSoloGame()">
+          🎒 내 차시별 게임으로 돌아가기
+        </button>
       </div>
     </div>
   </div>
@@ -3575,6 +3768,10 @@
        F. 뷰 화면 전환 컨트롤러
        ========================================================= */
     function showMapView() {
+      if (gameState.isRaidMode) {
+        gameState.isRaidMode = false;
+        if (typeof broadcastRaidEnd === "function") broadcastRaidEnd();
+      }
       hideNoticeBanner();
       document.querySelectorAll(".view-screen").forEach(el => el.classList.remove("active"));
       document.getElementById("viewMap").classList.add("active");
@@ -3706,6 +3903,7 @@
       loadCurrentRaidBattle();
       showBattleView();
       renderStagePreviews();
+      if (typeof broadcastRaidStart === "function") broadcastRaidStart();
     }
 
     function loadCurrentRaidBattle() {
@@ -4588,6 +4786,8 @@
       gameState.xp += 1000;
       saveGame();
 
+      if (typeof broadcastRaidVictory === "function") broadcastRaidVictory(boss.name);
+
       document.getElementById("raidVictoryImg").src = getPokemonArtworkUrl(boss.bossId);
       document.getElementById("raidVictoryBossName").textContent = `${boss.name} 토벌 & 생포 완료!`;
       document.getElementById("modalRaidVictory").style.display = "flex";
@@ -4821,13 +5021,93 @@
       if (data.type === "JOIN") {
         connectedStudents.set(data.studentId, { name: data.name, score: 0, lastSeen: Date.now() });
         updateConnectedStudentsUI();
-        showAttackToast(`👋 <b>${data.name}</b> 학생이 배틀에 참가했습니다!`, "#38bdf8");
+        showAttackToast(`👋 <b>${data.name}</b> 학생이 모험에 참여했습니다!`, "#38bdf8");
         sound.playKey();
-        // 입장한 학생에게 현재 문제 즉시 동기화
-        sendProblemToSingleStudent(data.studentId);
+
+        // 교사가 레이드 중이면 들어온 학생도 즉시 레이드로 소환
+        if (gameState.isRaidMode) {
+          sendRaidStartToSingleStudent(data.studentId);
+        }
+      } else if (data.type === "POKE_CAUGHT") {
+        // 학생이 개별 차시별 게임에서 포켓몬 포획 성공 시
+        showAttackToast(`🌟 <b>${data.name}</b> 학생이 <b>${data.pokeName}</b>을(를) 포획했습니다! (+100 XP)`, "#facc15");
+        sound.playKey();
       } else if (data.type === "ANSWER") {
         handleStudentAnswerSubmit(data);
       }
+    }
+
+    function broadcastRaidStart() {
+      if (!mqttHostClient || !mqttHostClient.isConnected()) return;
+      const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+      const phaseData = boss.phases[gameState.currentRaidPhase];
+      const curHp = boss.maxHp - (gameState.currentRaidPhase * 100);
+      const payload = {
+        type: "RAID_START",
+        bossName: boss.name,
+        bossId: boss.bossId,
+        maxHp: boss.maxHp,
+        curHp: curHp,
+        formula: phaseData.formula,
+        question: phaseData.question,
+        phase: gameState.currentRaidPhase
+      };
+      const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+      msg.destinationName = `${getTopicPrefix()}/broadcast`;
+      mqttHostClient.send(msg);
+      showAttackToast("🚨 전 학생 기기로 [전설 레이드 보스전] 긴급 소환을 발령했습니다!", "#ef4444");
+    }
+
+    function sendRaidStartToSingleStudent(studentId) {
+      if (!mqttHostClient || !mqttHostClient.isConnected()) return;
+      const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+      const phaseData = boss.phases[gameState.currentRaidPhase];
+      const curHpText = document.getElementById("raidHpText") ? document.getElementById("raidHpText").textContent : `${boss.maxHp}`;
+      const curHp = parseInt(curHpText) || boss.maxHp;
+      const payload = {
+        type: "RAID_START",
+        bossName: boss.name,
+        bossId: boss.bossId,
+        maxHp: boss.maxHp,
+        curHp: curHp,
+        formula: phaseData.formula,
+        question: phaseData.question,
+        phase: gameState.currentRaidPhase
+      };
+      const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+      msg.destinationName = `${getTopicPrefix()}/to_student/${studentId}`;
+      mqttHostClient.send(msg);
+    }
+
+    function broadcastRaidHp(curHp, maxHp) {
+      if (!mqttHostClient || !mqttHostClient.isConnected()) return;
+      const msg = new Paho.MQTT.Message(JSON.stringify({
+        type: "RAID_HP_UPDATE",
+        curHp: curHp,
+        maxHp: maxHp
+      }));
+      msg.destinationName = `${getTopicPrefix()}/broadcast`;
+      mqttHostClient.send(msg);
+    }
+
+    function broadcastRaidVictory(bossName) {
+      if (!mqttHostClient || !mqttHostClient.isConnected()) return;
+      const msg = new Paho.MQTT.Message(JSON.stringify({
+        type: "RAID_VICTORY",
+        bossName: bossName
+      }));
+      msg.destinationName = `${getTopicPrefix()}/broadcast`;
+      mqttHostClient.send(msg);
+    }
+
+    function broadcastRaidEnd() {
+      if (!mqttHostClient || !mqttHostClient.isConnected()) return;
+      const msg = new Paho.MQTT.Message(JSON.stringify({
+        type: "RAID_END"
+      }));
+      msg.destinationName = `${getTopicPrefix()}/broadcast`;
+      mqttHostClient.send(msg);
+      showAttackToast("모든 학생 기기가 [차시별 게임 모드]로 복귀했습니다.", "#38bdf8");
     }
 
     function getCurrentProblemPayload() {
@@ -4855,20 +5135,14 @@
       };
     }
 
-    function sendProblemToSingleStudent(studentId) {
-      if (!mqttHostClient || !mqttHostClient.isConnected()) return;
-      const payload = getCurrentProblemPayload();
-      const msg = new Paho.MQTT.Message(JSON.stringify(payload));
-      msg.destinationName = `${getTopicPrefix()}/to_student/${studentId}`;
-      mqttHostClient.send(msg);
-    }
-
     function broadcastProblemToAllStudents() {
       if (!mqttHostClient || !mqttHostClient.isConnected()) return;
-      const payload = getCurrentProblemPayload();
-      const msg = new Paho.MQTT.Message(JSON.stringify(payload));
-      msg.destinationName = `${getTopicPrefix()}/broadcast`;
-      mqttHostClient.send(msg);
+      if (gameState.isRaidMode) {
+        const payload = getCurrentProblemPayload();
+        const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+        msg.destinationName = `${getTopicPrefix()}/broadcast`;
+        mqttHostClient.send(msg);
+      }
     }
 
     function handleStudentAnswerSubmit(data) {
@@ -4901,7 +5175,7 @@
       }
 
       if (isCorrect) {
-        showAttackToast(`⚡ <b>${studentName}</b> 정답 적중! (+25 DMG)`, "#4ade80");
+        showAttackToast(`⚡ <b>${studentName}</b> 합동 공격 적중! (+25 DMG)`, "#4ade80");
         sound.playCatchSuccess();
 
         // 칠판 보스 피격 애니메이션
@@ -4925,6 +5199,8 @@
           const curHp = Math.max(0, parseInt(curHpText) - 25);
           document.getElementById("raidHpText").textContent = `${curHp} / ${boss.maxHp}`;
           document.getElementById("raidBossHpBar").style.width = `${(curHp / boss.maxHp) * 100}%`;
+          broadcastRaidHp(curHp, boss.maxHp);
+
           if (curHp <= 0) {
             handleRaidVictory(boss);
           }
@@ -4996,7 +5272,9 @@
       document.getElementById("modalMultiplayer").style.display = "none";
     }
 
-    /* --- [학생 클라이언트 로직] --- */
+    /* =========================================================
+       Q. 학생 클라이언트 로직 (차시별 개별 게임 + 협동 레이드)
+       ========================================================= */
     function joinClassroomBattle() {
       const nameInput = document.getElementById("studentJoinName").value.trim();
       const roomCode = document.getElementById("studentJoinRoomCode").value.trim();
@@ -5051,8 +5329,15 @@
           onSuccess: () => {
             document.getElementById("studentConnStatus").textContent = "선생님 화면과 연결됨 🟢";
             document.getElementById("studentWelcomeName").textContent = `🎒 ${myStudentName}`;
+            if (document.getElementById("studentRaidPlayerName")) {
+              document.getElementById("studentRaidPlayerName").textContent = `🎒 ${myStudentName}`;
+            }
+
             document.getElementById("studentJoinBox").style.display = "none";
-            document.getElementById("studentBattleBox").style.display = "flex";
+            document.getElementById("studentSoloBox").style.display = "flex";
+
+            // 차시별 개별 게임 초기화
+            initStudentSoloGame();
 
             // 브로드캐스트 토픽 & 개인 피드백 토픽 구독
             mqttStudentClient.subscribe(`${getTopicPrefix()}/broadcast`);
@@ -5081,50 +5366,213 @@
 
     function handleStudentIncomingData(data) {
       if (!data) return;
-      if (data.type === "SYNC_PROBLEM") {
-        document.getElementById("studentLiveFormula").textContent = `${data.formula} = ?`;
-        document.getElementById("studentLiveQuestion").textContent = data.question;
-        document.getElementById("studentStageTag").textContent = `🎯 ${data.pokeName} 배틀 중!`;
-        studentInputVal = "";
-        document.getElementById("studentInputDisplay").textContent = "_";
-        const fb = document.getElementById("studentFeedbackNotice");
-        fb.style.display = "none";
+
+      if (data.type === "RAID_START") {
+        // 교사가 레이드 보스전을 시작함 -> 전원 자동 전환!
+        isStudentInRaid = true;
+        sound.playCatchSuccess();
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+        document.getElementById("studentSoloBox").style.display = "none";
+        document.getElementById("studentRaidBox").style.display = "flex";
+        document.getElementById("studentRaidVictoryModal").style.display = "none";
+
+        document.getElementById("studentRaidBossImg").src = getPokemonArtworkUrl(data.bossId);
+        document.getElementById("studentRaidBossName").textContent = `👑 전설의 보스: ${data.bossName}`;
+        document.getElementById("studentRaidHpText").textContent = `${data.curHp} / ${data.maxHp} HP`;
+        document.getElementById("studentRaidHpBar").style.width = `${(data.curHp / data.maxHp) * 100}%`;
+        document.getElementById("studentRaidFormula").textContent = `${data.formula} = ?`;
+        document.getElementById("studentRaidQuestion").textContent = data.question;
+        document.getElementById("studentRaidPhaseTag").textContent = `PHASE ${data.phase + 1} / 3`;
+
+        studentRaidInputVal = "";
+        document.getElementById("studentRaidInputDisplay").textContent = "_";
+        document.getElementById("studentRaidFeedback").style.display = "none";
+      } else if (data.type === "RAID_HP_UPDATE") {
+        // 보스 실시간 체력 갱신
+        document.getElementById("studentRaidHpText").textContent = `${data.curHp} / ${data.maxHp} HP`;
+        document.getElementById("studentRaidHpBar").style.width = `${(data.curHp / data.maxHp) * 100}%`;
+      } else if (data.type === "SYNC_PROBLEM") {
+        // 보스 다음 페이즈 문제 갱신
+        if (isStudentInRaid) {
+          document.getElementById("studentRaidFormula").textContent = `${data.formula} = ?`;
+          document.getElementById("studentRaidQuestion").textContent = data.question;
+          studentRaidInputVal = "";
+          document.getElementById("studentRaidInputDisplay").textContent = "_";
+          document.getElementById("studentRaidFeedback").style.display = "none";
+        }
       } else if (data.type === "RESULT") {
-        const fb = document.getElementById("studentFeedbackNotice");
+        // 보스 공격 정답/오답 피드백
+        const fb = document.getElementById("studentRaidFeedback");
         fb.style.display = "block";
         if (data.isCorrect) {
           fb.style.background = "rgba(34, 197, 94, 0.25)";
           fb.style.border = "2px solid #22c55e";
           fb.style.color = "#4ade80";
-          fb.innerHTML = `🎉 정답입니다! 칠판으로 합동 공격을 발사했습니다! (+${data.earnedXP} XP)`;
+          fb.innerHTML = `🎉 정답 적중! 칠판 보스에게 강력한 레이저 발사! (+${data.earnedXP} XP)`;
           myStudentXP += data.earnedXP;
-          document.getElementById("studentMyXP").textContent = `⭐ ${myStudentXP} XP`;
+          updateStudentHeaderStats();
         } else {
           fb.style.background = "rgba(239, 68, 68, 0.25)";
           fb.style.border = "2px solid #ef4444";
           fb.style.color = "#f87171";
           fb.innerHTML = `앗! 계산이 맞지 않습니다. 다시 계산해보세요! 💡`;
         }
+      } else if (data.type === "RAID_VICTORY") {
+        // 보스 토벌 성공 모달
+        sound.playCatchSuccess();
+        myStudentXP += 500;
+        updateStudentHeaderStats();
+        document.getElementById("studentRaidVictoryModal").style.display = "flex";
+      } else if (data.type === "RAID_END") {
+        // 교사가 레이드를 종료하고 지도로 복귀함 -> 학생도 차시별 모험으로 복귀
+        returnToStudentSoloGame();
       }
     }
 
-    function pressStudentKey(key) {
+    /* --- [학생 차시별 개별 게임 제어] --- */
+    function initStudentSoloGame() {
+      studentCurrentStageId = 1;
+      studentCurrentPokeIdx = 0;
+      renderStudentStageTabs();
+      renderStudentSoloGame();
+      updateStudentHeaderStats();
+    }
+
+    function renderStudentStageTabs() {
+      const container = document.getElementById("studentStageTabs");
+      if (!container) return;
+      container.innerHTML = STAGES_DATA.map(s => {
+        const isActive = s.stageId === studentCurrentStageId;
+        return `<button class="student-stage-tab ${isActive ? 'active' : ''}" onclick="selectStudentStage(${s.stageId})">${s.stageId}차시</button>`;
+      }).join("");
+    }
+
+    function selectStudentStage(stageId) {
+      studentCurrentStageId = stageId;
+      studentCurrentPokeIdx = 0;
+      studentSoloInputVal = "";
+      renderStudentStageTabs();
+      renderStudentSoloGame();
+    }
+
+    function renderStudentSoloGame() {
+      const stage = STAGES_DATA.find(s => s.stageId === studentCurrentStageId);
+      if (!stage) return;
+
+      document.getElementById("studentStageConceptBadge").textContent = `📌 ${stage.stageId}차시: ${stage.concept}`;
+
+      const poke = stage.pokemons[studentCurrentPokeIdx] || stage.pokemons[0];
+      document.getElementById("studentSoloPokeImg").src = getPokemonArtworkUrl(poke.id);
+      document.getElementById("studentSoloPokeName").innerHTML = `
+        ${poke.name}
+        <span class="poke-type-badge" style="background: ${poke.typeBg}; font-size: 12px; padding: 2px 8px; border-radius: 8px;">${poke.type}</span>
+      `;
+      document.getElementById("studentSoloPokeProgress").textContent = `포획 진행: ${studentCurrentPokeIdx + 1} / ${stage.pokemons.length}`;
+
+      document.getElementById("studentSoloFormula").textContent = `${poke.formula} = ?`;
+      document.getElementById("studentSoloQuestion").textContent = poke.question;
+
+      studentSoloInputVal = "";
+      document.getElementById("studentSoloInputDisplay").textContent = "_";
+      document.getElementById("studentSoloFeedback").style.display = "none";
+    }
+
+    function pressStudentSoloKey(key) {
       if (key === "CLEAR") {
-        studentInputVal = "";
+        studentSoloInputVal = "";
       } else {
-        if (studentInputVal.length < 10) {
-          studentInputVal += key;
+        if (studentSoloInputVal.length < 10) {
+          studentSoloInputVal += key;
         }
       }
-      document.getElementById("studentInputDisplay").textContent = studentInputVal || "_";
+      document.getElementById("studentSoloInputDisplay").textContent = studentSoloInputVal || "_";
     }
 
-    function sendStudentAnswerToHost() {
+    function sendStudentSoloAnswer() {
+      if (!studentSoloInputVal) {
+        alert("계산 정답을 입력해주세요!");
+        return;
+      }
+      const stage = STAGES_DATA.find(s => s.stageId === studentCurrentStageId);
+      const poke = stage.pokemons[studentCurrentPokeIdx];
+      const isCorrect = (Math.abs(parseFloat(studentSoloInputVal) - parseFloat(poke.ansMain)) < 0.001);
+
+      const fb = document.getElementById("studentSoloFeedback");
+      fb.style.display = "block";
+
+      if (isCorrect) {
+        sound.playCatchSuccess();
+        fb.style.background = "rgba(34, 197, 94, 0.25)";
+        fb.style.border = "2px solid #22c55e";
+        fb.style.color = "#4ade80";
+        fb.innerHTML = `🎉 대단해요! [${poke.name}] 포획 성공! (+100 XP)`;
+
+        myStudentXP += 100;
+        if (!studentCaughtList.includes(poke.id)) {
+          studentCaughtList.push(poke.id);
+        }
+        updateStudentHeaderStats();
+
+        // 선생님 칠판으로 포획 소식 전송
+        if (mqttStudentClient && mqttStudentClient.isConnected()) {
+          const msg = new Paho.MQTT.Message(JSON.stringify({
+            type: "POKE_CAUGHT",
+            studentId: myStudentId,
+            name: myStudentName,
+            pokeName: poke.name,
+            stageId: studentCurrentStageId
+          }));
+          msg.destinationName = `${getTopicPrefix()}/to_host`;
+          mqttStudentClient.send(msg);
+        }
+
+        // 1.4초 후 다음 포켓몬 등장
+        setTimeout(() => {
+          if (studentCurrentPokeIdx < stage.pokemons.length - 1) {
+            studentCurrentPokeIdx++;
+            renderStudentSoloGame();
+          } else {
+            fb.innerHTML = `👑 축하합니다! ${studentCurrentStageId}차시의 모든 포켓몬을 포획했습니다! 상단의 다른 차시 버튼을 눌러 모험을 계속하세요!`;
+          }
+        }, 1400);
+      } else {
+        sound.playError();
+        fb.style.background = "rgba(239, 68, 68, 0.25)";
+        fb.style.border = "2px solid #ef4444";
+        fb.style.color = "#f87171";
+        const hintClean = poke.hint.replace(/<[^>]*>?/gm, ' ');
+        fb.innerHTML = `앗! 계산이 맞지 않습니다. 다시 계산해보세요! 💡<br><span style="font-size: 13px; font-weight: normal; color: #fde047;">${hintClean}</span>`;
+      }
+    }
+
+    function updateStudentHeaderStats() {
+      const xpEl = document.getElementById("studentMyXP");
+      if (xpEl) xpEl.textContent = `⭐ ${myStudentXP} XP`;
+      const raidXpEl = document.getElementById("studentRaidMyXP");
+      if (raidXpEl) raidXpEl.textContent = `⭐ ${myStudentXP} XP`;
+      const caughtEl = document.getElementById("studentMyCaught");
+      if (caughtEl) caughtEl.textContent = `🔴 도감 ${studentCaughtList.length}/36`;
+    }
+
+    /* --- [학생 협동 레이드 보스전 제어] --- */
+    function pressStudentRaidKey(key) {
+      if (key === "CLEAR") {
+        studentRaidInputVal = "";
+      } else {
+        if (studentRaidInputVal.length < 10) {
+          studentRaidInputVal += key;
+        }
+      }
+      document.getElementById("studentRaidInputDisplay").textContent = studentRaidInputVal || "_";
+    }
+
+    function sendStudentRaidAnswer() {
       if (!mqttStudentClient || !mqttStudentClient.isConnected()) {
         alert("선생님 화면과 연결되어 있지 않습니다!");
         return;
       }
-      if (!studentInputVal) {
+      if (!studentRaidInputVal) {
         alert("계산 정답을 입력해주세요!");
         return;
       }
@@ -5132,10 +5580,18 @@
         type: "ANSWER",
         studentId: myStudentId,
         name: myStudentName,
-        answer: studentInputVal
+        answer: studentRaidInputVal
       }));
       ansMsg.destinationName = `${getTopicPrefix()}/to_host`;
       mqttStudentClient.send(ansMsg);
+    }
+
+    function returnToStudentSoloGame() {
+      isStudentInRaid = false;
+      document.getElementById("studentRaidBox").style.display = "none";
+      document.getElementById("studentRaidVictoryModal").style.display = "none";
+      document.getElementById("studentSoloBox").style.display = "flex";
+      renderStudentSoloGame();
     }
 
   </script>
