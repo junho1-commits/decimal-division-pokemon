@@ -1,0 +1,10 @@
+# OS and temporary files
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.tmp
+*~
+
+# Python cache if any
+__pycache__/
+*.pyc

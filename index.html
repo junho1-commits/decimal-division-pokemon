@@ -1,0 +1,5055 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>포켓몬 GO : 소수의 나눗셈 대모험 (6-2 수학 2단원 전단원)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&family=Jua&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================
+       1. 디자인 시스템 & 리셋 (교실 맨 뒤 8m 가독성 + 포켓몬 GO UI)
+       ========================================================= */
+    :root {
+      --bg-dark: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-sub: #334155;
+      --poke-red: #ef4444;
+      --poke-blue: #3b82f6;
+      --poke-yellow: #facc15;
+      --poke-green: #22c55e;
+      --poke-purple: #a855f7;
+      --poke-cyan: #06b6d4;
+
+      --text-white: #ffffff;
+      --text-light: #f1f5f9;
+      --text-muted: #94a3b8;
+
+      --font-main: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+      --font-game: "Jua", "Pretendard", cursive, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0f19;
+      font-family: var(--font-main);
+      color: var(--text-white);
+    }
+
+    /* 16:9 반응형 뷰포트 고정 스케일러 */
+    #stage {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 30%, #1e293b 0%, #0b0f19 85%);
+    }
+
+    #viewport {
+      position: absolute;
+      width: 1600px;
+      height: 900px;
+      transform-origin: center center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px 24px 14px;
+      background: linear-gradient(175deg, #131d31 0%, #0d1322 100%);
+      border: 3px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(59, 130, 246, 0.15);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* =========================================================
+       2. 상단 헤더 & 트레이너 프로필 바 (한 줄 고정: No Wrap)
+       ========================================================= */
+    header {
+      flex: none;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 10px;
+      z-index: 30;
+      white-space: nowrap;
+      gap: 12px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      padding: 5px 15px;
+      border-radius: 30px;
+      font-family: var(--font-game);
+      font-size: 22px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .logo-badge img {
+      width: 26px;
+      height: 26px;
+      animation: spin-slow 8s linear infinite;
+    }
+
+    @keyframes spin-slow {
+      100% { transform: rotate(360deg); }
+    }
+
+    .unit-indicator {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .unit-indicator .title {
+      font-size: 24px;
+      font-weight: 900;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .unit-indicator .title span {
+      color: var(--poke-yellow);
+      font-family: var(--font-game);
+      font-size: 23px;
+      white-space: nowrap;
+    }
+
+    .unit-indicator .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* 트레이너 스탯 바 */
+    .trainer-stats {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 5px 13px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 17px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .stat-pill .icon {
+      font-size: 19px;
+    }
+
+    .stat-pill .val {
+      color: var(--poke-yellow);
+      font-family: var(--font-game);
+      font-size: 20px;
+    }
+
+    /* 상단 메뉴 버튼군 */
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .btn-action {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+    }
+
+    .btn-action:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-action.active-toggle {
+      background: rgba(59, 130, 246, 0.35);
+      border-color: #60a5fa;
+      color: #93c5fd;
+    }
+
+    .btn-action.memo-btn {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.3), rgba(2, 132, 199, 0.4));
+      border-color: #38bdf8;
+      color: #7dd3fc;
+      font-weight: 800;
+    }
+
+    .btn-action.pokedex-btn {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-color: #38bdf8;
+      font-family: var(--font-game);
+      font-size: 17px;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-action.raid-btn {
+      background: linear-gradient(135deg, #7c3aed, #db2777);
+      border-color: #f472b6;
+      font-family: var(--font-game);
+      font-size: 17px;
+      animation: pulse-glow 2s infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 8px rgba(219, 39, 119, 0.4); }
+      50% { box-shadow: 0 0 20px rgba(219, 39, 119, 0.8); }
+    }
+
+    /* =========================================================
+       3. 메인 컨텐츠 영역 (뷰 전환)
+       ========================================================= */
+    #mainContent {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+      margin: 10px 0 8px;
+      border-radius: 18px;
+    }
+
+    .view-screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .view-screen.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* =========================================================
+       4. [화면 1] 스테이지 선택 맵 (Stage Map View)
+       ========================================================= */
+    #viewMap {
+      padding: 8px 12px;
+      overflow-y: auto;
+      justify-content: space-between;
+    }
+
+    .map-header {
+      text-align: center;
+      margin-bottom: 10px;
+      white-space: nowrap;
+    }
+
+    .map-header h2 {
+      font-size: 33px;
+      font-weight: 900;
+      font-family: var(--font-game);
+      letter-spacing: -0.5px;
+      color: #ffffff;
+      text-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+      white-space: nowrap;
+    }
+
+    .map-header p {
+      font-size: 18px;
+      color: #93c5fd;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .stage-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      flex: 1;
+    }
+
+    .stage-card {
+      background: linear-gradient(160deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .stage-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--poke-cyan);
+      box-shadow: 0 12px 28px rgba(6, 182, 212, 0.35);
+    }
+
+    .stage-card.raid-card {
+      grid-column: span 3;
+      background: linear-gradient(135deg, rgba(88, 28, 135, 0.95), rgba(157, 23, 77, 0.95));
+      border-color: #f472b6;
+      flex-direction: row;
+      align-items: center;
+      padding: 14px 26px;
+    }
+
+    .stage-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 10px;
+      width: fit-content;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      font-family: var(--font-game);
+      white-space: nowrap;
+    }
+
+    .badge-s1 { background: #166534; color: #86efac; border: 1px solid #22c55e; }
+    .badge-s2 { background: #1e40af; color: #93c5fd; border: 1px solid #3b82f6; }
+    .badge-s3 { background: #6b21a8; color: #d8b4fe; border: 1px solid #a855f7; }
+    .badge-s4 { background: #854d0e; color: #fde047; border: 1px solid #eab308; }
+    .badge-s5 { background: #0e7490; color: #67e8f9; border: 1px solid #06b6d4; }
+    .badge-s6 { background: #9f1239; color: #fca5a5; border: 1px solid #f43f5e; }
+    .badge-raid { background: #4c1d95; color: #f472b6; border: 1px solid #db2777; font-size: 17px; padding: 5px 14px; }
+
+    .stage-info h3 {
+      font-size: 24px;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 3px;
+      font-family: var(--font-game);
+      white-space: nowrap;
+    }
+
+    .stage-info .concept {
+      font-size: 17px;
+      color: var(--poke-yellow);
+      font-weight: 700;
+      margin-bottom: 6px;
+      white-space: nowrap;
+    }
+
+    .stage-info .desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stage-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      white-space: nowrap;
+    }
+
+    .poke-preview-list {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .poke-preview-img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+      padding: 3px;
+      flex-shrink: 0;
+    }
+
+    .stage-progress {
+      font-size: 16px;
+      font-weight: 800;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    .stage-progress span {
+      color: var(--poke-green);
+      font-family: var(--font-game);
+      font-size: 21px;
+    }
+
+    /* =========================================================
+       5. [화면 2] 야생 포켓몬 조우 및 포획 배틀 (Battle View)
+       ========================================================= */
+    #viewBattle {
+      display: flex;
+      flex-direction: row;
+      gap: 18px;
+      height: 100%;
+    }
+
+    /* 좌측: 야생 포켓몬 필드 화면 */
+    .battle-field {
+      flex: 1.1;
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.7);
+    }
+
+    /* 스테이지별 테마 배경 */
+    .theme-stage1 { background: radial-gradient(circle at 50% 60%, #15803d 0%, #064e3b 60%, #022c22 100%); }
+    .theme-stage2 { background: radial-gradient(circle at 50% 60%, #0369a1 0%, #0c4a6e 60%, #082f49 100%); }
+    .theme-stage3 { background: radial-gradient(circle at 50% 60%, #7e22ce 0%, #581c87 60%, #3b0764 100%); }
+    .theme-stage4 { background: radial-gradient(circle at 50% 60%, #ca8a04 0%, #713f12 60%, #422006 100%); }
+    .theme-stage5 { background: radial-gradient(circle at 50% 60%, #0891b2 0%, #155e75 60%, #164e63 100%); }
+    .theme-stage6 { background: radial-gradient(circle at 50% 60%, #be123c 0%, #881337 60%, #4c0519 100%); }
+    .theme-raid   { background: radial-gradient(circle at 50% 60%, #be185d 0%, #701a75 50%, #2e1065 100%); }
+
+    /* 야생 포켓몬 상태 HUD (한 줄 고정) */
+    .poke-hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 12px 18px;
+      border-radius: 16px;
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      z-index: 10;
+      white-space: nowrap;
+    }
+
+    .poke-meta {
+      white-space: nowrap;
+    }
+
+    .poke-meta h3 {
+      font-size: 28px;
+      font-weight: 900;
+      color: #ffffff;
+      font-family: var(--font-game);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .poke-type-badge {
+      font-size: 14px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 9px;
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .poke-meta .stage-name {
+      font-size: 15px;
+      color: #93c5fd;
+      font-weight: 700;
+      margin-top: 3px;
+      white-space: nowrap;
+    }
+
+    .poke-cp {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .poke-cp .label {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .poke-cp .value {
+      font-size: 30px;
+      font-weight: 900;
+      font-family: var(--font-game);
+      color: var(--poke-yellow);
+      letter-spacing: -0.5px;
+      white-space: nowrap;
+    }
+
+    /* 포켓몬 연출 영역 */
+    .poke-stage-arena {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 5;
+    }
+
+    .poke-pedestal {
+      position: absolute;
+      bottom: 25px;
+      width: 320px;
+      height: 90px;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.05) 60%, transparent 80%);
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 0 35px rgba(255, 255, 255, 0.3);
+      z-index: 1;
+    }
+
+    .wild-pokemon-img {
+      max-width: 270px;
+      max-height: 270px;
+      object-fit: contain;
+      position: relative;
+      z-index: 5;
+      filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.7));
+      transition: all 0.35s ease;
+      animation: float-anim 3s ease-in-out infinite;
+    }
+
+    @keyframes float-anim {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    /* 던져진 몬스터볼 애니메이션 요소 */
+    #animPokeball {
+      position: absolute;
+      width: 58px;
+      height: 58px;
+      display: none;
+      z-index: 20;
+      transition: all 0.55s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    /* 탈출/배틀 알림 메시지 플로팅 배너 */
+    #battleNoticeBanner {
+      position: absolute;
+      top: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #facc15;
+      color: #ffffff;
+      padding: 10px 22px;
+      border-radius: 16px;
+      font-size: 19px;
+      font-weight: 800;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      z-index: 25;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+      white-space: nowrap;
+      animation: bannerSlideDown 0.3s ease;
+    }
+
+    @keyframes bannerSlideDown {
+      from { top: 60px; opacity: 0; }
+      to { top: 90px; opacity: 1; }
+    }
+
+    /* 레이드 보스 체력바 */
+    .raid-boss-hp-wrap {
+      display: none;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      border: 2px solid #ec4899;
+      border-radius: 12px;
+      padding: 6px;
+      margin-top: 8px;
+      white-space: nowrap;
+    }
+
+    .raid-boss-hp-bar {
+      height: 18px;
+      background: linear-gradient(90deg, #ec4899, #f43f5e);
+      border-radius: 8px;
+      width: 100%;
+      transition: width 0.4s ease;
+    }
+
+    /* 하단 볼 선택기 (한 줄 고정) */
+    .ball-selector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 6px 14px;
+      z-index: 10;
+      white-space: nowrap;
+    }
+
+    .ball-btn {
+      background: transparent;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      padding: 5px 12px;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .ball-btn.active {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--poke-yellow);
+      transform: scale(1.05);
+    }
+
+    .ball-icon {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+
+    /* 우측: 소수의 나눗셈 퀴즈 & 터치 키패드 영역 */
+    .battle-quiz-panel {
+      flex: 1.2;
+      background: #172138;
+      border-radius: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .quiz-card {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 16px 20px;
+      border: 2px solid rgba(56, 189, 248, 0.3);
+      position: relative;
+    }
+
+    .quiz-label {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--poke-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      white-space: nowrap;
+    }
+
+    .quiz-question {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.4;
+      margin-bottom: 10px;
+      word-break: keep-all;
+    }
+
+    .quiz-formula-box {
+      background: #0f172a;
+      border-radius: 14px;
+      padding: 10px 16px;
+      border: 2px solid rgba(250, 204, 21, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--poke-yellow);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    /* 입력 영역 (한 줄 고정) */
+    .answer-inputs-wrap {
+      margin: 10px 0 8px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      flex-wrap: nowrap;
+    }
+
+    .single-input-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .single-input-box label {
+      font-size: 23px;
+      font-weight: 800;
+      color: #93c5fd;
+      white-space: nowrap;
+    }
+
+    .answer-display {
+      min-width: 170px;
+      height: 56px;
+      background: #090d16;
+      border: 3px solid #38bdf8;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      font-weight: 900;
+      color: #ffffff;
+      padding: 0 14px;
+      cursor: pointer;
+      box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.6);
+      transition: border-color 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .answer-display.active-target {
+      border-color: var(--poke-yellow);
+      box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
+    }
+
+    .answer-display:empty::after {
+      content: "터치 입력";
+      color: #64748b;
+      font-size: 19px;
+      font-weight: 600;
+    }
+
+    /* 전자칠판 대형 터치 키패드 */
+    .touch-keypad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 9px;
+      margin-top: 6px;
+    }
+
+    .key-btn {
+      height: 54px;
+      background: #25334d;
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .key-btn:hover {
+      background: #334466;
+    }
+
+    .key-btn:active {
+      transform: scale(0.95);
+      background: #3b82f6;
+    }
+
+    .key-btn.action-key {
+      background: #334155;
+      font-size: 20px;
+      color: #fca5a5;
+    }
+
+    .key-btn.throw-key {
+      grid-column: span 2;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      border-color: #f87171;
+      font-family: var(--font-game);
+      font-size: 24px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    }
+
+    .key-btn.throw-key:hover {
+      background: linear-gradient(135deg, #f87171, #ef4444);
+    }
+
+    /* 퀴즈 하단 보조 툴바 */
+    .quiz-bottom-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      white-space: nowrap;
+    }
+
+    .btn-hint {
+      background: rgba(234, 179, 8, 0.15);
+      border: 1.5px solid #eab308;
+      color: #fef08a;
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn-hint:hover {
+      background: rgba(234, 179, 8, 0.3);
+    }
+
+    /* =========================================================
+       6. [화면 3] 포켓몬 도감 (Pokédex View)
+       ========================================================= */
+    #viewPokedex {
+      padding: 10px 16px;
+      overflow-y: auto;
+    }
+
+    .pokedex-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+      white-space: nowrap;
+    }
+
+    .pokedex-header h2 {
+      font-size: 32px;
+      font-weight: 900;
+      font-family: var(--font-game);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .pokedex-rate {
+      font-size: 19px;
+      font-weight: 800;
+      color: #93c5fd;
+      white-space: nowrap;
+    }
+
+    .pokedex-rate span {
+      color: var(--poke-yellow);
+      font-size: 26px;
+      font-family: var(--font-game);
+    }
+
+    .pokedex-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      padding-bottom: 20px;
+    }
+
+    .dex-card {
+      background: #1e293b;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .dex-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--poke-cyan);
+    }
+
+    .dex-card.locked {
+      background: #111827;
+      opacity: 0.65;
+      cursor: default;
+    }
+
+    .dex-card.locked img {
+      filter: brightness(0) invert(0.2);
+    }
+
+    .dex-img {
+      width: 76px;
+      height: 76px;
+      object-fit: contain;
+      margin: 6px 0;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+    }
+
+    .dex-num {
+      font-size: 13px;
+      font-weight: 800;
+      color: #64748b;
+      align-self: flex-start;
+      white-space: nowrap;
+    }
+
+    .dex-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: var(--font-game);
+      white-space: nowrap;
+    }
+
+    .dex-stage-tag {
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-top: 3px;
+      white-space: nowrap;
+    }
+
+    /* =========================================================
+       7. 모달 다이얼로그 (포획 성공, 힌트, 도감 상세)
+       ========================================================= */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-box {
+      background: linear-gradient(170deg, #1e293b, #0f172a);
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 28px 34px;
+      width: 720px;
+      max-width: 90%;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+      animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes scaleUp {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-catch-img {
+      width: 170px;
+      height: 170px;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.6));
+      margin: 8px 0;
+      animation: bounce 1.5s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .modal-title {
+      font-size: 36px;
+      font-weight: 900;
+      font-family: var(--font-game);
+      color: var(--poke-yellow);
+      margin-bottom: 6px;
+      white-space: nowrap;
+    }
+
+    .modal-desc {
+      font-size: 21px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+
+    .modal-formula-review {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1.5px solid rgba(56, 189, 248, 0.4);
+      border-radius: 14px;
+      padding: 12px 18px;
+      font-size: 23px;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: 22px;
+      white-space: nowrap;
+    }
+
+    .modal-btn-group {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      white-space: nowrap;
+    }
+
+    .btn-modal {
+      padding: 11px 26px;
+      border-radius: 16px;
+      font-size: 21px;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: var(--font-game);
+      border: none;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-modal.primary {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+    }
+
+    .btn-modal.primary:hover {
+      transform: scale(1.05);
+    }
+
+    .btn-modal.secondary {
+      background: #334155;
+      color: #e2e8f0;
+    }
+
+    .hint-step-box {
+      text-align: left;
+      background: #090d16;
+      border-radius: 16px;
+      padding: 18px 22px;
+      margin: 14px 0 20px;
+      border-left: 5px solid var(--poke-yellow);
+      font-size: 21px;
+      line-height: 1.6;
+      color: #f1f5f9;
+    }
+
+    .hint-step-box b {
+      color: var(--poke-yellow);
+    }
+
+    /* =========================================================
+       8. 계산 연습장 (모눈종이 메모장) 모달 & 도구창
+       ========================================================= */
+    #modalScratchpad {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 15, 29, 0.88);
+      backdrop-filter: blur(8px);
+      z-index: 120;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .scratchpad-window {
+      width: 1260px;
+      height: 780px;
+      max-width: 95vw;
+      max-height: 92vh;
+      background: #141f36;
+      border: 3px solid rgba(56, 189, 248, 0.45);
+      border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(56, 189, 248, 0.2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .scratchpad-header {
+      height: 64px;
+      background: #1a2744;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+      padding: 0 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .scratchpad-title {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 23px;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: var(--font-game);
+      white-space: nowrap;
+    }
+
+    .scratchpad-formula-tag {
+      background: #0f172a;
+      border: 2px solid #facc15;
+      color: #facc15;
+      padding: 4px 14px;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .scratchpad-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .pad-tool-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .pad-tool-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .pad-tool-btn.active {
+      background: rgba(56, 189, 248, 0.35);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    .pad-color-dot {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s ease;
+    }
+
+    .pad-color-dot.active {
+      transform: scale(1.25);
+      border-color: #ffffff;
+    }
+
+    .pad-size-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      padding: 5px 9px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .pad-size-btn.active {
+      background: #38bdf8;
+      color: #0f172a;
+      border-color: #38bdf8;
+    }
+
+    .scratchpad-body {
+      flex: 1;
+      position: relative;
+      /* 모눈종이 격자무늬 (34px x 34px - 세로셈 자릿수 맞춤 최적화) */
+      background-color: #0b1324;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 34px 34px;
+      touch-action: none;
+      cursor: crosshair;
+      overflow: hidden;
+    }
+
+    #scratchpadCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .scratchpad-watermark {
+      position: absolute;
+      bottom: 12px;
+      right: 18px;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.35);
+      font-weight: 700;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* =========================================================
+       9. 전자칠판 캔버스 판서 오버레이
+       ========================================================= */
+    #drawCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      pointer-events: none;
+      touch-action: none;
+    }
+
+    #drawCanvas.pen-active {
+      pointer-events: auto;
+      cursor: crosshair;
+    }
+
+    .canvas-toolbar {
+      position: absolute;
+      bottom: 24px;
+      left: 36px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      z-index: 60;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+      white-space: nowrap;
+    }
+
+    .canvas-toolbar.show {
+      display: flex;
+    }
+
+    .color-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.2s ease;
+    }
+
+    .color-dot.active {
+      transform: scale(1.2);
+      border-color: #ffffff;
+    }
+
+    /* =========================================================
+       10. 하단 네비게이션 & 빠른 바로가기 (한 줄 고정)
+       ========================================================= */
+    footer {
+      flex: none;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 2px solid rgba(255, 255, 255, 0.1);
+      padding-top: 8px;
+      z-index: 30;
+      white-space: nowrap;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .stage-quick-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .quick-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #94a3b8;
+      padding: 4px 10px;
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .quick-pill:hover, .quick-pill.active {
+      background: var(--poke-blue);
+      color: #ffffff;
+      border-color: #60a5fa;
+    }
+
+    .quick-pill.raid {
+      background: rgba(219, 39, 119, 0.2);
+      border-color: #ec4899;
+      color: #f472b6;
+    }
+
+    .quick-pill.raid:hover, .quick-pill.raid.active {
+      background: #db2777;
+      color: #ffffff;
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .shortcut-badge {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* =========================================================
+       13. 학급 협동 레이드 & 포켓몬 진화 시스템 스타일
+       ========================================================= */
+    .coop-raid-console {
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #ec4899;
+      box-shadow: 0 0 25px rgba(236, 72, 153, 0.4), inset 0 0 15px rgba(236, 72, 153, 0.2);
+      border-radius: 16px;
+      padding: 12px 18px;
+      margin-top: 10px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      animation: pulseBorder 2s infinite alternate;
+    }
+
+    @keyframes pulseBorder {
+      from { border-color: #ec4899; box-shadow: 0 0 15px rgba(236, 72, 153, 0.4); }
+      to { border-color: #f43f5e; box-shadow: 0 0 30px rgba(244, 63, 94, 0.7); }
+    }
+
+    .coop-timer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.8);
+      border-radius: 12px;
+      padding: 8px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .coop-timer-display {
+      font-size: 20px;
+      font-weight: 900;
+      color: #fde047;
+      font-family: var(--font-game);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .coop-counter-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+    }
+
+    .coop-count-stepper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .coop-step-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: none;
+      background: #3b82f6;
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .coop-step-btn:hover { background: #2563eb; transform: scale(1.08); }
+    .coop-step-btn:active { transform: scale(0.95); }
+
+    .coop-preset-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-preset {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(30, 41, 59, 0.8);
+      color: #e2e8f0;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-preset:hover, .btn-preset.active {
+      background: #ec4899;
+      color: #ffffff;
+      border-color: #f472b6;
+    }
+
+    .coop-damage-badge {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(236, 72, 153, 0.15);
+      border: 1px solid rgba(236, 72, 153, 0.4);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #fbcfe8;
+      white-space: nowrap;
+    }
+
+    /* 합동 빔 이펙트 및 피격 진동 */
+    .laser-beam-anim {
+      position: absolute;
+      top: 50%;
+      left: 10%;
+      width: 80%;
+      height: 24px;
+      background: linear-gradient(90deg, transparent, #38bdf8, #ffffff, #f43f5e);
+      border-radius: 20px;
+      box-shadow: 0 0 30px #38bdf8, 0 0 60px #f43f5e;
+      transform: translateY(-50%);
+      z-index: 50;
+      animation: shootBeam 0.65s ease-out forwards;
+    }
+
+    @keyframes shootBeam {
+      0% { opacity: 0; width: 0; left: 0%; }
+      50% { opacity: 1; width: 85%; }
+      100% { opacity: 0; width: 100%; left: 30%; }
+    }
+
+    .boss-raid-hit {
+      animation: bossHitShake 0.65s cubic-bezier(.36,.07,.19,.97) both !important;
+      filter: drop-shadow(0 0 35px #ef4444) brightness(1.6) !important;
+    }
+
+    @keyframes bossHitShake {
+      10%, 90% { transform: scale(1.2) translate3d(-6px, 0, 0); }
+      20%, 80% { transform: scale(1.2) translate3d(8px, 0, 0); }
+      30%, 50%, 70% { transform: scale(1.2) translate3d(-10px, 0, 0); }
+      40%, 60% { transform: scale(1.2) translate3d(10px, 0, 0); }
+    }
+
+    /* 포켓몬 진화 모달 스타일 */
+    .modal-evolution-box {
+      background: radial-gradient(circle at center, #1e1b4b 0%, #030712 100%);
+      border: 3px solid #facc15;
+      border-radius: 28px;
+      padding: 32px 38px;
+      width: 740px;
+      max-width: 95%;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 0 80px rgba(250, 204, 21, 0.4);
+    }
+
+    .evo-sprite-wrap {
+      width: 240px;
+      height: 240px;
+      margin: 14px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .evo-sprite {
+      width: 210px;
+      height: 210px;
+      object-fit: contain;
+      filter: drop-shadow(0 15px 30px rgba(0,0,0,0.8));
+      transition: all 0.3s;
+    }
+
+    .evo-flashing {
+      animation: evoFlash 0.32s infinite alternate ease-in-out;
+    }
+
+    @keyframes evoFlash {
+      0% { filter: brightness(1) drop-shadow(0 0 20px #38bdf8); transform: scale(1); }
+      50% { filter: brightness(10) drop-shadow(0 0 50px #ffffff); transform: scale(1.12); }
+      100% { filter: brightness(0.1) invert(1) drop-shadow(0 0 30px #facc15); transform: scale(1.04); }
+    }
+
+    .btn-evolution {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #ffffff;
+      border: 2px solid #fef08a;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+      font-size: 18px;
+      font-weight: 900;
+      padding: 10px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      animation: pulseGold 1.5s infinite alternate;
+      white-space: nowrap;
+    }
+    .btn-evolution:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.9);
+    }
+    @keyframes pulseGold {
+      from { box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+      to { box-shadow: 0 0 25px rgba(245, 158, 11, 0.85); }
+    }
+
+
+    /* =========================================================
+       14. 실시간 학급 P2P 멀티플레이 & 학생용 컨트롤러 스타일
+       ========================================================= */
+    .multiplayer-btn {
+      background: rgba(14, 165, 233, 0.25) !important;
+      border-color: #38bdf8 !important;
+      color: #38bdf8 !important;
+      font-weight: 800 !important;
+      animation: pulseCyan 2s infinite alternate;
+    }
+    @keyframes pulseCyan {
+      from { box-shadow: 0 0 5px rgba(56, 189, 248, 0.3); }
+      to { box-shadow: 0 0 18px rgba(56, 189, 248, 0.7); }
+    }
+
+    /* 실시간 학생 공격 토스트 컨테이너 */
+    #liveAttackToastContainer {
+      position: absolute;
+      top: 90px;
+      right: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 80;
+      pointer-events: none;
+    }
+
+    .attack-toast {
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid #38bdf8;
+      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.4);
+      border-radius: 12px;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 17px;
+      animation: slideInToast 0.35s ease-out, fadeOutToast 0.5s ease-in 3.5s forwards;
+      white-space: nowrap;
+    }
+
+    @keyframes slideInToast {
+      from { transform: translateX(80px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOutToast {
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+
+    /* 학생 접속 칩 */
+    .student-chip {
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      animation: popChip 0.3s ease;
+      white-space: nowrap;
+    }
+
+    @keyframes popChip {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* =========================================================
+       학생용 모바일/태블릿 화면 (Student Controller View)
+       ========================================================= */
+    #viewStudentController {
+      display: none;
+      width: 100vw;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #090d16 0%, #0f172a 100%);
+      color: #ffffff;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      box-sizing: border-box;
+      font-family: var(--font-base);
+      overflow-y: auto;
+    }
+
+    .student-app-header {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 16px;
+    }
+
+    .student-box {
+      width: 100%;
+      max-width: 500px;
+      background: #1e293b;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .student-input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 2px solid #38bdf8;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 800;
+      text-align: center;
+      box-sizing: border-box;
+      outline: none;
+    }
+
+    .btn-student-primary {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, #38bdf8, #2563eb);
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+      transition: all 0.15s;
+    }
+    .btn-student-primary:active {
+      transform: scale(0.97);
+    }
+
+    .student-formula-card {
+      background: #0f172a;
+      border: 2px solid #facc15;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .student-keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .student-key-btn {
+      padding: 14px;
+      font-size: 24px;
+      font-weight: 900;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: #334155;
+      color: #ffffff;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .student-key-btn:active {
+      background: #38bdf8;
+      transform: scale(0.95);
+    }
+
+  </style>
+  <!-- PeerJS WebRTC P2P & QRCode CDN -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+  <!-- 전체화면 16:9 뷰포트 컨테이너 -->
+  <div id="stage">
+    <div id="viewport">
+
+      <!-- 실시간 학생 공격 토스트 컨테이너 -->
+      <div id="liveAttackToastContainer"></div>
+
+      <!-- 전자칠판 전면 드로잉 캔버스 -->
+      <canvas id="drawCanvas" width="1600" height="900"></canvas>
+
+      <!-- 캔버스 판서 플로팅 툴바 -->
+      <div id="canvasToolbar" class="canvas-toolbar">
+        <span style="font-size: 15px; font-weight: 700; color: #94a3b8; margin-right: 4px;">판서 펜:</span>
+        <div class="color-dot active" style="background: #facc15;" onclick="setPenColor('#facc15', this)"></div>
+        <div class="color-dot" style="background: #38bdf8;" onclick="setPenColor('#38bdf8', this)"></div>
+        <div class="color-dot" style="background: #ef4444;" onclick="setPenColor('#ef4444', this)"></div>
+        <div class="color-dot" style="background: #4ade80;" onclick="setPenColor('#4ade80', this)"></div>
+        <div class="color-dot" style="background: #ffffff;" onclick="setPenColor('#ffffff', this)"></div>
+        <button class="btn-action" style="padding: 3px 8px; font-size: 13px;" onclick="clearCanvas()">전체 지우기</button>
+      </div>
+
+      <!-- 상단 헤더 -->
+      <header>
+        <div class="brand-group">
+          <div class="logo-badge" onclick="showMapView()" style="cursor: pointer;" title="모험 지도로 이동">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Pokeball">
+            <span>POKÉMON GO</span>
+          </div>
+          <div class="unit-indicator">
+            <div class="title">
+              6-2 수학 2단원 <span>소수의 나눗셈 대모험</span>
+            </div>
+            <div class="subtitle">문제를 풀고 몬스터볼을 던져 포켓몬 도감을 완성하자!</div>
+          </div>
+        </div>
+
+        <div class="trainer-stats">
+          <div class="stat-pill" title="획득한 경험치">
+            <span class="icon">⭐</span>
+            <span>XP</span>
+            <span class="val" id="valXP">0</span>
+          </div>
+          <div class="stat-pill" title="잡은 포켓몬 수">
+            <span class="icon">🔴</span>
+            <span>도감</span>
+            <span class="val" id="valCaughtCount">0 / 36</span>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="btn-action memo-btn" onclick="openScratchpad()" id="btnScratchpad" title="펜으로 계산할 수 있는 모눈 메모장 (N)">
+            <span>📝</span> 계산 메모장
+          </button>
+          <button class="btn-action" onclick="togglePenMode()" id="btnPen" title="전자칠판 전체화면 판서">
+            <span>✎</span> 판서
+          </button>
+          <button class="btn-action active-toggle" onclick="toggleBGM()" id="btnBgm" title="배경음악 켜기/끄기 (M)">
+            <span id="bgmIcon">🎵</span> BGM
+          </button>
+          <button class="btn-action active-toggle" onclick="toggleVoice()" id="btnVoice" title="한국어 음성 켜기/끄기">
+            <span id="voiceIcon">🗣️</span> 음성
+          </button>
+          <button class="btn-action" onclick="toggleAudio()" id="btnAudio" title="효과음 켜기/끄기">
+            <span id="audioIcon">🔊</span> 효과음
+          </button>
+          <button class="btn-action pokedex-btn" onclick="showPokedexView()">
+            <span>📖</span> 도감
+          </button>
+          <button class="btn-action multiplayer-btn" onclick="openMultiplayerModal()" id="btnMultiplayer" title="학생 스마트폰/크롬북 실시간 연동 (P)">
+            <span>📡</span> 실시간 학생 참여
+          </button>
+          <button class="btn-action raid-btn" onclick="startRaidBattle()">
+            <span>⚡</span> 전설 레이드
+          </button>
+          <button class="btn-action" onclick="toggleFullscreen()" title="전체화면 (F)">
+            <span>⛶</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 메인 뷰 컨테이너 -->
+      <div id="mainContent">
+
+        <!-- [화면 1] 스테이지 선택 맵 -->
+        <div id="viewMap" class="view-screen active">
+          <div class="map-header">
+            <h2>🌍 모험을 떠날 지역(차시)을 선택하세요!</h2>
+            <p>초원의 들판부터 전설의 보스 레이드까지, 6-2 수학 2단원 완전 정복</p>
+          </div>
+
+          <div class="stage-grid">
+            <!-- 스테이지 1 -->
+            <div class="stage-card" onclick="enterStage(1)">
+              <div>
+                <div class="stage-badge badge-s1">STAGE 1 · 2차시</div>
+                <div class="stage-info">
+                  <h3>초원의 들판</h3>
+                  <div class="concept">(소수 한 자리) ÷ (소수 한 자리)</div>
+                  <div class="desc">소수점을 1자리 옮겨 자연수 나눗셈으로 해결하기</div>
+                </div>
+              </div>
+              <div class="stage-bottom">
+                <div class="poke-preview-list" id="previewS1"></div>
+                <div class="stage-progress" id="progS1"><span>0</span> / 6</div>
+              </div>
+            </div>
+
+            <!-- 스테이지 2 -->
+            <div class="stage-card" onclick="enterStage(2)">
+              <div>
+                <div class="stage-badge badge-s2">STAGE 2 · 3차시</div>
+                <div class="stage-info">
+                  <h3>바람의 언덕</h3>
+                  <div class="concept">(소수 두 자리) ÷ (소수 두 자리)</div>
+                  <div class="desc">소수점을 2자리 옮겨 나눗셈 계산하기</div>
+                </div>
+              </div>
+              <div class="stage-bottom">
+                <div class="poke-preview-list" id="previewS2"></div>
+                <div class="stage-progress" id="progS2"><span>0</span> / 6</div>
+              </div>
+            </div>
+
+            <!-- 스테이지 3 -->
+            <div class="stage-card" onclick="enterStage(3)">
+              <div>
+                <div class="stage-badge badge-s3">STAGE 3 · 4차시</div>
+                <div class="stage-info">
+                  <h3>수정 동굴</h3>
+                  <div class="concept">(소수 두 자리) ÷ (소수 한 자리)</div>
+                  <div class="desc">나누는 수에 맞춰 1자리 이동! 몫의 소수점 정확히 찍기</div>
+                </div>
+              </div>
+              <div class="stage-bottom">
+                <div class="poke-preview-list" id="previewS3"></div>
+                <div class="stage-progress" id="progS3"><span>0</span> / 6</div>
+              </div>
+            </div>
+
+            <!-- 스테이지 4 -->
+            <div class="stage-card" onclick="enterStage(4)">
+              <div>
+                <div class="stage-badge badge-s4">STAGE 4 · 5차시</div>
+                <div class="stage-info">
+                  <h3>번개의 협곡</h3>
+                  <div class="concept">(자연수) ÷ (소수)</div>
+                  <div class="desc">자연수 뒤에 0을 붙여 소수점을 옮기고 계산하기</div>
+                </div>
+              </div>
+              <div class="stage-bottom">
+                <div class="poke-preview-list" id="previewS4"></div>
+                <div class="stage-progress" id="progS4"><span>0</span> / 6</div>
+              </div>
+            </div>
+
+            <!-- 스테이지 5 -->
+            <div class="stage-card" onclick="enterStage(5)">
+              <div>
+                <div class="stage-badge badge-s5">STAGE 5 · 6차시</div>
+                <div class="stage-info">
+                  <h3>시간의 시계탑</h3>
+                  <div class="concept">몫을 반올림하여 나타내기</div>
+                  <div class="desc">요구하는 자리의 다음 자리 숫자로 올림/버림 판단</div>
+                </div>
+              </div>
+              <div class="stage-bottom">
+                <div class="poke-preview-list" id="previewS5"></div>
+                <div class="stage-progress" id="progS5"><span>0</span> / 5</div>
+              </div>
+            </div>
+
+            <!-- 스테이지 6 -->
+            <div class="stage-card" onclick="enterStage(6)">
+              <div>
+                <div class="stage-badge badge-s6">STAGE 6 · 7차시</div>
+                <div class="stage-info">
+                  <h3>신비의 호수</h3>
+                  <div class="concept">나누어 주고 남는 양 구하기</div>
+                  <div class="desc">몫은 자연수, 남는 양은 처음 소수점 그대로 유지!</div>
+                </div>
+              </div>
+              <div class="stage-bottom">
+                <div class="poke-preview-list" id="previewS6"></div>
+                <div class="stage-progress" id="progS6"><span>0</span> / 5</div>
+              </div>
+            </div>
+
+            <!-- 전설 레이드 보스 카드 -->
+            <div class="stage-card raid-card" onclick="startRaidBattle()">
+              <div style="flex: 1; white-space: nowrap;">
+                <div class="stage-badge badge-raid">FINAL BOSS RAID · 단원 마무리 종합</div>
+                <div class="stage-info">
+                  <h3>전설의 성소 (뮤츠 & 레쿠쟈 레이드 배틀)</h3>
+                  <div class="concept" style="color: #fbcfe8;">실생활 문장제 & 함정 조건 극복 (텃밭, 하이킹, 페인트, 버스 기름)</div>
+                  <div class="desc" style="color: #fdf2f8;">학급의 모든 지혜를 모아 전설의 포켓몬 체력을 깎고 포획하세요!</div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px; flex-shrink: 0; white-space: nowrap;">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png" style="width: 65px; height: 65px;" alt="뮤츠">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/384.png" style="width: 65px; height: 65px;" alt="레쿠쟈">
+                <button class="btn-action raid-btn" style="padding: 9px 20px; font-size: 20px;">레이드 참가</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- [화면 2] 배틀 및 퀴즈 풀이 화면 -->
+        <div id="viewBattle" class="view-screen">
+          <!-- 좌측 배틀 필드 -->
+          <div class="battle-field theme-stage1" id="battleField">
+            <!-- 상단 포켓몬 정보 HUD -->
+            <div class="poke-hud">
+              <div class="poke-meta">
+                <h3 id="battlePokeName">
+                  야생의 피카츄
+                  <span class="poke-type-badge" id="battlePokeType" style="background: #eab308;">전기</span>
+                </h3>
+                <div class="stage-name" id="battleStageName">STAGE 1 · 초원의 들판 (1 / 6)</div>
+              </div>
+              <div class="poke-cp">
+                <div class="label">전투력 (수학 파워)</div>
+                <div class="value" id="battlePokeCP">CP 480</div>
+              </div>
+            </div>
+
+            <!-- 레이드 보스 전용 체력바 -->
+            <div class="raid-boss-hp-wrap" id="raidBossHpWrap">
+              <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 800; margin-bottom: 4px; color: #fbcfe8;">
+                <span>BOSS HP</span>
+                <span id="raidHpText">300 / 300</span>
+              </div>
+              <div class="raid-boss-hp-bar" id="raidBossHpBar"></div>
+            </div>
+
+            <!-- 탈출/배틀 안내 플로팅 배너 -->
+            <div id="battleNoticeBanner">
+              <span id="bannerIcon">⚠️</span>
+              <span id="bannerText">알림 내용</span>
+            </div>
+
+            <!-- 포켓몬 등장 스테이지 아레나 -->
+            <div class="poke-stage-arena">
+              <!-- 던져질 몬스터볼 이미지 요소 -->
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" id="animPokeball" alt="볼">
+              <div class="poke-pedestal"></div>
+              <img src="" class="wild-pokemon-img" id="battlePokeImg" alt="야생 포켓몬">
+            </div>
+
+            <!-- 하단 몬스터볼 선택기 (일반 배틀용) -->
+            <div class="ball-selector" id="ballSelectorWrap">
+              <span style="font-size: 15px; font-weight: 800; color: #94a3b8; margin-right: 4px;">볼 선택:</span>
+              <button class="ball-btn active" id="btnBallRegular" onclick="selectBall('regular')" title="기본 포획률 약 65%">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" class="ball-icon" alt="몬스터볼">
+                <span>몬스터볼</span>
+              </button>
+              <button class="ball-btn" id="btnBallGreat" onclick="selectBall('great')" title="포획률 약 85% (+50XP)">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png" class="ball-icon" alt="슈퍼볼">
+                <span>슈퍼볼 (확률UP)</span>
+              </button>
+              <button class="ball-btn" id="btnBallUltra" onclick="selectBall('ultra')" title="포획률 98% 확실한 포획 (+100XP)">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png" class="ball-icon" alt="하이퍼볼">
+                <span>하이퍼볼 (특급)</span>
+              </button>
+            </div>
+
+            <!-- 학급 협동 레이드 전용 콘솔 -->
+            <div class="coop-raid-console" id="coopRaidConsole">
+              <div class="coop-timer-bar">
+                <div class="coop-timer-display">
+                  <span>⏱️ 작전 시간:</span>
+                  <span id="coopTimerSec" style="color: #facc15; font-size: 24px;">60</span>초
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn-action" style="padding: 4px 10px; font-size: 13px;" onclick="toggleCoopTimer()" id="btnCoopTimerToggle">▶ 시작</button>
+                  <button class="btn-action" style="padding: 4px 10px; font-size: 13px;" onclick="resetCoopTimer()">↺ 리셋</button>
+                </div>
+              </div>
+              <div class="coop-counter-row">
+                <span style="font-size: 15px; font-weight: 800; color: #cbd5e1; white-space: nowrap;">👥 정답 학생 수:</span>
+                <div class="coop-count-stepper">
+                  <button class="coop-step-btn" onclick="adjustCoopCount(-1)">−</button>
+                  <span id="coopStudentCount" style="font-size: 26px; font-weight: 900; color: #facc15; min-width: 40px; text-align: center;">20</span>
+                  <span style="font-size: 16px; font-weight: 800; color: #94a3b8;">명</span>
+                  <button class="coop-step-btn" onclick="adjustCoopCount(1)">+</button>
+                </div>
+                <div class="coop-preset-btns">
+                  <button class="btn-preset" onclick="setCoopCount(15)">15명</button>
+                  <button class="btn-preset active" id="presetBtn20" onclick="setCoopCount(20)">20명</button>
+                  <button class="btn-preset" onclick="setCoopCount(25)" style="color: #facc15;">전원(25명)!</button>
+                </div>
+              </div>
+              <div class="coop-damage-badge">
+                <span>💥 발사 예상 피해량:</span>
+                <span id="coopDmgPreview" style="color: #f43f5e; font-size: 19px; font-weight: 900;">500 DMG (1인당 25)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 우측 문제 풀이 & 터치 키패드 패널 -->
+          <div class="battle-quiz-panel">
+            <div class="quiz-card">
+              <div class="quiz-label">
+                <span id="quizDifficultyTag">🎯 소수의 나눗셈 포획 미션</span>
+                <span id="quizQuestionIdx">Q. 1 / 6</span>
+              </div>
+              <div class="quiz-question" id="quizQuestionText">
+                나눗셈 식의 몫을 정확히 계산하여 몬스터볼을 던지세요!
+              </div>
+              <div class="quiz-formula-box" id="quizFormulaBox">
+                4.8 ÷ 0.6 = ?
+              </div>
+            </div>
+
+            <!-- 정답 입력칸 -->
+            <div class="answer-inputs-wrap" id="answerInputsContainer">
+              <!-- 단일 몫 입력 모드 -->
+              <div class="single-input-box" id="singleInputBox">
+                <label>정답 몫 :</label>
+                <div class="answer-display active-target" id="displayMainAns" onclick="focusAnswerField('main')"></div>
+              </div>
+              <!-- 몫 & 나머지 복합 입력 모드 (Stage 6용) -->
+              <div class="single-input-box" id="remainderInputBox" style="display: none;">
+                <label style="color: #fde047;">남는 양 :</label>
+                <div class="answer-display" id="displayRemainderAns" onclick="focusAnswerField('remainder')"></div>
+              </div>
+            </div>
+
+            <!-- 전자칠판 대형 터치 키패드 -->
+            <div class="touch-keypad">
+              <button class="key-btn" onclick="pressKey('7')">7</button>
+              <button class="key-btn" onclick="pressKey('8')">8</button>
+              <button class="key-btn" onclick="pressKey('9')">9</button>
+              <button class="key-btn action-key" onclick="pressKey('CLEAR')">지우기</button>
+
+              <button class="key-btn" onclick="pressKey('4')">4</button>
+              <button class="key-btn" onclick="pressKey('5')">5</button>
+              <button class="key-btn" onclick="pressKey('6')">6</button>
+              <button class="key-btn action-key" onclick="pressKey('BACKSPACE')">⌫</button>
+
+              <button class="key-btn" onclick="pressKey('1')">1</button>
+              <button class="key-btn" onclick="pressKey('2')">2</button>
+              <button class="key-btn" onclick="pressKey('3')">3</button>
+              <button class="key-btn" onclick="pressKey('.')">·</button>
+
+              <button class="key-btn" onclick="pressKey('0')">0</button>
+              <button class="key-btn" onclick="pressKey('00')">00</button>
+              <button class="key-btn throw-key" onclick="throwPokeball()">⚾ 몬스터볼 던지기!</button>
+            </div>
+
+            <!-- 퀴즈 하단 보조 툴바 (계산 메모장 열기 버튼 탑재) -->
+            <div class="quiz-bottom-tools">
+              <div style="display: flex; gap: 8px; align-items: center; white-space: nowrap;">
+                <button class="btn-hint" onclick="showHintModal()">
+                  <span>💡</span> 힌트
+                </button>
+                <button class="btn-action memo-btn" onclick="openScratchpad()" title="펜으로 세로셈 계산하기 (N)">
+                  <span>📝</span> 계산 메모장 열기
+                </button>
+              </div>
+              <button class="btn-action" style="padding: 6px 14px; font-size: 15px;" onclick="showMapView()">
+                🗺️ 지도(메뉴)로
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- [화면 3] 포켓몬 도감 (Pokédex View) -->
+        <div id="viewPokedex" class="view-screen">
+          <div class="pokedex-header">
+            <h2>
+              <span>📖</span> 포켓몬 도감 (POKÉDEX)
+            </h2>
+            <div class="pokedex-rate">
+              수집률: <span id="dexCollectRate">0%</span> (<span id="dexCollectCount">0</span> / 36 마리)
+            </div>
+            <div style="display: flex; gap: 10px; white-space: nowrap;">
+              <button class="btn-action" onclick="resetPokedexData()" style="color: #fca5a5; font-size: 14px;">
+                ⚠️ 도감 초기화
+              </button>
+              <button class="btn-action" onclick="showMapView()">
+                🗺️ 모험 지도로 돌아가기
+              </button>
+            </div>
+          </div>
+
+          <div class="pokedex-grid" id="pokedexGridContainer">
+            <!-- JS 동적 생성 -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 하단 네비게이션 & 빠른 바로가기 -->
+      <footer>
+        <div class="footer-left">
+          <span style="font-size: 14px; font-weight: 800; color: #64748b;">차시 바로가기:</span>
+          <div class="stage-quick-pills">
+            <button class="quick-pill active" onclick="enterStage(1)">1차시(한자리)</button>
+            <button class="quick-pill" onclick="enterStage(2)">2차시(두자리)</button>
+            <button class="quick-pill" onclick="enterStage(3)">3차시(자리다름)</button>
+            <button class="quick-pill" onclick="enterStage(4)">4차시(자연수÷소수)</button>
+            <button class="quick-pill" onclick="enterStage(5)">5차시(반올림)</button>
+            <button class="quick-pill" onclick="enterStage(6)">6차시(나머지)</button>
+            <button class="quick-pill raid" onclick="startRaidBattle()">🔥보스 레이드</button>
+          </div>
+        </div>
+
+        <div class="footer-right">
+          <span class="shortcut-badge">단축키: [F] 전체화면 | [M] BGM | [N] 계산 메모장 | [Enter] 볼 던지기 | [ESC] 지도/닫기</span>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- =========================================================
+       11. 모달 다이얼로그 (계산 연습장 메모장, 포획 성공, 힌트, 도감)
+       ========================================================= -->
+
+  <!-- [NEW] 펜으로 계산할 수 있는 모눈종이 메모장 모달 -->
+  <div class="modal-overlay" id="modalScratchpad">
+    <div class="scratchpad-window">
+      <!-- 상단 헤더 & 도구 툴바 -->
+      <div class="scratchpad-header">
+        <div class="scratchpad-title">
+          <span>📝 소수 나눗셈 계산 연습장</span>
+          <span class="scratchpad-formula-tag" id="scratchpadFormulaTag">📌 문제: 4.8 ÷ 0.6 = ?</span>
+        </div>
+
+        <div class="scratchpad-toolbar">
+          <!-- 도구: 펜, 지우개 -->
+          <button class="pad-tool-btn active" id="btnScratchPen" onclick="setScratchTool('pen')">
+            <span>✏️</span> 펜
+          </button>
+          <button class="pad-tool-btn" id="btnScratchEraser" onclick="setScratchTool('eraser')">
+            <span>🧹</span> 지우개
+          </button>
+
+          <!-- 색상 선택 팔레트 -->
+          <div style="display: flex; align-items: center; gap: 6px; margin: 0 4px;">
+            <div class="pad-color-dot active" style="background: #facc15;" onclick="setScratchColor('#facc15', this)" title="분필 노랑"></div>
+            <div class="pad-color-dot" style="background: #38bdf8;" onclick="setScratchColor('#38bdf8', this)" title="분필 하늘"></div>
+            <div class="pad-color-dot" style="background: #ffffff;" onclick="setScratchColor('#ffffff', this)" title="분필 흰색"></div>
+            <div class="pad-color-dot" style="background: #ef4444;" onclick="setScratchColor('#ef4444', this)" title="분필 빨강"></div>
+            <div class="pad-color-dot" style="background: #4ade80;" onclick="setScratchColor('#4ade80', this)" title="분필 초록"></div>
+          </div>
+
+          <!-- 굵기 선택 -->
+          <div style="display: flex; gap: 4px; margin: 0 4px;">
+            <button class="pad-size-btn" onclick="setScratchSize(3, this)" title="얇게">얇게</button>
+            <button class="pad-size-btn active" onclick="setScratchSize(6, this)" title="보통">보통</button>
+            <button class="pad-size-btn" onclick="setScratchSize(12, this)" title="굵게">굵게</button>
+          </div>
+
+          <!-- 실행 취소 & 전체 지우기 -->
+          <button class="pad-tool-btn" onclick="undoScratch()" title="실행 취소 (한 획 뒤로)">
+            <span>↩️</span> 취소
+          </button>
+          <button class="pad-tool-btn" onclick="clearScratchpad()" title="메모장 전체 비우기" style="color: #fca5a5;">
+            <span>🗑️</span> 지우기
+          </button>
+
+          <!-- 닫기 버튼 -->
+          <button class="btn-action" onclick="closeScratchpad()" style="background: #2563eb; border-color: #60a5fa; color: #ffffff; padding: 6px 16px; font-weight: 800; font-size: 16px;">
+            ✓ 계산 완료 (닫기)
+          </button>
+        </div>
+      </div>
+
+      <!-- 모눈종이 캔버스 본체 -->
+      <div class="scratchpad-body" id="scratchpadBody">
+        <canvas id="scratchpadCanvas" width="1260" height="716"></canvas>
+        <div class="scratchpad-watermark">
+          💡 모눈에 맞추어 세로셈과 소수점 위치를 반듯하게 적어보세요!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 포획 성공 모달 -->
+  <div class="modal-overlay" id="modalCatchSuccess">
+    <div class="modal-box">
+      <div style="font-size: 20px; font-weight: 800; color: #4ade80;">GOTCHA! 포획 성공!</div>
+      <div class="modal-title" id="catchSuccessTitle">야생의 피카츄를 잡았다!</div>
+      <img src="" id="catchSuccessImg" class="modal-catch-img" alt="잡은 포켓몬">
+      <div class="modal-desc" id="catchSuccessDesc">
+        소수의 나눗셈 계산을 완벽하게 맞혔습니다!<br>포켓몬 도감에 등록되고 경험치를 획득했습니다.
+      </div>
+      <div class="modal-formula-review" id="catchSuccessFormula">
+        4.8 ÷ 0.6 = 8
+      </div>
+      <div class="modal-btn-group">
+        <button class="btn-modal secondary" onclick="closeCatchSuccessModal(false)">🗺️ 지도 보기</button>
+        <button class="btn-modal primary" onclick="closeCatchSuccessModal(true)">다음 포켓몬 만나기 ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 오박사의 나눗셈 힌트 모달 -->
+  <div class="modal-overlay" id="modalHint">
+    <div class="modal-box" style="text-align: left;">
+      <div style="display: flex; align-items: center; justify-content: space-between; white-space: nowrap;">
+        <h3 style="font-size: 28px; font-family: var(--font-game); color: var(--poke-yellow);">
+          💡 오박사의 소수 나눗셈 연구 노트
+        </h3>
+        <button class="btn-action" onclick="closeHintModal()">닫기 ✕</button>
+      </div>
+      <div class="hint-step-box" id="hintContentBox">
+        힌트 내용이 여기에 로드됩니다.
+      </div>
+      <div style="text-align: right;">
+        <button class="btn-modal primary" onclick="closeHintModal()">이해했어요! 다시 풀기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 도감 상세 모달 -->
+  <div class="modal-overlay" id="modalDexDetail">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">
+        <div style="font-size: 16px; font-weight: 800; color: #64748b;" id="dexDetailNum">No. 025</div>
+        <button class="btn-action" onclick="closeDexDetailModal()">닫기 ✕</button>
+      </div>
+      <img src="" id="dexDetailImg" class="modal-catch-img" alt="도감 포켓몬">
+      <h3 style="font-size: 34px; font-family: var(--font-game); color: #ffffff; white-space: nowrap;" id="dexDetailName">피카츄</h3>
+      <div style="display: flex; justify-content: center; gap: 8px; margin: 8px 0;" id="dexDetailTypes"></div>
+      <div class="hint-step-box" style="margin-top: 14px;" id="dexDetailMathInfo">
+        해결한 수학 문제 기록
+      </div>
+      <div id="dexEvolutionActionWrap" style="margin-top: 12px; display: none;">
+        <button class="btn-evolution" id="btnDexEvolve" onclick="openEvolutionQuizFromDex()">
+          ✨ 리자드로 진화 도전하기!
+        </button>
+      </div>
+      <button class="btn-modal secondary" onclick="closeDexDetailModal()" style="margin-top: 10px;">확인</button>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       학생용 모바일/태블릿 원격 컨트롤러 화면 (?role=student)
+       ========================================================= -->
+  <div id="viewStudentController">
+    <!-- 학생 헤더 -->
+    <div class="student-app-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" style="width: 32px; height: 32px;" alt="볼">
+        <span style="font-size: 20px; font-weight: 900; font-family: var(--font-game); color: #facc15;">POKÉMON GO</span>
+      </div>
+      <div id="studentConnStatus" style="font-size: 14px; font-weight: 800; color: #4ade80;">
+        ● 연결 대기 중
+      </div>
+    </div>
+
+    <!-- 1단계: 이름 입력 및 입장 -->
+    <div class="student-box" id="studentJoinBox">
+      <h2 style="font-size: 26px; font-weight: 900; text-align: center; color: #38bdf8; margin: 0;">
+        ⚡ 배틀 참가하기
+      </h2>
+      <div style="font-size: 16px; color: #cbd5e1; text-align: center;">
+        내 번호와 이름을 입력하고 선생님 칠판에 접속하세요!
+      </div>
+      <div>
+        <label style="font-size: 14px; font-weight: 800; color: #94a3b8;">방 코드:</label>
+        <input type="text" id="studentJoinRoomCode" class="student-input" style="color: #facc15; font-size: 22px;" placeholder="방 코드" readonly>
+      </div>
+      <div>
+        <label style="font-size: 14px; font-weight: 800; color: #94a3b8;">내 번호와 이름:</label>
+        <input type="text" id="studentJoinName" class="student-input" placeholder="예: 3번 홍길동" onkeydown="if(event.key==='Enter') joinClassroomBattle()">
+      </div>
+      <button class="btn-student-primary" onclick="joinClassroomBattle()">
+        🚀 배틀 방 입장하기!
+      </button>
+    </div>
+
+    <!-- 2단계: 실시간 배틀 컨트롤러 (연결 후 표시) -->
+    <div class="student-box" id="studentBattleBox" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 16px; font-weight: 800; color: #38bdf8;" id="studentWelcomeName">
+          🎒 내 이름
+        </div>
+        <div style="font-size: 16px; font-weight: 800; color: #facc15;" id="studentMyXP">
+          ⭐ 0 XP
+        </div>
+      </div>
+
+      <!-- 실시간 문제 수식 카드 -->
+      <div class="student-formula-card">
+        <div style="font-size: 14px; font-weight: 800; color: #94a3b8;" id="studentStageTag">
+          🎯 실시간 칠판 동기화
+        </div>
+        <div style="font-size: 32px; font-weight: 900; color: #facc15; margin: 8px 0; font-family: var(--font-game);" id="studentLiveFormula">
+          문제를 준비 중입니다...
+        </div>
+        <div style="font-size: 15px; color: #e2e8f0;" id="studentLiveQuestion">
+          칠판에서 배틀이 시작되면 문제가 자동으로 나타납니다!
+        </div>
+      </div>
+
+      <!-- 정답 입력창 -->
+      <div style="text-align: center;">
+        <div style="font-size: 14px; font-weight: 800; color: #94a3b8; margin-bottom: 4px;">내가 계산한 정답 몫:</div>
+        <div id="studentInputDisplay" style="font-size: 34px; font-weight: 900; color: #ffffff; background: #0f172a; padding: 10px; border-radius: 12px; border: 2px solid #38bdf8; min-height: 48px;">
+          _
+        </div>
+      </div>
+
+      <!-- 터치 키패드 -->
+      <div class="student-keypad-grid">
+        <button class="student-key-btn" onclick="pressStudentKey('7')">7</button>
+        <button class="student-key-btn" onclick="pressStudentKey('8')">8</button>
+        <button class="student-key-btn" onclick="pressStudentKey('9')">9</button>
+
+        <button class="student-key-btn" onclick="pressStudentKey('4')">4</button>
+        <button class="student-key-btn" onclick="pressStudentKey('5')">5</button>
+        <button class="student-key-btn" onclick="pressStudentKey('6')">6</button>
+
+        <button class="student-key-btn" onclick="pressStudentKey('1')">1</button>
+        <button class="student-key-btn" onclick="pressStudentKey('2')">2</button>
+        <button class="student-key-btn" onclick="pressStudentKey('3')">3</button>
+
+        <button class="student-key-btn" onclick="pressStudentKey('.')">·</button>
+        <button class="student-key-btn" onclick="pressStudentKey('0')">0</button>
+        <button class="student-key-btn" style="color: #f87171;" onclick="pressStudentKey('CLEAR')">C</button>
+      </div>
+
+      <!-- 공격 발사 버튼 -->
+      <button class="btn-student-primary" style="background: linear-gradient(135deg, #ef4444, #dc2626);" onclick="sendStudentAnswerToHost()">
+        💥 칠판으로 정답 발사!
+      </button>
+
+      <!-- 결과 피드백 배너 -->
+      <div id="studentFeedbackNotice" style="display: none; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: 800; text-align: center;">
+      </div>
+    </div>
+  </div>
+
+  <!-- 진화 승급 나눗셈 퀴즈 모달 -->
+  <div class="modal-overlay" id="modalEvoQuiz">
+    <div class="modal-box" style="border-color: #f59e0b; width: 680px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">
+        <div style="font-size: 16px; font-weight: 800; color: #f59e0b;">✨ POKÉMON EVOLUTION CHALLENGE</div>
+        <button class="btn-action" onclick="closeEvolutionQuiz()">닫기 ✕</button>
+      </div>
+      <h3 style="font-size: 30px; font-family: var(--font-game); color: #fef08a; margin: 10px 0; white-space: nowrap;" id="evoQuizTitle">
+        파이리 ➡️ 리자드 진화 시험!
+      </h3>
+      <div style="font-size: 19px; font-weight: 700; color: #e2e8f0; margin-bottom: 12px; line-height: 1.5;" id="evoQuizQuestion">
+        진화 퀘스트 문제 내용
+      </div>
+      <div class="quiz-formula-box" id="evoQuizFormula" style="margin-bottom: 16px; font-size: 32px;">
+        7.92 ÷ 1.8 = ?
+      </div>
+      <div style="display: flex; justify-content: center; gap: 12px; align-items: center; margin-bottom: 18px;">
+        <label style="font-size: 20px; font-weight: 800; color: #38bdf8;">정답 입력:</label>
+        <input type="text" id="evoQuizInput" style="font-size: 28px; font-weight: 900; width: 160px; text-align: center; border-radius: 12px; border: 2px solid #38bdf8; background: #0f172a; color: #ffffff;" placeholder="답 입력" onkeydown="if(event.key==='Enter') submitEvolutionQuiz()">
+      </div>
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button class="btn-modal primary" style="background: #f59e0b; border-color: #fef08a;" onclick="submitEvolutionQuiz()">⚡ 진화 에너지 주입!</button>
+        <button class="btn-modal secondary" onclick="closeEvolutionQuiz()">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 원작 스타일 포켓몬 진화 컷신 모달 -->
+  <div class="modal-overlay" id="modalEvolution">
+    <div class="modal-evolution-box">
+      <div style="font-size: 18px; font-weight: 800; color: #facc15; letter-spacing: 2px; white-space: nowrap;" id="evoCutsceneSubtitle">
+        ✨ EVOLUTION IN PROGRESS ✨
+      </div>
+      <h2 style="font-size: 34px; font-family: var(--font-game); color: #ffffff; margin: 10px 0; white-space: nowrap;" id="evoCutsceneTitle">
+        어라...? 파이리의 모습이...!
+      </h2>
+      <div class="evo-sprite-wrap">
+        <img src="" id="evoSpriteImg" class="evo-sprite evo-flashing" alt="진화 포켓몬">
+      </div>
+      <div id="evoSuccessBanner" style="display: none; margin-top: 10px;">
+        <div style="font-size: 30px; font-weight: 900; color: #facc15; font-family: var(--font-game); margin-bottom: 6px; white-space: nowrap;" id="evoResultName">
+          축하합니다! 리자드로 진화했습니다!
+        </div>
+        <div style="font-size: 20px; font-weight: 700; color: #93c5fd; margin-bottom: 16px; white-space: nowrap;" id="evoResultStats">
+          전투력 CP 980 획득! · 도감 등록 완료!
+        </div>
+        <button class="btn-modal primary" onclick="closeEvolutionModal()" style="font-size: 20px; padding: 12px 36px; white-space: nowrap;">
+          도감에서 확인하기 🌟
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 학급 전원 협동 레이드 토벌 성공 모달 -->
+  <div class="modal-overlay" id="modalRaidVictory">
+    <div class="modal-box" style="border: 4px solid #facc15; box-shadow: 0 0 80px rgba(250, 204, 21, 0.6); width: 780px;">
+      <div style="font-size: 20px; font-weight: 900; color: #ec4899; letter-spacing: 3px; white-space: nowrap;">
+        👑 LEGENDARY RAID VICTORY 👑
+      </div>
+      <h2 style="font-size: 38px; font-family: var(--font-game); color: #facc15; margin: 8px 0; white-space: nowrap;" id="raidVictoryTitle">
+        🎉 전설의 보스 토벌 성공! 🎉
+      </h2>
+      <img src="" id="raidVictoryImg" class="modal-catch-img" style="width: 200px; height: 200px;" alt="토벌 보스">
+      <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 8px; white-space: nowrap;" id="raidVictoryBossName">
+        뮤츠 (Mewtwo) 생포 완료!
+      </div>
+      <div class="hint-step-box" style="margin: 14px 0; font-size: 19px; line-height: 1.6; text-align: center;">
+        🏆 <b>[모덕초 6학년]</b> 학급 전원이 소수의 나눗셈 합동 에너지로<br>
+        전설의 레이드 보스를 완벽히 격파했습니다! (전원 도감 등록 & +1000 XP)
+      </div>
+      <div style="display: flex; justify-content: center; gap: 14px; white-space: nowrap;">
+        <button class="btn-modal primary" onclick="closeRaidVictoryModal(false)" style="font-size: 20px; padding: 12px 32px;">
+          📖 도감에서 보스 확인하기
+        </button>
+        <button class="btn-modal secondary" onclick="closeRaidVictoryModal(true)">
+          🗺️ 지도로 돌아가기
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 실시간 학생 참여(멀티플레이) 관리 모달 -->
+  <div class="modal-overlay" id="modalMultiplayer">
+    <div class="modal-box" style="width: 740px; border-color: #38bdf8; box-shadow: 0 0 60px rgba(56, 189, 248, 0.5);">
+      <div style="display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">
+        <div style="font-size: 16px; font-weight: 800; color: #38bdf8;">📡 PEERJS WEBRTC MULTIPLAYER</div>
+        <button class="btn-action" onclick="closeMultiplayerModal()">닫기 ✕</button>
+      </div>
+
+      <h2 style="font-size: 34px; font-family: var(--font-game); color: #facc15; margin: 8px 0; white-space: nowrap;">
+        📡 실시간 학급 배틀 (학생 기기 연동)
+      </h2>
+      <p style="font-size: 17px; color: #cbd5e1; margin-bottom: 14px;">
+        학생들이 스마트폰, 태블릿, 크롬북 카메라로 아래 <b>QR 코드</b>를 찍으면 즉시 배틀에 참여합니다!
+      </p>
+
+      <div style="display: flex; gap: 24px; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); padding: 18px; border-radius: 16px;">
+        <!-- QR 코드 렌더링 박스 -->
+        <div style="background: #ffffff; padding: 12px; border-radius: 14px; display: inline-block;">
+          <div id="qrcodeCanvas"></div>
+        </div>
+
+        <!-- 방 정보 및 접속 현황 -->
+        <div style="display: flex; flex-direction: column; gap: 10px; text-align: left; min-width: 320px;">
+          <div>
+            <span style="font-size: 14px; font-weight: 800; color: #94a3b8;">우리 반 방 코드:</span>
+            <div style="font-size: 32px; font-weight: 900; color: #38bdf8; font-family: var(--font-game); letter-spacing: 2px;" id="displayRoomCode">
+              POKE63
+            </div>
+          </div>
+          <div style="font-size: 15px; color: #94a3b8;">
+            <b>접속 주소:</b><br>
+            <span id="displayConnectUrl" style="color: #facc15; font-size: 14px; word-break: break-all;">-</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px; font-weight: 800; color: #4ade80;">● 실시간 연결 상태:</span>
+            <span id="hostStatusBadge" style="font-size: 15px; font-weight: 800; color: #ffffff;">대기 중</span>
+          </div>
+          <div style="font-size: 16px; font-weight: 800; color: #fbcfe8;">
+            👥 현재 접속 학생: <span id="connectedStudentCount" style="color: #facc15; font-size: 22px;">0</span> 명
+          </div>
+        </div>
+      </div>
+
+      <!-- 접속한 학생 목록 칩 박스 -->
+      <div style="margin-top: 14px; text-align: left;">
+        <div style="font-size: 15px; font-weight: 800; color: #94a3b8; margin-bottom: 6px;">참가한 학생 명단:</div>
+        <div id="connectedStudentChips" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 100px; overflow-y: auto; padding: 8px; background: rgba(15,23,42,0.6); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+          <span style="color: #64748b; font-size: 14px;">아직 참가한 학생이 없습니다. 학생 기기로 QR을 스캔하세요.</span>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; gap: 12px; margin-top: 16px; white-space: nowrap;">
+        <button class="btn-modal primary" onclick="closeMultiplayerModal()" style="font-size: 18px; padding: 10px 30px;">
+          🎮 게임 화면으로 돌아가기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       12. 게임 데이터 및 스크립트 로직
+       ========================================================= -->
+  <script>
+    /* =========================================================
+       A. 6-2 수학 2단원 소수의 나눗셈 전체 포켓몬 데이터베이스 (36종)
+       ========================================================= */
+    const STAGES_DATA = [
+      {
+        stageId: 1,
+        title: "초원의 들판",
+        themeClass: "theme-stage1",
+        concept: "(소수 한 자리 수) ÷ (소수 한 자리 수)",
+        desc: "소수점을 오른쪽으로 1자리씩 똑같이 옮겨 계산합니다.",
+        pokemons: [
+          {
+            id: 25,
+            name: "피카츄",
+            type: "전기",
+            typeBg: "#eab308",
+            cp: 480,
+            question: "전기를 충전하는 피카츄를 만나려면 다음 나눗셈의 몫을 구하세요!",
+            formula: "4.8 ÷ 0.6",
+            ansMain: "8",
+            hint: "<b>[1단계] 소수점 이동:</b> 나누는 수 0.6을 자연수 6으로 만들기 위해 소수점을 오른쪽으로 1자리 이동합니다.<br><b>[2단계] 나누어지는 수 이동:</b> 4.8도 똑같이 1자리 이동하면 48이 됩니다.<br><b>[3단계] 계산:</b> 48 ÷ 6 = <b>8</b>"
+          },
+          {
+            id: 1,
+            name: "이상해씨",
+            type: "풀/독",
+            typeBg: "#16a34a",
+            cp: 350,
+            question: "씨앗을 키우는 이상해씨가 나타났습니다. 알맞은 몫을 계산하세요.",
+            formula: "3.5 ÷ 0.7",
+            ansMain: "5",
+            hint: "소수점을 각각 오른쪽으로 1자리씩 옮기면 <b>35 ÷ 7</b>이 됩니다.<br>35 속에 7이 <b>5번</b> 들어가므로 정답은 <b>5</b>입니다."
+          },
+          {
+            id: 4,
+            name: "파이리",
+            type: "불꽃",
+            typeBg: "#ea580c",
+            cp: 540,
+            question: "꼬리의 불꽃이 타오르는 파이리입니다! 몫을 구해 몬스터볼을 던지세요.",
+            formula: "5.4 ÷ 0.9",
+            ansMain: "6",
+            hint: "소수점을 각각 1자리씩 오른쪽으로 옮기면 <b>54 ÷ 9</b>가 됩니다.<br>구구단 9단을 생각하면 9 × 6 = 54이므로 정답은 <b>6</b>입니다."
+          },
+          {
+            id: 7,
+            name: "꼬부기",
+            type: "물",
+            typeBg: "#2563eb",
+            cp: 280,
+            question: "물대포를 쏘는 꼬부기 발견! 나눗셈을 풀어 포획하세요.",
+            formula: "2.8 ÷ 0.4",
+            ansMain: "7",
+            hint: "2.8과 0.4의 소수점을 똑같이 오른쪽으로 1자리 이동하면 <b>28 ÷ 4</b>가 됩니다.<br>28 ÷ 4 = <b>7</b>"
+          },
+          {
+            id: 133,
+            name: "이브이",
+            type: "노말",
+            typeBg: "#a16207",
+            cp: 720,
+            question: "귀여운 이브이가 풀숲에서 뛰어나왔습니다. 계산해 보세요!",
+            formula: "7.2 ÷ 0.8",
+            ansMain: "9",
+            hint: "소수점을 1자리씩 이동하면 <b>72 ÷ 8</b>이 됩니다.<br>8 × 9 = 72 이므로 몫은 <b>9</b>입니다."
+          },
+          {
+            id: 39,
+            name: "푸린",
+            type: "노말/페어리",
+            typeBg: "#ec4899",
+            cp: 630,
+            question: "노래를 부르려는 푸린을 잠들기 전에 잡으세요!",
+            formula: "6.3 ÷ 0.7",
+            ansMain: "9",
+            hint: "소수점을 1자리씩 이동하면 <b>63 ÷ 7</b>이 됩니다.<br>7 × 9 = 63 이므로 정답은 <b>9</b>입니다."
+          }
+        ]
+      },
+      {
+        stageId: 2,
+        title: "바람의 언덕",
+        themeClass: "theme-stage2",
+        concept: "(소수 두 자리 수) ÷ (소수 두 자리 수)",
+        desc: "소수점을 똑같이 오른쪽으로 2자리(100배) 옮겨서 계산합니다.",
+        pokemons: [
+          {
+            id: 18,
+            name: "피죤투",
+            type: "노말/비행",
+            typeBg: "#0284c7",
+            cp: 1250,
+            question: "바람을 가르며 날아온 피죤투! 소수 두 자리 나눗셈을 계산하세요.",
+            formula: "1.25 ÷ 0.25",
+            ansMain: "5",
+            hint: "소수점을 각각 오른쪽으로 2자리씩 옮기면 <b>125 ÷ 25</b>가 됩니다.<br>125 속에 25가 <b>5번</b> 들어가므로 정답은 <b>5</b>입니다."
+          },
+          {
+            id: 143,
+            name: "잠만보",
+            type: "노말",
+            typeBg: "#475569",
+            cp: 2450,
+            question: "길을 막고 잠든 잠만보를 깨우기 위해 나눗셈을 풀어주세요!",
+            formula: "7.35 ÷ 0.35",
+            ansMain: "21",
+            hint: "소수점을 2자리씩 옮기면 <b>735 ÷ 35</b>가 됩니다.<br>73 ÷ 35 = 2 (나머지 3) ➔ 35 ÷ 35 = 1 이므로 정답은 <b>21</b>입니다."
+          },
+          {
+            id: 54,
+            name: "고라파덕",
+            type: "물",
+            typeBg: "#0891b2",
+            cp: 1180,
+            question: "머리가 아파 고민 중인 고라파덕입니다. 정답을 찾아주세요!",
+            formula: "2.48 ÷ 0.08",
+            ansMain: "31",
+            hint: "0.08의 소수점을 2자리 옮기면 8, 2.48도 2자리 옮기면 248이 됩니다.<br><b>248 ÷ 8 = 31</b> 입니다."
+          },
+          {
+            id: 79,
+            name: "야도란",
+            type: "물/에스퍼",
+            typeBg: "#db2777",
+            cp: 1920,
+            question: "느긋하게 쉬고 있는 야도란을 잡으려면 몫을 맞춰야 합니다.",
+            formula: "4.92 ÷ 0.12",
+            ansMain: "41",
+            hint: "소수점을 2자리씩 옮기면 <b>492 ÷ 12</b>가 됩니다.<br>49 ÷ 12 = 4 (나머지 1) ➔ 12 ÷ 12 = 1 이므로 정답은 <b>41</b>입니다."
+          },
+          {
+            id: 131,
+            name: "라프라스",
+            type: "물/얼음",
+            typeBg: "#06b6d4",
+            cp: 2150,
+            question: "물살을 가르며 다가온 라프라스입니다! 신속하게 계산하세요.",
+            formula: "6.75 ÷ 0.75",
+            ansMain: "9",
+            hint: "소수점을 2자리씩 오른쪽으로 옮기면 <b>675 ÷ 75</b>가 됩니다.<br>75 × 9 = 675 이므로 정답은 <b>9</b>입니다."
+          },
+          {
+            id: 65,
+            name: "후딘",
+            type: "에스퍼",
+            typeBg: "#ca8a04",
+            cp: 2550,
+            question: "양손에 숟가락을 든 지혜의 포켓몬 후딘! 높은 집중력이 필요합니다.",
+            formula: "9.36 ÷ 0.78",
+            ansMain: "12",
+            hint: "소수점을 2자리씩 이동하면 <b>936 ÷ 78</b>이 됩니다.<br>93 ÷ 78 = 1 (나머지 15) ➔ 156 ÷ 78 = 2 이므로 정답은 <b>12</b>입니다."
+          }
+        ]
+      },
+      {
+        stageId: 3,
+        title: "수정 동굴",
+        themeClass: "theme-stage3",
+        concept: "(소수 두 자리 수) ÷ (소수 한 자리 수)",
+        desc: "나누는 수에 맞춰 1자리만 옮기고, 몫에 소수점을 바르게 찍습니다.",
+        pokemons: [
+          {
+            id: 94,
+            name: "팬텀",
+            type: "고스트/독",
+            typeBg: "#7c3aed",
+            cp: 2680,
+            question: "어둠 속에서 웃고 있는 팬텀! 자릿수가 다른 소수의 나눗셈입니다.",
+            formula: "7.36 ÷ 3.2",
+            ansMain: "2.3",
+            hint: "<b>[핵심]</b> 나누는 수 3.2를 자연수 32로 만들기 위해 소수점을 <b>1자리만</b> 옮깁니다!<br>7.36도 똑같이 1자리 옮기면 <b>73.6 ÷ 32</b>가 됩니다.<br>73 ÷ 32 = 2 이고 남은 9.6 ÷ 32 = 0.3 이므로 몫은 <b>2.3</b>입니다."
+          },
+          {
+            id: 130,
+            name: "갸라도스",
+            type: "물/비행",
+            typeBg: "#1d4ed8",
+            cp: 2890,
+            question: "거대한 폭포에서 용솟음치는 갸라도스입니다. 정확히 계산하세요!",
+            formula: "8.82 ÷ 4.2",
+            ansMain: "2.1",
+            hint: "나누는 수 4.2에 맞춰 소수점을 1자리만 옮기면 <b>88.2 ÷ 42</b>가 됩니다.<br>88 ÷ 42 = 2 (나머지 4) ➔ 4.2 ÷ 42 = 0.1 이므로 정답은 <b>2.1</b>입니다."
+          },
+          {
+            id: 59,
+            name: "윈디",
+            type: "불꽃",
+            typeBg: "#c2410c",
+            cp: 2750,
+            question: "바람처럼 빠른 포켓몬 윈디! 침착하게 소수점을 찍으세요.",
+            formula: "9.72 ÷ 1.8",
+            ansMain: "5.4",
+            hint: "소수점을 각각 1자리씩 오른쪽으로 이동하면 <b>97.2 ÷ 18</b>이 됩니다.<br>97 ÷ 18 = 5 (나머지 7) ➔ 7.2 ÷ 18 = 0.4 이므로 정답은 <b>5.4</b>입니다."
+          },
+          {
+            id: 68,
+            name: "괴력몬",
+            type: "격투",
+            typeBg: "#b45309",
+            cp: 2950,
+            question: "네 개의 팔을 가진 강력한 괴력몬! 나눗셈의 힘을 보여주세요.",
+            formula: "7.56 ÷ 1.4",
+            ansMain: "5.4",
+            hint: "소수점을 1자리만 옮기면 <b>75.6 ÷ 14</b>가 됩니다.<br>75 ÷ 14 = 5 (나머지 5) ➔ 5.6 ÷ 14 = 0.4 이므로 정답은 <b>5.4</b>입니다."
+          },
+          {
+            id: 149,
+            name: "망나뇽",
+            type: "드래곤/비행",
+            typeBg: "#d97706",
+            cp: 3180,
+            question: "넓은 바다를 건너온 망나뇽입니다. 완벽한 몫을 구해 보세요!",
+            formula: "5.76 ÷ 1.2",
+            ansMain: "4.8",
+            hint: "소수점을 1자리만 이동하면 <b>57.6 ÷ 12</b>가 됩니다.<br>57 ÷ 12 = 4 (나머지 9) ➔ 9.6 ÷ 12 = 0.8 이므로 정답은 <b>4.8</b>입니다."
+          },
+          {
+            id: 448,
+            name: "루카리오",
+            type: "격투/강철",
+            typeBg: "#0284c7",
+            cp: 2820,
+            question: "파동을 느끼는 루카리오! 배수 관계를 나타내는 소수의 나눗셈입니다.",
+            formula: "8.84 ÷ 2.6",
+            ansMain: "3.4",
+            hint: "소수점을 1자리만 이동하면 <b>88.4 ÷ 26</b>이 됩니다.<br>88 ÷ 26 = 3 (나머지 10) ➔ 10.4 ÷ 26 = 0.4 이므로 정답은 <b>3.4</b>입니다."
+          }
+        ]
+      },
+      {
+        stageId: 4,
+        title: "번개의 협곡",
+        themeClass: "theme-stage4",
+        concept: "(자연수) ÷ (소수)",
+        desc: "자연수 뒤에 0을 붙여서 자릿수를 옮기고 계산합니다.",
+        pokemons: [
+          {
+            id: 135,
+            name: "쥬피썬더",
+            type: "전기",
+            typeBg: "#eab308",
+            cp: 2720,
+            question: "날카로운 번개를 뿜는 쥬피썬더! 자연수를 소수로 나누어 보세요.",
+            formula: "12 ÷ 1.5",
+            ansMain: "8",
+            hint: "1.5를 자연수 15로 만들기 위해 1자리 옮길 때, 자연수 12 뒤에 0을 붙여 <b>120</b>으로 만듭니다!<br><b>120 ÷ 15 = 8</b> 이므로 정답은 <b>8</b>입니다."
+          },
+          {
+            id: 136,
+            name: "부스터",
+            type: "불꽃",
+            typeBg: "#dc2626",
+            cp: 2650,
+            question: "뜨거운 열기를 뿜어내는 부스터입니다. 정확하게 0을 붙여 계산하세요.",
+            formula: "15 ÷ 2.5",
+            ansMain: "6",
+            hint: "소수점을 1자리 옮기면 <b>150 ÷ 25</b>가 됩니다.<br>150 속에 25가 6번 들어가므로 정답은 <b>6</b>입니다."
+          },
+          {
+            id: 134,
+            name: "샤미드",
+            type: "물",
+            typeBg: "#0284c7",
+            cp: 2800,
+            question: "물속에 녹아드는 샤미드입니다. 나눗셈을 완료하세요!",
+            formula: "21 ÷ 3.5",
+            ansMain: "6",
+            hint: "3.5를 35로, 21을 210으로 만듭니다.<br><b>210 ÷ 35 = 6</b> 입니다."
+          },
+          {
+            id: 445,
+            name: "한카리아스",
+            type: "드래곤/땅",
+            typeBg: "#4338ca",
+            cp: 3350,
+            question: "음속으로 비행하는 최강의 드래곤 한카리아스입니다!",
+            formula: "36 ÷ 4.5",
+            ansMain: "8",
+            hint: "소수점을 옮기면 <b>360 ÷ 45</b>가 됩니다.<br>45 × 8 = 360 이므로 정답은 <b>8</b>입니다."
+          },
+          {
+            id: 373,
+            name: "보만다",
+            type: "드래곤/비행",
+            typeBg: "#be185d",
+            cp: 3240,
+            question: "하늘을 날고 싶어 하던 보만다! 소수 몫이 나오는 자연수의 나눗셈입니다.",
+            formula: "6 ÷ 0.8",
+            ansMain: "7.5",
+            hint: "소수점을 1자리 이동하면 <b>60 ÷ 8</b>이 됩니다.<br>60 ÷ 8 = 7 이고 나머지 4 뒤에 0을 붙이면 40 ÷ 8 = 5 입니다.<br>따라서 몫은 <b>7.5</b>입니다."
+          },
+          {
+            id: 212,
+            name: "핫삼",
+            type: "벌레/강철",
+            typeBg: "#b91c1c",
+            cp: 2900,
+            question: "강철 집게를 번뜩이는 핫삼입니다! 빠르게 계산해 포획하세요.",
+            formula: "9 ÷ 0.6",
+            ansMain: "15",
+            hint: "소수점을 1자리 옮기면 <b>90 ÷ 6</b>이 됩니다.<br>90 ÷ 6 = <b>15</b> 입니다."
+          }
+        ]
+      },
+      {
+        stageId: 5,
+        title: "시간의 시계탑",
+        themeClass: "theme-stage5",
+        concept: "몫을 반올림하여 나타내기",
+        desc: "나누어떨어지지 않을 때, 구하려는 자리의 다음 자리 숫자로 올림/버림 판단합니다.",
+        pokemons: [
+          {
+            id: 658,
+            name: "개굴닌자",
+            type: "물/악",
+            typeBg: "#1e3a8a",
+            cp: 2980,
+            question: "11 ÷ 3 의 몫을 반올림하여 【소수 첫째 자리】까지 나타내세요!",
+            formula: "11 ÷ 3 ≈ ?",
+            ansMain: "3.7",
+            hint: "11 ÷ 3 = 3.666... 입니다.<br>소수 첫째 자리까지 구해야 하므로, <b>소수 둘째 자리의 숫자 6</b>에서 반올림(올림)합니다.<br>따라서 몫은 <b>3.7</b>입니다."
+          },
+          {
+            id: 282,
+            name: "가디안",
+            type: "에스퍼/페어리",
+            typeBg: "#059669",
+            cp: 2850,
+            question: "14.5 ÷ 2.3 의 몫을 반올림하여 【소수 첫째 자리】까지 구하세요.",
+            formula: "14.5 ÷ 2.3 ≈ ?",
+            ansMain: "6.3",
+            hint: "145 ÷ 23 = 6.304... 입니다.<br>소수 둘째 자리 숫자가 <b>0</b>이므로 버림합니다.<br>따라서 몫은 <b>6.3</b>입니다."
+          },
+          {
+            id: 248,
+            name: "마기라스",
+            type: "바위/악",
+            typeBg: "#3f6212",
+            cp: 3300,
+            question: "8.2 ÷ 3.7 의 몫을 반올림하여 【소수 둘째 자리】까지 구하세요.",
+            formula: "8.2 ÷ 3.7 ≈ ?",
+            ansMain: "2.22",
+            hint: "82 ÷ 37 = 2.2162... 입니다.<br>소수 둘째 자리까지 나타내야 하므로, <b>소수 셋째 자리 숫자 6</b>에서 올림합니다.<br>2.21 + 0.01 = <b>2.22</b>"
+          },
+          {
+            id: 350,
+            name: "밀로틱",
+            type: "물",
+            typeBg: "#0891b2",
+            cp: 2920,
+            question: "19.4 ÷ 6 의 몫을 반올림하여 【자연수(일의 자리)】로 나타내세요.",
+            formula: "19.4 ÷ 6 ≈ ?",
+            ansMain: "3",
+            hint: "19.4 ÷ 6 = 3.233... 입니다.<br>자연수로 나타내려면 <b>소수 첫째 자리 숫자 2</b>를 보고 판단합니다.<br>2는 버림하므로 정답은 <b>3</b>입니다."
+          },
+          {
+            id: 475,
+            name: "엘레이드",
+            type: "에스퍼/격투",
+            typeBg: "#0f766e",
+            cp: 2870,
+            question: "5.3 ÷ 1.7 의 몫을 반올림하여 【소수 첫째 자리】까지 나타내세요.",
+            formula: "5.3 ÷ 1.7 ≈ ?",
+            ansMain: "3.1",
+            hint: "53 ÷ 17 = 3.117... 입니다.<br>소수 둘째 자리 숫자가 <b>1</b>이므로 버림합니다.<br>따라서 정답은 <b>3.1</b>입니다."
+          }
+        ]
+      },
+      {
+        stageId: 6,
+        title: "신비의 호수",
+        themeClass: "theme-stage6",
+        concept: "나누어 주고 남는 양 구하기 (몫과 나머지)",
+        desc: "몫은 자연수, 남는 양은 처음 나누어지는 수의 소수점 자리를 그대로 내립니다.",
+        isRemainderMode: true,
+        pokemons: [
+          {
+            id: 9,
+            name: "거북왕",
+            type: "물",
+            typeBg: "#1d4ed8",
+            cp: 2780,
+            question: "물 12.5L를 한 병에 3L씩 담으려 합니다. 가득 채울 수 있는 병 수와 남는 물의 양은?",
+            formula: "12.5 ÷ 3",
+            ansMain: "4",
+            ansRemainder: "0.5",
+            hint: "3L씩 4병을 채우면 3 × 4 = 12L를 씁니다.<br>남는 물은 12.5 - 12 = <b>0.5L</b>입니다.<br>정답: 몫은 <b>4</b>병, 남는 양은 <b>0.5</b>L"
+          },
+          {
+            id: 6,
+            name: "리자몽",
+            type: "불꽃/비행",
+            typeBg: "#c2410c",
+            cp: 3150,
+            question: "리본 15.7m를 한 사람에게 3.4m씩 주려고 합니다. 줄 수 있는 사람 수와 남는 리본의 길이는?",
+            formula: "15.7 ÷ 3.4",
+            ansMain: "4",
+            ansRemainder: "2.1",
+            hint: "3.4m씩 4명에게 주면 3.4 × 4 = 13.6m입니다.<br>남는 리본: 15.7 - 13.6 = <b>2.1m</b>입니다.<br>정답: 몫 <b>4</b>명, 남는 양 <b>2.1</b>m"
+          },
+          {
+            id: 3,
+            name: "이상해꽃",
+            type: "풀/독",
+            typeBg: "#15803d",
+            cp: 2720,
+            question: "흙 28.6kg을 화분 하나에 4.5kg씩 담습니다. 채울 수 있는 화분 수와 남는 흙의 양은?",
+            formula: "28.6 ÷ 4.5",
+            ansMain: "6",
+            ansRemainder: "1.6",
+            hint: "4.5 × 6 = 27kg을 담습니다.<br>남는 흙: 28.6 - 27 = <b>1.6kg</b><br>정답: 몫 <b>6</b>개, 남는 양 <b>1.6</b>kg"
+          },
+          {
+            id: 132,
+            name: "메타몽",
+            type: "노말",
+            typeBg: "#a855f7",
+            cp: 1420,
+            question: "주스 9.8L를 2.3L들이 컵에 가득 담을 때, 가득 찬 컵 수와 남는 주스의 양은?",
+            formula: "9.8 ÷ 2.3",
+            ansMain: "4",
+            ansRemainder: "0.6",
+            hint: "2.3 × 4 = 9.2L입니다.<br>남는 주스: 9.8 - 9.2 = <b>0.6L</b>입니다.<br>정답: 몫 <b>4</b>컵, 남는 양 <b>0.6</b>L"
+          },
+          {
+            id: 144,
+            name: "프리져",
+            type: "얼음/비행",
+            typeBg: "#0284c7",
+            cp: 3250,
+            question: "털실 23.4m로 목도리 1개당 5.2m씩 씁니다. 만들 수 있는 목도리 수와 남는 털실 길이는?",
+            formula: "23.4 ÷ 5.2",
+            ansMain: "4",
+            ansRemainder: "2.6",
+            hint: "5.2 × 4 = 20.8m입니다.<br>남는 털실: 23.4 - 20.8 = <b>2.6m</b>입니다.<br>정답: 몫 <b>4</b>개, 남는 양 <b>2.6</b>m"
+          }
+        ]
+      }
+    ];
+
+    /* =========================================================
+       B. 전설 레이드 보스 데이터 (뮤츠 & 레쿠쟈 - 실생활 문장제 5선)
+       ========================================================= */
+    const RAID_BOSSES = [
+      {
+        bossId: 150,
+        name: "뮤츠 (Mewtwo)",
+        type: "에스퍼",
+        typeBg: "#7c3aed",
+        maxHp: 300,
+        phases: [
+          {
+            phase: 1,
+            damage: 100,
+            question: "[모덕초 텃밭 문제] 넓이가 7.56 ㎡이고 세로가 1.4 m인 직사각형 텃밭의 가로는 몇 m일까요?",
+            formula: "7.56 ÷ 1.4",
+            ansMain: "5.4",
+            hint: "직사각형 가로 = 넓이 ÷ 세로 = 7.56 ÷ 1.4<br>소수점을 1자리 옮겨 75.6 ÷ 14 = <b>5.4m</b>"
+          },
+          {
+            phase: 2,
+            damage: 100,
+            question: "[자전거 하이킹] 자전거로 1.8시간 동안 9.72 km를 달렸습니다. 1시간 동안 달린 거리는 몇 km일까요?",
+            formula: "9.72 ÷ 1.8",
+            ansMain: "5.4",
+            hint: "거리 ÷ 시간 = 9.72 ÷ 1.8<br>소수점을 1자리 옮겨 97.2 ÷ 18 = <b>5.4km</b>"
+          },
+          {
+            phase: 3,
+            damage: 100,
+            question: "[나무 벤치 칠하기] 1 ㎡를 칠하는 데 페인트 1.2 L가 듭니다. 페인트 5.76 L로 칠할 수 있는 넓이는?",
+            formula: "5.76 ÷ 1.2",
+            ansMain: "4.8",
+            hint: "5.76 속에 1.2가 몇 번 들어가는지 구합니다: 5.76 ÷ 1.2<br>57.6 ÷ 12 = <b>4.8 ㎡</b>"
+          }
+        ]
+      },
+      {
+        bossId: 384,
+        name: "레쿠쟈 (Rayquaza)",
+        type: "드래곤/비행",
+        typeBg: "#059669",
+        maxHp: 300,
+        phases: [
+          {
+            phase: 1,
+            damage: 100,
+            question: "[동물 몸무게 비교] 진돗개 마루(8.84 kg)의 몸무게는 아기 고양이 보리(2.6 kg)의 몇 배일까요?",
+            formula: "8.84 ÷ 2.6",
+            ansMain: "3.4",
+            hint: "비교하는 양 ÷ 기준량 = 8.84 ÷ 2.6<br>88.4 ÷ 26 = <b>3.4배</b>"
+          },
+          {
+            phase: 2,
+            damage: 100,
+            question: "[매실청 담기] 매실청 8.28 L를 한 병에 1.8 L씩 남김없이 담으려고 합니다. 몇 병 분량이 될까요?",
+            formula: "8.28 ÷ 1.8",
+            ansMain: "4.6",
+            hint: "8.28 ÷ 1.8 ➔ 82.8 ÷ 18 = <b>4.6병</b>"
+          },
+          {
+            phase: 3,
+            damage: 100,
+            question: "[함정 극복 심화!] 학생 72명, 65만원 대절, 시속 70km로 휴게소 25분 휴식! 버스가 2.5시간 동안 휘발유 8.75 L를 썼다면, 1시간 동안 사용한 휘발유 양은?",
+            formula: "8.75 ÷ 2.5",
+            ansMain: "3.5",
+            hint: "<b>[불필요한 조건 제거!]</b> 학생수, 금액, 시속, 휴식시간은 필요 없습니다!<br>필요한 조건: <b>8.75 L ÷ 2.5 시간</b><br>87.5 ÷ 25 = <b>3.5 L</b>"
+          }
+        ]
+      }
+    ];
+
+    /* =========================================================
+       B-2. 스타팅 포켓몬 진화 계통 및 승급 퀴즈 데이터
+       ========================================================= */
+    const EVOLUTION_CHAINS = {
+      1: {
+        fromName: "이상해씨",
+        nextId: 2,
+        nextName: "이상해풀",
+        nextCP: 950,
+        quiz: {
+          q: "[이상해풀 진화 미션] 덩굴 채찍 8.64m를 2.4m씩 자르면 몇 도막이 나올까요?",
+          formula: "8.64 ÷ 2.4",
+          ans: "3.6"
+        },
+        finalId: 3,
+        finalName: "이상해꽃",
+        finalCP: 1850,
+        finalQuiz: {
+          q: "[이상해꽃 최종 진화] 꽃잎 영양제 14.28L를 4.2L들이 병에 똑같이 나누어 담으려고 합니다. 몇 병이 될까요?",
+          formula: "14.28 ÷ 4.2",
+          ans: "3.4"
+        }
+      },
+      4: {
+        fromName: "파이리",
+        nextId: 5,
+        nextName: "리자드",
+        nextCP: 980,
+        quiz: {
+          q: "[리자드 진화 미션] 불꽃 온도 7.92도를 올리는 데 1.8분이 걸립니다. 1분당 오른 온도는?",
+          formula: "7.92 ÷ 1.8",
+          ans: "4.4"
+        },
+        finalId: 6,
+        finalName: "리자몽",
+        finalCP: 1980,
+        finalQuiz: {
+          q: "[리자몽 최종 진화] 하늘을 18.36km 날아가는 데 3.6시간이 걸렸습니다. 1시간 동안 날아간 거리는 몇 km?",
+          formula: "18.36 ÷ 3.6",
+          ans: "5.1"
+        }
+      },
+      7: {
+        fromName: "꼬부기",
+        nextId: 8,
+        nextName: "어니부기",
+        nextCP: 940,
+        quiz: {
+          q: "[어니부기 진화 미션] 물대포 물 9.36L를 2.6L들이 통에 똑같이 나누어 담으려고 합니다. 몇 통이 될까요?",
+          formula: "9.36 ÷ 2.6",
+          ans: "3.6"
+        },
+        finalId: 9,
+        finalName: "거북왕",
+        finalCP: 1920,
+        finalQuiz: {
+          q: "[거북왕 최종 진화] 하이드로펌프 물 21.6톤을 수조 4.5개에 똑같이 채웠습니다. 수조 1개당 들어간 물의 양은?",
+          formula: "21.6 ÷ 4.5",
+          ans: "4.8"
+        }
+      },
+      25: {
+        fromName: "피카츄",
+        nextId: 26,
+        nextName: "라이츄",
+        nextCP: 1450,
+        quiz: {
+          q: "[라이츄 번개의돌 진화] 10만 볼트 충전지 15.75V를 3.5V 소형 전지 몇 개로 만들 수 있을까요?",
+          formula: "15.75 ÷ 3.5",
+          ans: "4.5"
+        }
+      },
+      133: {
+        fromName: "이브이",
+        nextId: 135,
+        nextName: "쥬피썬더",
+        nextCP: 1520,
+        quiz: {
+          q: "[쥬피썬더 진화 미션] 번개의 돌 에너지 13.5를 1.5씩 충전하려면 몇 번 충전해야 할까요?",
+          formula: "13.5 ÷ 1.5",
+          ans: "9"
+        }
+      }
+    };
+
+    /* =========================================================
+       C. 사운드 신시사이저 & 8-bit BGM 엔진 (Web Audio API)
+       ========================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.sfxMuted = false;
+        this.bgmMuted = false;
+        this.bgmTimer = null;
+        this.bgmStep = 0;
+        this.bgmGainNode = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playThrow() {
+        if (this.sfxMuted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const now = this.ctx.currentTime;
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.35);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+
+      playWiggle() {
+        if (this.sfxMuted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        const now = this.ctx.currentTime;
+        osc.frequency.setValueAtTime(240, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + 0.16);
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.16);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.16);
+      }
+
+      playBreakout() {
+        if (this.sfxMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.28);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.28);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.28);
+      }
+
+      playCatchSuccess() {
+        if (this.sfxMuted) return;
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 1046.50, 880.00, 1046.50];
+        const times = [0, 0.12, 0.24, 0.38, 0.52, 0.70];
+        const durs = [0.1, 0.1, 0.12, 0.12, 0.15, 0.65];
+        const now = this.ctx.currentTime;
+
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.value = freq;
+          const start = now + times[i];
+          const dur = durs[i];
+          gain.gain.setValueAtTime(0.25, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(start);
+          osc.stop(start + dur);
+        });
+      }
+
+      playError() {
+        if (this.sfxMuted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        const now = this.ctx.currentTime;
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.setValueAtTime(130, now + 0.12);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+
+      playKey() {
+        if (this.sfxMuted) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const now = this.ctx.currentTime;
+        osc.frequency.setValueAtTime(800, now);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      }
+
+      playCoopBeam() {
+        if (this.sfxMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc1 = this.ctx.createOscillator();
+        const gain1 = this.ctx.createGain();
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(200, now);
+        osc1.frequency.exponentialRampToValueAtTime(880, now + 0.35);
+        gain1.gain.setValueAtTime(0.25, now);
+        gain1.gain.linearRampToValueAtTime(0.01, now + 0.35);
+        osc1.connect(gain1);
+        gain1.connect(this.ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.35);
+
+        const osc2 = this.ctx.createOscillator();
+        const gain2 = this.ctx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(150, now + 0.3);
+        osc2.frequency.exponentialRampToValueAtTime(35, now + 0.9);
+        gain2.gain.setValueAtTime(0.5, now + 0.3);
+        gain2.gain.linearRampToValueAtTime(0.001, now + 0.9);
+        osc2.connect(gain2);
+        gain2.connect(this.ctx.destination);
+        osc2.start(now + 0.3);
+        osc2.stop(now + 0.9);
+      }
+
+      playEvolutionStart() {
+        if (this.sfxMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const freqs = [330, 392, 440, 523, 587, 659, 784, 880];
+        freqs.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.value = f;
+          const t = now + i * 0.4;
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.linearRampToValueAtTime(0.01, t + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.35);
+        });
+      }
+
+      playEvolutionFanfare() {
+        if (this.sfxMuted) return;
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 1046.50, 880.00, 987.77, 1046.50];
+        const times = [0, 0.15, 0.30, 0.45, 0.65, 0.85, 1.10];
+        const durs = [0.12, 0.12, 0.12, 0.18, 0.18, 0.22, 0.8];
+        const now = this.ctx.currentTime;
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.value = freq;
+          const start = now + times[i];
+          const dur = durs[i];
+          gain.gain.setValueAtTime(0.35, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(start);
+          osc.stop(start + dur);
+        });
+      }
+
+      /* 포켓몬 스타일 8-bit 루핑 BGM 신시사이저 */
+      startBGM() {
+        if (this.bgmTimer) return;
+        this.init();
+        if (!this.bgmGainNode) {
+          this.bgmGainNode = this.ctx.createGain();
+          this.bgmGainNode.gain.setValueAtTime(this.bgmMuted ? 0 : 0.08, this.ctx.currentTime);
+          this.bgmGainNode.connect(this.ctx.destination);
+        }
+
+        const melody = [
+          523.25, 659.25, 783.99, 659.25,  523.25, 783.99, 880.00, 783.99,
+          659.25, 587.33, 523.25, 587.33,  659.25, 783.99, 659.25, 587.33,
+          523.25, 659.25, 783.99, 1046.50, 987.77, 880.00, 783.99, 659.25,
+          587.33, 659.25, 783.99, 587.33,  523.25, 523.25, 0,      523.25
+        ];
+
+        const bass = [
+          130.81, 261.63, 196.00, 261.63,  130.81, 261.63, 196.00, 261.63,
+          146.83, 293.66, 220.00, 293.66,  164.81, 329.63, 246.94, 329.63,
+          174.61, 349.23, 261.63, 349.23,  196.00, 392.00, 293.66, 392.00,
+          196.00, 293.66, 246.94, 196.00,  130.81, 196.00, 261.63, 130.81
+        ];
+
+        const stepTime = 160;
+
+        this.bgmTimer = setInterval(() => {
+          if (!this.ctx || this.bgmMuted) {
+            this.bgmStep = (this.bgmStep + 1) % melody.length;
+            return;
+          }
+
+          const now = this.ctx.currentTime;
+          const melFreq = melody[this.bgmStep];
+          const bassFreq = bass[this.bgmStep];
+
+          if (melFreq > 0) {
+            const mOsc = this.ctx.createOscillator();
+            const mGain = this.ctx.createGain();
+            mOsc.type = 'square';
+            mOsc.frequency.setValueAtTime(melFreq, now);
+            mGain.gain.setValueAtTime(0.04, now);
+            mGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+            mOsc.connect(mGain);
+            mGain.connect(this.bgmGainNode);
+            mOsc.start(now);
+            mOsc.stop(now + 0.14);
+          }
+
+          if (bassFreq > 0) {
+            const bOsc = this.ctx.createOscillator();
+            const bGain = this.ctx.createGain();
+            bOsc.type = 'triangle';
+            bOsc.frequency.setValueAtTime(bassFreq, now);
+            bGain.gain.setValueAtTime(0.08, now);
+            bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            bOsc.connect(bGain);
+            bGain.connect(this.bgmGainNode);
+            bOsc.start(now);
+            bOsc.stop(now + 0.15);
+          }
+
+          this.bgmStep = (this.bgmStep + 1) % melody.length;
+        }, stepTime);
+      }
+
+      stopBGM() {
+        if (this.bgmTimer) {
+          clearInterval(this.bgmTimer);
+          this.bgmTimer = null;
+        }
+      }
+
+      setBgmMute(muted) {
+        this.bgmMuted = muted;
+        if (this.bgmGainNode && this.ctx) {
+          this.bgmGainNode.gain.setValueAtTime(muted ? 0 : 0.08, this.ctx.currentTime);
+        }
+        if (!muted && !this.bgmTimer) {
+          this.startBGM();
+        }
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* =========================================================
+       D. 한국어 음성 내레이션 엔진 (Web Speech API)
+       ========================================================= */
+    class VoiceEngine {
+      constructor() {
+        this.enabled = true;
+        this.synth = window.speechSynthesis;
+      }
+
+      speak(text) {
+        if (!this.enabled || !this.synth) return;
+        try {
+          this.synth.cancel();
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = 'ko-KR';
+          utter.rate = 1.15;
+          utter.pitch = 1.05;
+          this.synth.speak(utter);
+        } catch (e) {
+          console.warn("Speech synthesis error:", e);
+        }
+      }
+    }
+
+    const voice = new VoiceEngine();
+
+    /* =========================================================
+       E. 게임 상태 관리 (Game State & LocalStorage)
+       ========================================================= */
+    const STORAGE_KEY = "pokemon_math_6_2_save";
+
+    let gameState = {
+      xp: 0,
+      caughtList: [],
+      currentStageIndex: 1,
+      currentPokeIndex: 0,
+      isRaidMode: false,
+      currentRaidBossIndex: 0,
+      currentRaidPhase: 0,
+      selectedBall: "regular",
+      activeInputTarget: "main",
+      inputs: {
+        main: "",
+        remainder: ""
+      }
+    };
+
+    let coopTimerSec = 60;
+    let coopTimerRunning = false;
+    let coopTimerInterval = null;
+    let coopStudentCount = 20;
+    let activeEvoChallenge = null;
+    let activeDexPoke = null;
+
+    function loadSavedGame() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          gameState.xp = parsed.xp || 0;
+          gameState.caughtList = parsed.caughtList || [];
+        }
+      } catch (e) {
+        console.error("Save load error:", e);
+      }
+      updateStatsUI();
+      renderStagePreviews();
+    }
+
+    function saveGame() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          xp: gameState.xp,
+          caughtList: gameState.caughtList
+        }));
+      } catch (e) {
+        console.error("Save error:", e);
+      }
+      updateStatsUI();
+      renderStagePreviews();
+    }
+
+    function resetPokedexData() {
+      if (confirm("정말로 모든 포켓몬 도감 기록과 경험치를 초기화하시겠습니까?")) {
+        gameState.xp = 0;
+        gameState.caughtList = [];
+        saveGame();
+        renderPokedexGrid();
+        alert("도감이 성공적으로 초기화되었습니다!");
+      }
+    }
+
+    function updateStatsUI() {
+      document.getElementById("valXP").textContent = gameState.xp.toLocaleString();
+      const caughtCount = gameState.caughtList.length;
+      document.getElementById("valCaughtCount").textContent = `${caughtCount} / 36`;
+    }
+
+    function getPokemonGifUrl(id) {
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${id}.gif`;
+    }
+    function getPokemonArtworkUrl(id) {
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+    }
+
+    /* =========================================================
+       F. 뷰 화면 전환 컨트롤러
+       ========================================================= */
+    function showMapView() {
+      hideNoticeBanner();
+      document.querySelectorAll(".view-screen").forEach(el => el.classList.remove("active"));
+      document.getElementById("viewMap").classList.add("active");
+      renderStagePreviews();
+    }
+
+    function showBattleView() {
+      hideNoticeBanner();
+      document.querySelectorAll(".view-screen").forEach(el => el.classList.remove("active"));
+      document.getElementById("viewBattle").classList.add("active");
+    }
+
+    function showPokedexView() {
+      hideNoticeBanner();
+      document.querySelectorAll(".view-screen").forEach(el => el.classList.remove("active"));
+      document.getElementById("viewPokedex").classList.add("active");
+      renderPokedexGrid();
+    }
+
+    function showNoticeBanner(icon, text, duration = 3500) {
+      const banner = document.getElementById("battleNoticeBanner");
+      document.getElementById("bannerIcon").textContent = icon;
+      document.getElementById("bannerText").innerHTML = text;
+      banner.style.display = "flex";
+      if (banner._timer) clearTimeout(banner._timer);
+      banner._timer = setTimeout(() => {
+        banner.style.display = "none";
+      }, duration);
+    }
+
+    function hideNoticeBanner() {
+      const banner = document.getElementById("battleNoticeBanner");
+      banner.style.display = "none";
+    }
+
+    /* =========================================================
+       G. 스테이지 & 배틀 진행 로직
+       ========================================================= */
+    function renderStagePreviews() {
+      STAGES_DATA.forEach(stage => {
+        const previewEl = document.getElementById(`previewS${stage.stageId}`);
+        const progEl = document.getElementById(`progS${stage.stageId}`);
+        if (!previewEl || !progEl) return;
+
+        let caughtInStage = 0;
+        previewEl.innerHTML = stage.pokemons.slice(0, 4).map(p => {
+          const isCaught = gameState.caughtList.includes(p.id);
+          if (isCaught) caughtInStage++;
+          return `<img src="${getPokemonArtworkUrl(p.id)}" class="poke-preview-img" style="${isCaught ? '' : 'filter: grayscale(1) opacity(0.35);'}" alt="${p.name}">`;
+        }).join("");
+
+        const totalInStage = stage.pokemons.length;
+        const actualCaught = stage.pokemons.filter(p => gameState.caughtList.includes(p.id)).length;
+        progEl.innerHTML = `<span>${actualCaught}</span> / ${totalInStage}`;
+      });
+
+      document.querySelectorAll(".quick-pill").forEach((btn, idx) => {
+        btn.classList.remove("active");
+        if (!gameState.isRaidMode && gameState.currentStageIndex === (idx + 1)) {
+          btn.classList.add("active");
+        } else if (gameState.isRaidMode && idx === 6) {
+          btn.classList.add("active");
+        }
+      });
+    }
+
+    function enterStage(stageId) {
+      sound.init();
+      sound.startBGM();
+      gameState.isRaidMode = false;
+      gameState.currentStageIndex = stageId;
+      gameState.currentPokeIndex = 0;
+      loadCurrentBattle();
+      showBattleView();
+      renderStagePreviews();
+    }
+
+    function loadCurrentBattle() {
+      resetInputs();
+      hideNoticeBanner();
+      const stage = STAGES_DATA.find(s => s.stageId === gameState.currentStageIndex);
+      const poke = stage.pokemons[gameState.currentPokeIndex];
+
+      const field = document.getElementById("battleField");
+      field.className = `battle-field ${stage.themeClass}`;
+      document.getElementById("raidBossHpWrap").style.display = "none";
+      if (document.getElementById("ballSelectorWrap")) document.getElementById("ballSelectorWrap").style.display = "flex";
+      if (document.getElementById("coopRaidConsole")) document.getElementById("coopRaidConsole").style.display = "none";
+      const throwBtn = document.querySelector(".throw-key");
+      if (throwBtn) throwBtn.textContent = "⚾ 몬스터볼 던지기!";
+
+      document.getElementById("battlePokeName").innerHTML = `
+        야생의 ${poke.name}
+        <span class="poke-type-badge" style="background: ${poke.typeBg};">${poke.type}</span>
+      `;
+      document.getElementById("battleStageName").textContent = `STAGE ${stage.stageId} · ${stage.title} (${gameState.currentPokeIndex + 1} / ${stage.pokemons.length})`;
+      document.getElementById("battlePokeCP").textContent = `CP ${poke.cp}`;
+
+      const pokeImg = document.getElementById("battlePokeImg");
+      pokeImg.style.transform = "scale(1)";
+      pokeImg.style.opacity = "1";
+      pokeImg.src = getPokemonGifUrl(poke.id);
+      pokeImg.onerror = () => {
+        pokeImg.src = getPokemonArtworkUrl(poke.id);
+      };
+
+      document.getElementById("quizDifficultyTag").textContent = `🎯 STAGE ${stage.stageId} : ${stage.concept}`;
+      document.getElementById("quizQuestionIdx").textContent = `Q. ${gameState.currentPokeIndex + 1} / ${stage.pokemons.length}`;
+      document.getElementById("quizQuestionText").textContent = poke.question;
+      document.getElementById("quizFormulaBox").textContent = `${poke.formula} = ?`;
+
+      const remBox = document.getElementById("remainderInputBox");
+      if (stage.isRemainderMode) {
+        remBox.style.display = "flex";
+      } else {
+        remBox.style.display = "none";
+      }
+
+      voice.speak(`야생의 ${poke.name}가 나타났다!`);
+      broadcastProblemToAllStudents();
+    }
+
+    function startRaidBattle() {
+      sound.init();
+      sound.startBGM();
+      gameState.isRaidMode = true;
+      gameState.currentRaidBossIndex = 0;
+      gameState.currentRaidPhase = 0;
+      loadCurrentRaidBattle();
+      showBattleView();
+      renderStagePreviews();
+    }
+
+    function loadCurrentRaidBattle() {
+      resetInputs();
+      hideNoticeBanner();
+      const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+      const phaseData = boss.phases[gameState.currentRaidPhase];
+
+      const field = document.getElementById("battleField");
+      field.className = "battle-field theme-raid";
+      document.getElementById("raidBossHpWrap").style.display = "block";
+      if (document.getElementById("ballSelectorWrap")) document.getElementById("ballSelectorWrap").style.display = "none";
+      if (document.getElementById("coopRaidConsole")) document.getElementById("coopRaidConsole").style.display = "flex";
+      const throwBtn = document.querySelector(".throw-key");
+      if (throwBtn) throwBtn.textContent = "💥 우리 반 합동 에너지 발사!";
+      resetCoopTimer();
+      updateCoopDamagePreview();
+
+      document.getElementById("battlePokeName").innerHTML = `
+        👑 전설의 보스: ${boss.name}
+        <span class="poke-type-badge" style="background: ${boss.typeBg};">${boss.type}</span>
+      `;
+      document.getElementById("battleStageName").textContent = `전설의 레이드 배틀 · 페이즈 ${gameState.currentRaidPhase + 1} / 3`;
+      document.getElementById("battlePokeCP").textContent = `CP ??????`;
+
+      const curHp = boss.maxHp - (gameState.currentRaidPhase * 100);
+      document.getElementById("raidHpText").textContent = `${curHp} / ${boss.maxHp}`;
+      document.getElementById("raidBossHpBar").style.width = `${(curHp / boss.maxHp) * 100}%`;
+
+      const pokeImg = document.getElementById("battlePokeImg");
+      pokeImg.style.transform = "scale(1.2)";
+      pokeImg.style.opacity = "1";
+      pokeImg.src = getPokemonGifUrl(boss.bossId);
+      pokeImg.onerror = () => {
+        pokeImg.src = getPokemonArtworkUrl(boss.bossId);
+      };
+
+      document.getElementById("quizDifficultyTag").textContent = `🔥 FINAL RAID : 실생활 문장제 & 함정 극복`;
+      document.getElementById("quizQuestionIdx").textContent = `PHASE ${gameState.currentRaidPhase + 1} / 3`;
+      document.getElementById("quizQuestionText").textContent = phaseData.question;
+      document.getElementById("quizFormulaBox").textContent = `${phaseData.formula} = ?`;
+
+      document.getElementById("remainderInputBox").style.display = "none";
+
+      voice.speak(`전설의 보스, ${boss.name}와의 레이드 배틀이 시작되었다!`);
+      broadcastProblemToAllStudents();
+    }
+
+    /* =========================================================
+       H. 터치 키패드 & 정답 입력 처리
+       ========================================================= */
+    function focusAnswerField(target) {
+      sound.playKey();
+      gameState.activeInputTarget = target;
+      document.getElementById("displayMainAns").classList.remove("active-target");
+      document.getElementById("displayRemainderAns").classList.remove("active-target");
+
+      if (target === "main") {
+        document.getElementById("displayMainAns").classList.add("active-target");
+      } else {
+        document.getElementById("displayRemainderAns").classList.add("active-target");
+      }
+    }
+
+    function pressKey(key) {
+      sound.playKey();
+      const target = gameState.activeInputTarget;
+      let val = gameState.inputs[target];
+
+      if (key === "CLEAR") {
+        gameState.inputs[target] = "";
+      } else if (key === "BACKSPACE") {
+        gameState.inputs[target] = val.slice(0, -1);
+      } else if (key === ".") {
+        if (!val.includes(".")) {
+          gameState.inputs[target] = val === "" ? "0." : val + ".";
+        }
+      } else {
+        if (val.length < 8) {
+          gameState.inputs[target] = val + key;
+        }
+      }
+
+      updateDisplayValues();
+    }
+
+    function updateDisplayValues() {
+      document.getElementById("displayMainAns").textContent = gameState.inputs.main;
+      document.getElementById("displayRemainderAns").textContent = gameState.inputs.remainder;
+    }
+
+    function resetInputs() {
+      gameState.inputs.main = "";
+      gameState.inputs.remainder = "";
+      gameState.activeInputTarget = "main";
+      updateDisplayValues();
+      document.getElementById("displayMainAns").classList.add("active-target");
+      document.getElementById("displayRemainderAns").classList.remove("active-target");
+    }
+
+    function selectBall(type) {
+      sound.playKey();
+      gameState.selectedBall = type;
+      document.querySelectorAll(".ball-btn").forEach(b => b.classList.remove("active"));
+      if (type === "regular") document.getElementById("btnBallRegular").classList.add("active");
+      if (type === "great") document.getElementById("btnBallGreat").classList.add("active");
+      if (type === "ultra") document.getElementById("btnBallUltra").classList.add("active");
+    }
+
+    /* =========================================================
+       I. 몬스터볼 던지기 & 포획 확률 / 탈출 시퀀스
+       ========================================================= */
+    let isThrowingInProgress = false;
+
+    function throwPokeball() {
+      if (isThrowingInProgress) return;
+
+      let expectedMain = "";
+      let expectedRem = "";
+      let pokeName = "";
+      let pokeId = 0;
+      let formulaStr = "";
+
+      if (gameState.isRaidMode) {
+        const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+        const phase = boss.phases[gameState.currentRaidPhase];
+        expectedMain = phase.ansMain;
+        pokeName = boss.name;
+        pokeId = boss.bossId;
+        formulaStr = `${phase.formula} = ${phase.ansMain}`;
+      } else {
+        const stage = STAGES_DATA.find(s => s.stageId === gameState.currentStageIndex);
+        const poke = stage.pokemons[gameState.currentPokeIndex];
+        expectedMain = poke.ansMain;
+        expectedRem = poke.ansRemainder || "";
+        pokeName = poke.name;
+        pokeId = poke.id;
+        formulaStr = `${poke.formula} = ${poke.ansMain}` + (poke.ansRemainder ? ` (남는 양: ${poke.ansRemainder})` : "");
+      }
+
+      const userMain = gameState.inputs.main.trim();
+      const userRem = gameState.inputs.remainder.trim();
+
+      if (!userMain) {
+        alert("계산한 정답을 먼저 입력해주세요!");
+        return;
+      }
+
+      let isMathCorrect = (parseFloat(userMain) === parseFloat(expectedMain));
+      if (expectedRem) {
+        if (!userRem || parseFloat(userRem) !== parseFloat(expectedRem)) {
+          isMathCorrect = false;
+        }
+      }
+
+      let isCaptured = false;
+      if (isMathCorrect) {
+        if (gameState.isRaidMode) {
+          isCaptured = true;
+        } else {
+          const rand = Math.random();
+          if (gameState.selectedBall === "regular") {
+            isCaptured = (rand < 0.65);
+          } else if (gameState.selectedBall === "great") {
+            isCaptured = (rand < 0.85);
+          } else if (gameState.selectedBall === "ultra") {
+            isCaptured = (rand < 0.98);
+          }
+        }
+      }
+
+      isThrowingInProgress = true;
+      hideNoticeBanner();
+      sound.playThrow();
+
+      let ballVoiceText = "가라, 몬스터볼!";
+      if (gameState.selectedBall === "great") ballVoiceText = "슈퍼볼 투척!";
+      if (gameState.selectedBall === "ultra") ballVoiceText = "하이퍼볼 투척!";
+      voice.speak(ballVoiceText);
+
+      const ballImg = document.getElementById("animPokeball");
+      const pokeImg = document.getElementById("battlePokeImg");
+
+      let ballIconUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png";
+      if (gameState.selectedBall === "great") ballIconUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png";
+      if (gameState.selectedBall === "ultra") ballIconUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png";
+      ballImg.src = ballIconUrl;
+
+      ballImg.style.display = "block";
+      ballImg.style.bottom = "120px";
+      ballImg.style.left = "50%";
+      ballImg.style.transform = "translateX(-50%) scale(1)";
+
+      setTimeout(() => {
+        ballImg.style.bottom = "240px";
+        ballImg.style.transform = "translateX(-50%) scale(0.7) rotate(720deg)";
+      }, 50);
+
+      setTimeout(() => {
+        if (!isMathCorrect) {
+          sound.playError();
+          ballImg.style.transform = "translateX(-50%) scale(0.7) translateY(-80px) rotate(180deg)";
+          voice.speak("계산이 맞지 않습니다. 다시 풀어보세요!");
+
+          setTimeout(() => {
+            ballImg.style.display = "none";
+            pokeImg.style.transform = "scale(1.2)";
+            setTimeout(() => { pokeImg.style.transform = "scale(1)"; }, 250);
+            showNoticeBanner("❌", `앗! ${pokeName}이(가) 볼을 튕겨냈습니다! [📝 계산 메모장]을 열어 다시 풀어보세요.`, 4000);
+            isThrowingInProgress = false;
+          }, 350);
+          return;
+        }
+
+        pokeImg.style.transform = "scale(0)";
+        pokeImg.style.opacity = "0";
+
+        setTimeout(() => {
+          ballImg.style.bottom = "80px";
+          ballImg.style.transform = "translateX(-50%) scale(0.9)";
+
+          if (isCaptured) {
+            setTimeout(() => {
+              sound.playWiggle();
+              ballImg.style.transform = "translateX(-50%) scale(0.9) rotate(-25deg)";
+            }, 500);
+
+            setTimeout(() => {
+              sound.playWiggle();
+              ballImg.style.transform = "translateX(-50%) scale(0.9) rotate(25deg)";
+            }, 1100);
+
+            setTimeout(() => {
+              sound.playWiggle();
+              ballImg.style.transform = "translateX(-50%) scale(0.9) rotate(0deg)";
+            }, 1700);
+
+            setTimeout(() => {
+              sound.playCatchSuccess();
+              handleCaptureSuccess(pokeId, pokeName, formulaStr);
+              ballImg.style.display = "none";
+              isThrowingInProgress = false;
+            }, 2300);
+
+          } else {
+            setTimeout(() => {
+              sound.playWiggle();
+              ballImg.style.transform = "translateX(-50%) scale(0.9) rotate(-25deg)";
+            }, 500);
+
+            setTimeout(() => {
+              sound.playWiggle();
+              ballImg.style.transform = "translateX(-50%) scale(0.9) rotate(25deg)";
+            }, 1050);
+
+            setTimeout(() => {
+              sound.playBreakout();
+              ballImg.style.display = "none";
+              pokeImg.style.transform = "scale(1.2)";
+              pokeImg.style.opacity = "1";
+              setTimeout(() => { pokeImg.style.transform = "scale(1)"; }, 300);
+
+              voice.speak("앗! 볼에서 빠져나왔다!");
+              showNoticeBanner("💨", `앗! ${pokeName}이(가) 볼에서 빠져나왔습니다!<br>정답은 맞았습니다! 슈퍼볼이나 하이퍼볼을 쓰면 더 잘 잡힙니다! 다시 던져보세요!`, 5500);
+              isThrowingInProgress = false;
+            }, 1600);
+          }
+
+        }, 400);
+      }, 650);
+    }
+
+    function handleCaptureSuccess(pokeId, pokeName, formulaStr) {
+      let earnedXP = 100;
+      if (gameState.selectedBall === "great") earnedXP = 150;
+      if (gameState.selectedBall === "ultra") earnedXP = 200;
+
+      voice.speak(`신난다! ${pokeName}을 잡았다!`);
+
+      if (gameState.isRaidMode) {
+        earnedXP = 300;
+        const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+        gameState.currentRaidPhase++;
+
+        if (gameState.currentRaidPhase >= boss.phases.length) {
+          if (!gameState.caughtList.includes(pokeId)) {
+            gameState.caughtList.push(pokeId);
+          }
+          gameState.xp += earnedXP * 2;
+          saveGame();
+
+          document.getElementById("catchSuccessTitle").textContent = `전설의 포켓몬 ${pokeName} 포획 성공!`;
+          document.getElementById("catchSuccessImg").src = getPokemonArtworkUrl(pokeId);
+          document.getElementById("catchSuccessDesc").innerHTML = `
+            학급의 완벽한 수학적 협동으로 전설의 보스를 잡았습니다!<br>
+            대량의 경험치 <b>+${earnedXP * 2} XP</b> 획득!
+          `;
+          document.getElementById("catchSuccessFormula").textContent = formulaStr;
+          document.getElementById("modalCatchSuccess").style.display = "flex";
+        } else {
+          gameState.xp += earnedXP;
+          saveGame();
+          alert(`GREAT! 보스에게 강력한 데미지(100 HP)를 입혔습니다! 다음 페이즈로 돌입합니다.`);
+          loadCurrentRaidBattle();
+        }
+      } else {
+        if (!gameState.caughtList.includes(pokeId)) {
+          gameState.caughtList.push(pokeId);
+        }
+        gameState.xp += earnedXP;
+        saveGame();
+
+        document.getElementById("catchSuccessTitle").textContent = `야생의 ${pokeName}을(를) 잡았다!`;
+        document.getElementById("catchSuccessImg").src = getPokemonArtworkUrl(pokeId);
+        document.getElementById("catchSuccessDesc").innerHTML = `
+          소수의 나눗셈 계산을 완벽하게 맞혔습니다!<br>
+          도감 등록 완료! <b>+${earnedXP} XP</b> 획득!
+        `;
+        document.getElementById("catchSuccessFormula").textContent = formulaStr;
+        document.getElementById("modalCatchSuccess").style.display = "flex";
+      }
+    }
+
+    function closeCatchSuccessModal(goNext) {
+      document.getElementById("modalCatchSuccess").style.display = "none";
+      if (!goNext) {
+        showMapView();
+        return;
+      }
+
+      if (gameState.isRaidMode) {
+        if (gameState.currentRaidBossIndex < RAID_BOSSES.length - 1) {
+          gameState.currentRaidBossIndex++;
+          gameState.currentRaidPhase = 0;
+          loadCurrentRaidBattle();
+        } else {
+          alert("🎉 축하합니다! 모든 전설의 포켓몬 레이드를 클리어하셨습니다! 당신은 최고의 나눗셈 마스터!");
+          showMapView();
+        }
+      } else {
+        const stage = STAGES_DATA.find(s => s.stageId === gameState.currentStageIndex);
+        if (gameState.currentPokeIndex < stage.pokemons.length - 1) {
+          gameState.currentPokeIndex++;
+          loadCurrentBattle();
+        } else {
+          alert(`🎉 축하합니다! STAGE ${stage.stageId} [${stage.title}]의 모든 포켓몬을 포획하셨습니다!`);
+          showMapView();
+        }
+      }
+    }
+
+    /* =========================================================
+       J. 힌트 모달
+       ========================================================= */
+    function showHintModal() {
+      sound.playKey();
+      let hintText = "";
+      if (gameState.isRaidMode) {
+        const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+        hintText = boss.phases[gameState.currentRaidPhase].hint;
+      } else {
+        const stage = STAGES_DATA.find(s => s.stageId === gameState.currentStageIndex);
+        hintText = stage.pokemons[gameState.currentPokeIndex].hint;
+      }
+      document.getElementById("hintContentBox").innerHTML = hintText;
+      document.getElementById("modalHint").style.display = "flex";
+    }
+
+    function closeHintModal() {
+      document.getElementById("modalHint").style.display = "none";
+    }
+
+    /* =========================================================
+       K. 계산 연습장 (모눈종이 메모장) 기능 구현
+       ========================================================= */
+    let scratchCanvas, scratchCtx;
+    let isScratchDrawing = false;
+    let scratchTool = 'pen'; // 'pen', 'eraser'
+    let scratchColor = '#facc15';
+    let scratchSize = 6;
+    let scratchUndoStack = [];
+
+    function initScratchpad() {
+      scratchCanvas = document.getElementById("scratchpadCanvas");
+      if (!scratchCanvas) return;
+      scratchCtx = scratchCanvas.getContext("2d");
+      scratchCtx.lineCap = "round";
+      scratchCtx.lineJoin = "round";
+
+      scratchCanvas.addEventListener("pointerdown", startScratchDraw);
+      scratchCanvas.addEventListener("pointermove", drawScratch);
+      scratchCanvas.addEventListener("pointerup", stopScratchDraw);
+      scratchCanvas.addEventListener("pointercancel", stopScratchDraw);
+    }
+
+    function openScratchpad() {
+      sound.playKey();
+      let formulaText = "";
+      if (gameState.isRaidMode) {
+        const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+        const phase = boss.phases[gameState.currentRaidPhase];
+        formulaText = `${phase.formula} = ?`;
+      } else {
+        const stage = STAGES_DATA.find(s => s.stageId === gameState.currentStageIndex);
+        const poke = stage.pokemons[gameState.currentPokeIndex];
+        formulaText = `${poke.formula} = ?`;
+      }
+      document.getElementById("scratchpadFormulaTag").textContent = `📌 문제: ${formulaText}`;
+      document.getElementById("modalScratchpad").style.display = "flex";
+    }
+
+    function closeScratchpad() {
+      sound.playKey();
+      document.getElementById("modalScratchpad").style.display = "none";
+    }
+
+    function setScratchTool(tool) {
+      scratchTool = tool;
+      document.getElementById("btnScratchPen").classList.remove("active");
+      document.getElementById("btnScratchEraser").classList.remove("active");
+      if (tool === 'pen') {
+        document.getElementById("btnScratchPen").classList.add("active");
+      } else {
+        document.getElementById("btnScratchEraser").classList.add("active");
+      }
+    }
+
+    function setScratchColor(color, el) {
+      scratchColor = color;
+      setScratchTool('pen');
+      document.querySelectorAll(".pad-color-dot").forEach(d => d.classList.remove("active"));
+      el.classList.add("active");
+    }
+
+    function setScratchSize(size, el) {
+      scratchSize = size;
+      document.querySelectorAll(".pad-size-btn").forEach(b => b.classList.remove("active"));
+      el.classList.add("active");
+    }
+
+    function saveScratchState() {
+      if (scratchUndoStack.length > 20) scratchUndoStack.shift();
+      scratchUndoStack.push(scratchCtx.getImageData(0, 0, scratchCanvas.width, scratchCanvas.height));
+    }
+
+    function undoScratch() {
+      if (scratchUndoStack.length > 0) {
+        const last = scratchUndoStack.pop();
+        scratchCtx.putImageData(last, 0, 0);
+      }
+    }
+
+    function clearScratchpad() {
+      saveScratchState();
+      scratchCtx.clearRect(0, 0, scratchCanvas.width, scratchCanvas.height);
+    }
+
+    function startScratchDraw(e) {
+      isScratchDrawing = true;
+      saveScratchState();
+      const rect = scratchCanvas.getBoundingClientRect();
+      const scaleX = scratchCanvas.width / rect.width;
+      const scaleY = scratchCanvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+
+      scratchCtx.beginPath();
+      scratchCtx.moveTo(x, y);
+
+      if (scratchTool === 'eraser') {
+        scratchCtx.globalCompositeOperation = 'destination-out';
+        scratchCtx.lineWidth = scratchSize * 4;
+      } else {
+        scratchCtx.globalCompositeOperation = 'source-over';
+        scratchCtx.strokeStyle = scratchColor;
+        scratchCtx.lineWidth = scratchSize;
+      }
+    }
+
+    function drawScratch(e) {
+      if (!isScratchDrawing) return;
+      const rect = scratchCanvas.getBoundingClientRect();
+      const scaleX = scratchCanvas.width / rect.width;
+      const scaleY = scratchCanvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+
+      scratchCtx.lineTo(x, y);
+      scratchCtx.stroke();
+    }
+
+    function stopScratchDraw() {
+      isScratchDrawing = false;
+    }
+
+    /* =========================================================
+       L. 포켓몬 도감 렌더링 & 상세 모달
+       ========================================================= */
+    function renderPokedexGrid() {
+      const container = document.getElementById("pokedexGridContainer");
+      container.innerHTML = "";
+
+      let allPokes = [];
+      STAGES_DATA.forEach(s => {
+        s.pokemons.forEach(p => {
+          allPokes.push({ ...p, stageTitle: s.title, stageId: s.stageId });
+        });
+      });
+      RAID_BOSSES.forEach(b => {
+        allPokes.push({
+          id: b.bossId,
+          name: b.name,
+          type: b.type,
+          typeBg: b.typeBg,
+          stageTitle: "전설 레이드",
+          stageId: "RAID",
+          formula: b.phases[0].formula + " 등 문장제 3선",
+          ansMain: b.phases[0].ansMain
+        });
+      });
+
+      const caughtCount = gameState.caughtList.length;
+      const rate = Math.round((caughtCount / allPokes.length) * 100);
+      document.getElementById("dexCollectRate").textContent = `${rate}%`;
+      document.getElementById("dexCollectCount").textContent = caughtCount;
+
+      allPokes.forEach(p => {
+        const isCaught = gameState.caughtList.includes(p.id);
+        const card = document.createElement("div");
+        card.className = `dex-card ${isCaught ? '' : 'locked'}`;
+
+        card.innerHTML = `
+          <div class="dex-num">No.${String(p.id).padStart(3, '0')}</div>
+          <img src="${getPokemonArtworkUrl(p.id)}" class="dex-img" alt="${p.name}">
+          <div class="dex-name">${isCaught ? p.name : '???'}</div>
+          <div class="dex-stage-tag">${p.stageTitle}</div>
+        `;
+
+        if (isCaught) {
+          card.onclick = () => openDexDetailModal(p);
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    function openDexDetailModal(p) {
+      sound.playKey();
+      activeDexPoke = p;
+      document.getElementById("dexDetailNum").textContent = `No. ${String(p.id).padStart(3, '0')}`;
+      document.getElementById("dexDetailImg").src = getPokemonArtworkUrl(p.id);
+      document.getElementById("dexDetailName").textContent = p.name;
+      document.getElementById("dexDetailTypes").innerHTML = `
+        <span class="poke-type-badge" style="background: ${p.typeBg}; font-size: 15px; padding: 4px 12px;">${p.type}</span>
+      `;
+      document.getElementById("dexDetailMathInfo").innerHTML = `
+        <b>출현 지역:</b> STAGE ${p.stageId} (${p.stageTitle})<br>
+        <b>해결한 나눗셈 공식:</b> <span style="color: #38bdf8; font-weight: 800;">${p.formula}</span><br>
+        <b>계산 정답:</b> <span style="color: #4ade80; font-weight: 800;">${p.ansMain}</span>
+      `;
+      // 진화 가능 여부 확인
+      const evoWrap = document.getElementById("dexEvolutionActionWrap");
+      const evoBtn = document.getElementById("btnDexEvolve");
+      const evo = checkEvolutionAvailable(p.id);
+      if (evo) {
+        evoBtn.textContent = `✨ ${evo.toName}(으)로 진화 도전하기!`;
+        evoWrap.style.display = "block";
+      } else {
+        evoWrap.style.display = "none";
+      }
+
+      document.getElementById("modalDexDetail").style.display = "flex";
+    }
+
+    function closeDexDetailModal() {
+      document.getElementById("modalDexDetail").style.display = "none";
+    }
+
+    /* =========================================================
+       M. 전자칠판 캔버스 전면 판서 기능
+       ========================================================= */
+    let canvas, ctx, isDrawing = false, penColor = "#facc15", penSize = 5;
+
+    function initCanvas() {
+      canvas = document.getElementById("drawCanvas");
+      ctx = canvas.getContext("2d");
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      canvas.addEventListener("pointerdown", startDrawing);
+      canvas.addEventListener("pointermove", draw);
+      canvas.addEventListener("pointerup", stopDrawing);
+      canvas.addEventListener("pointercancel", stopDrawing);
+    }
+
+    function togglePenMode() {
+      const btn = document.getElementById("btnPen");
+      const toolbar = document.getElementById("canvasToolbar");
+      if (canvas.classList.contains("pen-active")) {
+        canvas.classList.remove("pen-active");
+        btn.classList.remove("active");
+        toolbar.classList.remove("show");
+      } else {
+        canvas.classList.add("pen-active");
+        btn.classList.add("active");
+        toolbar.classList.add("show");
+      }
+    }
+
+    function setPenColor(color, el) {
+      penColor = color;
+      document.querySelectorAll(".color-dot").forEach(d => d.classList.remove("active"));
+      el.classList.add("active");
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function startDrawing(e) {
+      if (!canvas.classList.contains("pen-active")) return;
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      ctx.strokeStyle = penColor;
+      ctx.lineWidth = penSize;
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    /* =========================================================
+       N. 오디오, 음성 & BGM 컨트롤
+       ========================================================= */
+    function toggleAudio() {
+      sound.sfxMuted = !sound.sfxMuted;
+      document.getElementById("audioIcon").textContent = sound.sfxMuted ? "🔇" : "🔊";
+      const btn = document.getElementById("btnAudio");
+      if (sound.sfxMuted) btn.classList.remove("active-toggle");
+      else btn.classList.add("active-toggle");
+    }
+
+    function toggleBGM() {
+      sound.init();
+      sound.setBgmMute(!sound.bgmMuted);
+      document.getElementById("bgmIcon").textContent = sound.bgmMuted ? "🔈" : "🎵";
+      const btn = document.getElementById("btnBgm");
+      if (sound.bgmMuted) btn.classList.remove("active-toggle");
+      else btn.classList.add("active-toggle");
+    }
+
+    function toggleVoice() {
+      voice.enabled = !voice.enabled;
+      document.getElementById("voiceIcon").textContent = voice.enabled ? "🗣️" : "🤐";
+      const btn = document.getElementById("btnVoice");
+      if (voice.enabled) btn.classList.add("active-toggle");
+      else btn.classList.remove("active-toggle");
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function resizeViewport() {
+      const vp = document.getElementById("viewport");
+      const targetW = 1600;
+      const targetH = 900;
+      const scale = Math.min(window.innerWidth / targetW, window.innerHeight / targetH);
+      vp.style.transform = `scale(${scale})`;
+    }
+
+    window.addEventListener("resize", resizeViewport);
+
+    /* 키보드 단축키 */
+    window.addEventListener("keydown", (e) => {
+      if (/^[0-9]$/.test(e.key)) {
+        pressKey(e.key);
+      } else if (e.key === ".") {
+        pressKey(".");
+      } else if (e.key === "Backspace") {
+        pressKey("BACKSPACE");
+      } else if (e.key === "Enter") {
+        throwPokeball();
+      } else if (e.key === "f" || e.key === "F" || e.key === "ㄹ") {
+        toggleFullscreen();
+      } else if (e.key === "m" || e.key === "M" || e.key === "ㅡ") {
+        toggleBGM();
+      } else if (e.key === "n" || e.key === "N" || e.key === "ㅜ") {
+        if (document.getElementById("modalScratchpad").style.display === "flex") {
+          closeScratchpad();
+        } else {
+          openScratchpad();
+        }
+      } else if (e.key === "Escape") {
+        if (document.getElementById("modalScratchpad").style.display === "flex") {
+          closeScratchpad();
+        } else if (document.getElementById("modalHint").style.display === "flex") {
+          closeHintModal();
+        } else if (document.getElementById("modalDexDetail").style.display === "flex") {
+          closeDexDetailModal();
+        } else {
+          showMapView();
+        }
+      }
+    });
+
+    document.addEventListener("click", () => {
+      sound.init();
+      if (!sound.bgmMuted && !sound.bgmTimer) {
+        sound.startBGM();
+      }
+    }, { once: true });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      resizeViewport();
+      initCanvas();
+      initScratchpad();
+      loadSavedGame();
+      initMultiplayerSystem();
+    });
+
+    /* =========================================================
+       N. 학급 협동 레이드 토벌전 컨트롤러
+       ========================================================= */
+    function toggleCoopTimer() {
+      sound.playKey();
+      const btn = document.getElementById("btnCoopTimerToggle");
+      if (coopTimerRunning) {
+        clearInterval(coopTimerInterval);
+        coopTimerRunning = false;
+        btn.textContent = "▶ 재개";
+      } else {
+        coopTimerRunning = true;
+        btn.textContent = "⏸ 일시정지";
+        coopTimerInterval = setInterval(() => {
+          coopTimerSec--;
+          document.getElementById("coopTimerSec").textContent = coopTimerSec;
+          if (coopTimerSec <= 0) {
+            clearInterval(coopTimerInterval);
+            coopTimerRunning = false;
+            btn.textContent = "▶ 시작";
+            sound.playBreakout();
+            showNoticeBanner("⏰", "작전 시간 종료! 정답 학생 수를 집계하고 합동 에너지를 발사하세요!", 5000);
+            voice.speak("작전 시간이 종료되었습니다. 정답 학생 수를 집계하여 합동 에너지를 발사하세요!");
+          }
+        }, 1000);
+      }
+    }
+
+    function resetCoopTimer() {
+      sound.playKey();
+      if (coopTimerInterval) clearInterval(coopTimerInterval);
+      coopTimerRunning = false;
+      coopTimerSec = 60;
+      document.getElementById("coopTimerSec").textContent = "60";
+      const btn = document.getElementById("btnCoopTimerToggle");
+      if (btn) btn.textContent = "▶ 시작";
+    }
+
+    function adjustCoopCount(delta) {
+      sound.playKey();
+      coopStudentCount = Math.max(1, Math.min(35, coopStudentCount + delta));
+      document.getElementById("coopStudentCount").textContent = coopStudentCount;
+      updateCoopDamagePreview();
+      updatePresetActive();
+    }
+
+    function setCoopCount(num) {
+      sound.playKey();
+      coopStudentCount = num;
+      document.getElementById("coopStudentCount").textContent = coopStudentCount;
+      updateCoopDamagePreview();
+      updatePresetActive();
+    }
+
+    function updatePresetActive() {
+      document.querySelectorAll(".btn-preset").forEach(btn => btn.classList.remove("active"));
+      if (coopStudentCount === 20) {
+        const b = document.getElementById("presetBtn20");
+        if (b) b.classList.add("active");
+      }
+    }
+
+    function updateCoopDamagePreview() {
+      const dmg = coopStudentCount * 25;
+      const el = document.getElementById("coopDmgPreview");
+      if (el) el.textContent = `${dmg} DMG (1인당 25)`;
+    }
+
+    function launchCoopBeam() {
+      if (isThrowingInProgress) return;
+      sound.init();
+
+      const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+      const phaseData = boss.phases[gameState.currentRaidPhase];
+      const userAns = gameState.inputs.main.trim();
+
+      if (!userAns) {
+        sound.playError();
+        showNoticeBanner("⚠️", "정답을 키패드로 입력한 후 합동 에너지를 발사하세요!");
+        return;
+      }
+
+      isThrowingInProgress = true;
+      const isMathCorrect = (Math.abs(parseFloat(userAns) - parseFloat(phaseData.ansMain)) < 0.001);
+
+      if (!isMathCorrect) {
+        sound.playError();
+        voice.speak("계산이 맞지 않아 에너지가 흩어졌습니다. 다시 계산해 보세요!");
+        showNoticeBanner("🛡️", "앗! 계산 결과가 맞지 않아 보스의 방어막에 막혔습니다! [📝 계산 메모장]으로 확인해보세요.", 4500);
+        isThrowingInProgress = false;
+        return;
+      }
+
+      // 발사 성공!
+      sound.playCoopBeam();
+      const arena = document.querySelector(".poke-stage-arena");
+      const beam = document.createElement("div");
+      beam.className = "laser-beam-anim";
+      arena.appendChild(beam);
+
+      const pokeImg = document.getElementById("battlePokeImg");
+      pokeImg.classList.add("boss-raid-hit");
+
+      const totalDmg = coopStudentCount * 25;
+      voice.speak(`우리 반 ${coopStudentCount}명의 합동 에너지! ${totalDmg} 데미지 발사!`);
+
+      setTimeout(() => {
+        beam.remove();
+        pokeImg.classList.remove("boss-raid-hit");
+
+        // HP 감소 연출
+        const newHp = Math.max(0, (boss.maxHp - ((gameState.currentRaidPhase + 1) * 100)));
+        document.getElementById("raidHpText").textContent = `${newHp} / ${boss.maxHp}`;
+        document.getElementById("raidBossHpBar").style.width = `${(newHp / boss.maxHp) * 100}%`;
+
+        // 다음 페이즈 또는 토벌 승리
+        if (gameState.currentRaidPhase < 2) {
+          sound.playCatchSuccess();
+          showNoticeBanner("💥", `페이즈 ${gameState.currentRaidPhase + 1} 돌파! 보스가 다음 기술을 준비합니다!`, 3500);
+          gameState.currentRaidPhase++;
+          setTimeout(() => {
+            loadCurrentRaidBattle();
+            isThrowingInProgress = false;
+          }, 2000);
+        } else {
+          // 보스 완전 격파!
+          sound.playCatchSuccess();
+          handleRaidVictory(boss);
+          isThrowingInProgress = false;
+        }
+      }, 700);
+    }
+
+    function handleRaidVictory(boss) {
+      if (!gameState.caughtList.includes(boss.bossId)) {
+        gameState.caughtList.push(boss.bossId);
+      }
+      gameState.xp += 1000;
+      saveGame();
+
+      document.getElementById("raidVictoryImg").src = getPokemonArtworkUrl(boss.bossId);
+      document.getElementById("raidVictoryBossName").textContent = `${boss.name} 토벌 & 생포 완료!`;
+      document.getElementById("modalRaidVictory").style.display = "flex";
+      voice.speak(`축하합니다! 우리 반 학급 전원의 힘으로 전설의 보스 ${boss.name}를 완벽히 토벌했습니다!`);
+    }
+
+    function closeRaidVictoryModal(returnToMap = false) {
+      document.getElementById("modalRaidVictory").style.display = "none";
+      if (returnToMap) {
+        showMapView();
+      } else {
+        showPokedexView();
+      }
+    }
+
+    /* =========================================================
+       O. 스타팅 포켓몬 진화 (Evolution) 시스템
+       ========================================================= */
+    function checkEvolutionAvailable(pokeId) {
+      if (!gameState.caughtList.includes(pokeId)) return null;
+
+      // 1단계 포켓몬인 경우 (이상해씨, 파이리, 꼬부기, 피카츄, 이브이)
+      if (EVOLUTION_CHAINS[pokeId]) {
+        const evo = EVOLUTION_CHAINS[pokeId];
+        if (!gameState.caughtList.includes(evo.nextId)) {
+          return {
+            fromId: pokeId,
+            fromName: evo.fromName,
+            toId: evo.nextId,
+            toName: evo.nextName,
+            toCP: evo.nextCP,
+            quiz: evo.quiz
+          };
+        }
+        // 2단계 -> 3단계 진화 체크
+        if (evo.finalId && !gameState.caughtList.includes(evo.finalId)) {
+          return {
+            fromId: evo.nextId,
+            fromName: evo.nextName,
+            toId: evo.finalId,
+            toName: evo.finalName,
+            toCP: evo.finalCP,
+            quiz: evo.finalQuiz
+          };
+        }
+      }
+      return null;
+    }
+
+    function openEvolutionQuizFromDex() {
+      if (!activeDexPoke) return;
+      const evo = checkEvolutionAvailable(activeDexPoke.id);
+      if (!evo) return;
+
+      closeDexDetailModal();
+      activeEvoChallenge = evo;
+
+      document.getElementById("evoQuizTitle").textContent = `${evo.fromName} ➡️ ${evo.toName} 진화 시험!`;
+      document.getElementById("evoQuizQuestion").textContent = evo.quiz.q;
+      document.getElementById("evoQuizFormula").textContent = `${evo.quiz.formula} = ?`;
+      document.getElementById("evoQuizInput").value = "";
+      document.getElementById("modalEvoQuiz").style.display = "flex";
+      setTimeout(() => document.getElementById("evoQuizInput").focus(), 150);
+      sound.playKey();
+    }
+
+    function closeEvolutionQuiz() {
+      document.getElementById("modalEvoQuiz").style.display = "none";
+      activeEvoChallenge = null;
+    }
+
+    function submitEvolutionQuiz() {
+      if (!activeEvoChallenge) return;
+      const userAns = document.getElementById("evoQuizInput").value.trim();
+      if (!userAns) {
+        sound.playError();
+        return;
+      }
+
+      const isCorrect = (Math.abs(parseFloat(userAns) - parseFloat(activeEvoChallenge.quiz.ans)) < 0.001);
+
+      if (isCorrect) {
+        sound.playCatchSuccess();
+        const evoToTrigger = activeEvoChallenge;
+        closeEvolutionQuiz();
+        triggerEvolutionCutscene(evoToTrigger);
+      } else {
+        sound.playError();
+        alert("아쉽습니다! 계산 결과를 다시 확인해 보세요. (소수점 위치를 확인하세요!)");
+      }
+    }
+
+    function triggerEvolutionCutscene(evo) {
+      document.getElementById("modalEvolution").style.display = "flex";
+      document.getElementById("evoCutsceneTitle").textContent = `어라...? ${evo.fromName}의 모습이...!`;
+      document.getElementById("evoSuccessBanner").style.display = "none";
+
+      const spriteImg = document.getElementById("evoSpriteImg");
+      spriteImg.className = "evo-sprite evo-flashing";
+      spriteImg.src = getPokemonArtworkUrl(evo.fromId);
+
+      sound.playEvolutionStart();
+      voice.speak(`어라...? ${evo.fromName}의 모습이...!`);
+
+      // 3.6초 후 진화 완료 연출!
+      setTimeout(() => {
+        spriteImg.className = "evo-sprite";
+        spriteImg.src = getPokemonArtworkUrl(evo.toId);
+        sound.playEvolutionFanfare();
+
+        document.getElementById("evoCutsceneTitle").textContent = `진화 대성공!`;
+        document.getElementById("evoResultName").textContent = `축하합니다! ${evo.toName}(으)로 진화했습니다!`;
+        document.getElementById("evoResultStats").textContent = `전투력 CP ${evo.toCP} 달성! · 도감 영구 등록! (+500 XP)`;
+        document.getElementById("evoSuccessBanner").style.display = "block";
+
+        if (!gameState.caughtList.includes(evo.toId)) {
+          gameState.caughtList.push(evo.toId);
+        }
+        gameState.xp += 500;
+        saveGame();
+        renderStagePreviews();
+        renderPokedexGrid();
+
+        voice.speak(`축하합니다! ${evo.fromName}가 ${evo.toName}로 진화했습니다!`);
+      }, 3600);
+    }
+
+    function closeEvolutionModal() {
+      document.getElementById("modalEvolution").style.display = "none";
+      showPokedexView();
+    }
+
+
+    /* =========================================================
+       P. 실시간 학급 P2P 멀티플레이 컨트롤러 (PeerJS WebRTC)
+       ========================================================= */
+    const DEFAULT_ROOM_PREFIX = "MODEUK";
+    let hostPeer = null;
+    let studentPeer = null;
+    let studentConn = null;
+    let connectedStudents = new Map(); // conn.peer -> { name, conn, score }
+    let myStudentName = "";
+    let myStudentXP = 0;
+    let studentInputVal = "";
+    let hostRoomCode = "MODEUK63";
+
+    function initMultiplayerSystem() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isStudent = (urlParams.get("role") === "student");
+      const targetRoom = urlParams.get("room") || hostRoomCode;
+
+      if (isStudent) {
+        // 학생 모드 시작
+        document.getElementById("stage").style.display = "none";
+        document.getElementById("viewStudentController").style.display = "flex";
+        document.getElementById("studentJoinRoomCode").value = targetRoom;
+        const savedName = localStorage.getItem("pokemon_student_name");
+        if (savedName) document.getElementById("studentJoinName").value = savedName;
+      } else {
+        // 교사용 호스트 모드 시작
+        initHostPeer();
+      }
+    }
+
+    /* --- [교사 호스트 로직] --- */
+    function initHostPeer() {
+      if (typeof Peer === "undefined") {
+        console.warn("PeerJS not loaded yet.");
+        return;
+      }
+      try {
+        hostPeer = new Peer(hostRoomCode);
+        hostPeer.on("open", (id) => {
+          console.log("Teacher Host Peer Open with ID:", id);
+          document.getElementById("hostStatusBadge").textContent = "접속 대기 중 🟢";
+        });
+
+        hostPeer.on("error", (err) => {
+          if (err.type === "unavailable-id") {
+            // ID 충돌 시 랜덤 ID 생성
+            hostRoomCode = "POKE" + Math.floor(1000 + Math.random() * 9000);
+            hostPeer = new Peer(hostRoomCode);
+            document.getElementById("displayRoomCode").textContent = hostRoomCode;
+          }
+        });
+
+        hostPeer.on("connection", (conn) => {
+          conn.on("open", () => {
+            conn.on("data", (data) => handleHostIncomingData(conn, data));
+          });
+
+          conn.on("close", () => {
+            connectedStudents.delete(conn.peer);
+            updateConnectedStudentsUI();
+          });
+        });
+      } catch (e) {
+        console.error("Host Peer Init Error:", e);
+      }
+    }
+
+    function handleHostIncomingData(conn, data) {
+      if (!data || !data.type) return;
+
+      if (data.type === "JOIN") {
+        connectedStudents.set(conn.peer, { name: data.name, conn: conn, score: 0 });
+        updateConnectedStudentsUI();
+        showAttackToast(`👋 ${data.name} 학생이 배틀에 참가했습니다!`, "#38bdf8");
+        sound.playKey();
+        broadcastCurrentStateToStudent(conn);
+      } else if (data.type === "ANSWER") {
+        handleStudentAnswerSubmit(conn, data);
+      }
+    }
+
+    function handleStudentAnswerSubmit(conn, data) {
+      const studentName = data.name || "학생";
+      const studentAns = String(data.answer).trim();
+
+      // 현재 문제 정답 판별
+      let targetAns = "";
+      if (gameState.isRaidMode) {
+        const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+        const phaseData = boss.phases[gameState.currentRaidPhase];
+        targetAns = phaseData.ansMain;
+      } else {
+        const stage = STAGES_DATA.find(s => s.stageId === gameState.currentStageIndex);
+        const poke = stage.pokemons[gameState.currentPokeIndex];
+        targetAns = poke.ansMain;
+      }
+
+      const isCorrect = (Math.abs(parseFloat(studentAns) - parseFloat(targetAns)) < 0.001);
+
+      if (isCorrect) {
+        // 정답! 피드백 전송
+        conn.send({ type: "RESULT", isCorrect: true, earnedXP: 100, dmg: 25 });
+        showAttackToast(`⚡ ${studentName} 정답 적중! (+25 DMG)`, "#4ade80");
+        sound.playCatchSuccess();
+
+        // 실시간 보스 레이저 피격 연출
+        const arena = document.querySelector(".poke-stage-arena");
+        if (arena) {
+          const beam = document.createElement("div");
+          beam.className = "laser-beam-anim";
+          arena.appendChild(beam);
+          setTimeout(() => beam.remove(), 600);
+        }
+
+        const pokeImg = document.getElementById("battlePokeImg");
+        if (pokeImg) {
+          pokeImg.classList.add("boss-raid-hit");
+          setTimeout(() => pokeImg.classList.remove("boss-raid-hit"), 600);
+        }
+
+        // 레이드 모드 시 실시간 HP 차감
+        if (gameState.isRaidMode) {
+          const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+          const curHpText = document.getElementById("raidHpText").textContent;
+          const curHp = Math.max(0, parseInt(curHpText) - 25);
+          document.getElementById("raidHpText").textContent = `${curHp} / ${boss.maxHp}`;
+          document.getElementById("raidBossHpBar").style.width = `${(curHp / boss.maxHp) * 100}%`;
+          if (curHp <= 0) {
+            handleRaidVictory(boss);
+          }
+        }
+      } else {
+        conn.send({ type: "RESULT", isCorrect: false });
+        showAttackToast(`❌ ${studentName} 계산 불일치 (다시 계산 중)`, "#f87171");
+        sound.playError();
+      }
+    }
+
+    function broadcastCurrentStateToStudent(conn) {
+      let formula = "", question = "", pokeName = "";
+      if (gameState.isRaidMode) {
+        const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
+        const phaseData = boss.phases[gameState.currentRaidPhase];
+        formula = phaseData.formula;
+        question = phaseData.question;
+        pokeName = boss.name;
+      } else {
+        const stage = STAGES_DATA.find(s => s.stageId === gameState.currentStageIndex);
+        const poke = stage.pokemons[gameState.currentPokeIndex];
+        formula = poke.formula;
+        question = poke.question;
+        pokeName = poke.name;
+      }
+      conn.send({
+        type: "SYNC_PROBLEM",
+        formula: formula,
+        question: question,
+        pokeName: pokeName,
+        stageId: gameState.currentStageIndex,
+        isRaid: gameState.isRaidMode
+      });
+    }
+
+    function broadcastProblemToAllStudents() {
+      connectedStudents.forEach(info => {
+        if (info.conn && info.conn.open) {
+          broadcastCurrentStateToStudent(info.conn);
+        }
+      });
+    }
+
+    function showAttackToast(msg, borderColor = "#38bdf8") {
+      const container = document.getElementById("liveAttackToastContainer");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = "attack-toast";
+      toast.style.borderColor = borderColor;
+      toast.innerHTML = msg;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function updateConnectedStudentsUI() {
+      const countEl = document.getElementById("connectedStudentCount");
+      const chipsEl = document.getElementById("connectedStudentChips");
+      if (countEl) countEl.textContent = connectedStudents.size;
+      if (chipsEl) {
+        if (connectedStudents.size === 0) {
+          chipsEl.innerHTML = '<span style="color: #64748b; font-size: 14px;">아직 참가한 학생이 없습니다.</span>';
+        } else {
+          chipsEl.innerHTML = Array.from(connectedStudents.values()).map(s => {
+            return `<div class="student-chip">🟢 ${s.name}</div>`;
+          }).join("");
+        }
+      }
+    }
+
+    function openMultiplayerModal() {
+      sound.playKey();
+      document.getElementById("displayRoomCode").textContent = hostRoomCode;
+
+      let joinUrl = "";
+      if (window.location.protocol.startsWith("http") && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+        joinUrl = `${window.location.origin}${window.location.pathname}?role=student&room=${hostRoomCode}`;
+      } else {
+        const hostIp = urlParams.get("hostIp") || "10.34.1.65";
+        const port = urlParams.get("port") || window.location.port || "8200";
+        joinUrl = `http://${hostIp}:${port}/index.html?role=student&room=${hostRoomCode}`;
+      }
+
+      document.getElementById("displayConnectUrl").textContent = joinUrl;
+
+      const qrContainer = document.getElementById("qrcodeCanvas");
+      qrContainer.innerHTML = "";
+      if (typeof QRCode !== "undefined") {
+        new QRCode(qrContainer, {
+          text: joinUrl,
+          width: 170,
+          height: 170,
+          colorDark: "#0f172a",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.L
+        });
+      }
+
+      document.getElementById("modalMultiplayer").style.display = "flex";
+    }
+
+    function closeMultiplayerModal() {
+      document.getElementById("modalMultiplayer").style.display = "none";
+    }
+
+    /* --- [학생 클라이언트 로직] --- */
+    function joinClassroomBattle() {
+      const nameInput = document.getElementById("studentJoinName").value.trim();
+      const roomCode = document.getElementById("studentJoinRoomCode").value.trim();
+      if (!nameInput) {
+        alert("이름을 입력해주세요!");
+        return;
+      }
+
+      myStudentName = nameInput;
+      localStorage.setItem("pokemon_student_name", myStudentName);
+
+      document.getElementById("studentConnStatus").textContent = "연결 시도 중... 🟡";
+
+      studentPeer = new Peer();
+      studentPeer.on("open", () => {
+        studentConn = studentPeer.connect(roomCode);
+
+        studentConn.on("open", () => {
+          document.getElementById("studentConnStatus").textContent = "선생님 화면과 연결됨 🟢";
+          document.getElementById("studentWelcomeName").textContent = `🎒 ${myStudentName}`;
+          document.getElementById("studentJoinBox").style.display = "none";
+          document.getElementById("studentBattleBox").style.display = "flex";
+
+          studentConn.send({ type: "JOIN", name: myStudentName });
+        });
+
+        studentConn.on("data", (data) => handleStudentIncomingData(data));
+
+        studentConn.on("close", () => {
+          document.getElementById("studentConnStatus").textContent = "연결 끊김 🔴";
+          alert("선생님 화면과의 연결이 끊어졌습니다.");
+        });
+
+        studentConn.on("error", (e) => {
+          alert("방에 연결할 수 없습니다. 방 코드를 확인하세요!");
+        });
+      });
+    }
+
+    function handleStudentIncomingData(data) {
+      if (!data) return;
+      if (data.type === "SYNC_PROBLEM") {
+        document.getElementById("studentLiveFormula").textContent = `${data.formula} = ?`;
+        document.getElementById("studentLiveQuestion").textContent = data.question;
+        document.getElementById("studentStageTag").textContent = `🎯 ${data.pokeName} 배틀 중!`;
+        studentInputVal = "";
+        document.getElementById("studentInputDisplay").textContent = "_";
+        const fb = document.getElementById("studentFeedbackNotice");
+        fb.style.display = "none";
+      } else if (data.type === "RESULT") {
+        const fb = document.getElementById("studentFeedbackNotice");
+        fb.style.display = "block";
+        if (data.isCorrect) {
+          fb.style.background = "rgba(34, 197, 94, 0.25)";
+          fb.style.border = "2px solid #22c55e";
+          fb.style.color = "#4ade80";
+          fb.innerHTML = `🎉 정답입니다! 칠판으로 합동 공격을 발사했습니다! (+${data.earnedXP} XP)`;
+          myStudentXP += data.earnedXP;
+          document.getElementById("studentMyXP").textContent = `⭐ ${myStudentXP} XP`;
+        } else {
+          fb.style.background = "rgba(239, 68, 68, 0.25)";
+          fb.style.border = "2px solid #ef4444";
+          fb.style.color = "#f87171";
+          fb.innerHTML = `앗! 계산이 맞지 않습니다. 다시 계산해보세요! 💡`;
+        }
+      }
+    }
+
+    function pressStudentKey(key) {
+      if (key === "CLEAR") {
+        studentInputVal = "";
+      } else {
+        if (studentInputVal.length < 10) {
+          studentInputVal += key;
+        }
+      }
+      document.getElementById("studentInputDisplay").textContent = studentInputVal || "_";
+    }
+
+    function sendStudentAnswerToHost() {
+      if (!studentConn || !studentConn.open) {
+        alert("선생님 화면과 연결되어 있지 않습니다!");
+        return;
+      }
+      if (!studentInputVal) {
+        alert("계산 정답을 입력해주세요!");
+        return;
+      }
+      studentConn.send({
+        type: "ANSWER",
+        name: myStudentName,
+        answer: studentInputVal
+      });
+    }
+
+  </script>
+</body>
+</html>

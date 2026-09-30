@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>6-2 수학 2단원 소수의 나눗셈 · 실생활 문장제 6선 (함정 조건 극복)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================
+       1. 디자인 토큰 및 기본 리셋 (교실 맨 뒤 8m 가독성 보장)
+       ========================================================= */
+    :root {
+      --bg-deep: #0a0f1d;
+      --bg-card: #131c31;
+      --bg-card-sub: #1b2640;
+      --bg-card-hover: #223052;
+      --border-soft: rgba(255, 255, 255, 0.12);
+      --border-accent: rgba(56, 189, 248, 0.35);
+
+      --text-white: #ffffff;
+      --text-dim: #cbd5e1;
+      --text-muted: #94a3b8;
+
+      --accent-yellow: #fde047; /* 문제 핵심 수치/강조 */
+      --accent-sky: #38bdf8;    /* 식 및 연산 기호 */
+      --accent-green: #4ade80;  /* 정답 및 해결 */
+      --accent-coral: #fb7185;  /* 주의점 및 오답 방지 */
+      --accent-purple: #c084fc; /* 실생활 상황 태그 */
+
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.45);
+      --shadow-glow: 0 0 25px rgba(56, 189, 248, 0.2);
+
+      --font-main: "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-deep);
+      font-family: var(--font-main);
+      color: var(--text-white);
+      user-select: none;
+    }
+
+    /* =========================================================
+       2. 16:9 전자칠판 뷰포트 고정 스케일러
+       ========================================================= */
+    #stage {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 20%, #152238 0%, #0a0f1d 75%);
+    }
+
+    #viewport {
+      position: absolute;
+      width: 1600px;
+      height: 900px;
+      transform-origin: center center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px 36px 18px;
+      background: linear-gradient(170deg, rgba(25, 36, 61, 0.95) 0%, rgba(13, 19, 35, 0.98) 100%);
+      border: 3px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+
+    /* 캔버스 판서 오버레이 (전자칠판 터치 드로잉) */
+    #drawCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      pointer-events: none;
+      touch-action: none;
+    }
+    #drawCanvas.pen-active {
+      pointer-events: auto;
+      cursor: crosshair;
+    }
+
+    /* =========================================================
+       3. 상단 헤더 & 메뉴바
+       ========================================================= */
+    header {
+      flex: none;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--border-soft);
+      padding-bottom: 12px;
+      position: relative;
+      z-index: 50;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .unit-pill {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 800;
+      padding: 6px 16px;
+      border-radius: 24px;
+      letter-spacing: -0.02em;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
+    .lesson-title {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .lesson-title span {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent-yellow);
+    }
+
+    /* 우측 롤오버 & 제어 툴바 */
+    .top-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: opacity 0.25s ease;
+    }
+
+    .timer-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1.5px solid rgba(253, 224, 71, 0.4);
+      border-radius: 12px;
+      padding: 4px 14px;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent-yellow);
+      cursor: pointer;
+    }
+    .timer-badge:hover {
+      background: rgba(253, 224, 71, 0.15);
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid var(--border-soft);
+      color: var(--text-dim);
+      font-family: var(--font-main);
+      font-size: 19px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .icon-btn.active {
+      background: var(--accent-sky);
+      border-color: var(--accent-sky);
+      color: #0b1320;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+    }
+
+    /* =========================================================
+       4. 슬라이드 본문 컨테이너 (화면 꽉 채움 레이아웃)
+       ========================================================= */
+    #slideContainer {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      margin: 18px 0 14px;
+      z-index: 10;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── [공통 카드 디자인] ── */
+    .card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-soft);
+      border-radius: 18px;
+      padding: 22px 28px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    /* 문제 질문 상단 대형 카드 */
+    .problem-card {
+      flex: none;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #162444 0%, #111a31 100%);
+      border: 2.5px solid var(--border-accent);
+      box-shadow: var(--shadow-glow), 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .problem-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .problem-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--accent-yellow);
+      background: rgba(253, 224, 71, 0.12);
+      border: 1.5px solid rgba(253, 224, 71, 0.35);
+      border-radius: 10px;
+      padding: 4px 14px;
+    }
+
+    .category-tag {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent-purple);
+      background: rgba(192, 132, 252, 0.12);
+      border: 1.5px solid rgba(192, 132, 252, 0.3);
+      padding: 4px 14px;
+      border-radius: 20px;
+    }
+
+    .problem-text {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.5;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      word-break: keep-all;
+    }
+
+    .highlight-num {
+      color: var(--accent-yellow);
+      font-size: 36px;
+      font-weight: 900;
+      text-decoration: underline;
+      text-underline-offset: 6px;
+      text-decoration-color: rgba(253, 224, 71, 0.5);
+      padding: 0 4px;
+    }
+
+    .highlight-target {
+      color: var(--accent-sky);
+      font-weight: 900;
+    }
+
+    /* ── [하단 영역: 단계별 터치 아코디언 인터랙션] ── */
+    .interaction-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .interactive-panel {
+      background: var(--bg-card);
+      border: 2px solid var(--border-soft);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .interactive-panel.opened {
+      border-color: var(--border-accent);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .panel-header-btn {
+      width: 100%;
+      background: var(--bg-card-sub);
+      border: none;
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #ffffff;
+      font-family: var(--font-main);
+      font-size: 24px;
+      font-weight: 800;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: background 0.2s;
+    }
+
+    .panel-header-btn:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .interactive-panel.opened .panel-header-btn {
+      border-bottom-color: var(--border-soft);
+      color: var(--accent-sky);
+    }
+
+    .panel-header-btn .btn-status {
+      font-size: 19px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+    }
+
+    .interactive-panel.opened .panel-header-btn .btn-status {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent-sky);
+    }
+
+    .panel-body {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: rgba(13, 20, 36, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(6px);
+      transition: all 0.3s ease;
+    }
+
+    .interactive-panel.opened .panel-body {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    /* ── [풀이 및 정답 상세 그래픽] ── */
+    .hint-box {
+      font-size: 25px;
+      font-weight: 600;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+    .hint-box b {
+      color: var(--accent-yellow);
+      font-weight: 800;
+    }
+
+    .formula-banner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(56, 189, 248, 0.08);
+      border-left: 6px solid var(--accent-sky);
+      padding: 12px 18px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    .formula-banner .lbl {
+      font-size: 21px;
+      font-weight: 800;
+      color: var(--accent-sky);
+    }
+    .formula-banner .math {
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      color: #ffffff;
+    }
+
+    /* 소수점 이동 시각화 박스 */
+    .step-shift-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1.5px dashed rgba(56, 189, 248, 0.4);
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .shift-tag {
+      background: var(--accent-sky);
+      color: #0b1320;
+      font-size: 19px;
+      font-weight: 900;
+      padding: 3px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .shift-desc {
+      font-size: 23px;
+      font-weight: 700;
+      color: var(--text-white);
+    }
+    .shift-desc em {
+      color: var(--accent-yellow);
+      font-style: normal;
+      font-weight: 900;
+    }
+
+    /* 세로셈 그래픽 레이아웃 */
+    .vertical-calc-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 20px;
+    }
+
+    .vertical-calc {
+      font-family: "Pretendard", monospace;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.35;
+      background: #0b1424;
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 14px 22px;
+      color: var(--text-white);
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    .vertical-calc .quotient {
+      color: var(--accent-green);
+      font-weight: 900;
+      border-bottom: 3px solid var(--accent-sky);
+      padding-bottom: 2px;
+      text-align: right;
+    }
+    .vertical-calc .middle-line {
+      border-bottom: 2px solid rgba(255, 255, 255, 0.4);
+    }
+    .vertical-calc .remainder {
+      color: var(--accent-yellow);
+      text-align: right;
+    }
+
+    /* 최종 정답 하이라이트 배너 */
+    .answer-hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, rgba(74, 222, 128, 0.15) 0%, rgba(16, 185, 129, 0.25) 100%);
+      border: 2.5px solid var(--accent-green);
+      border-radius: 16px;
+      padding: 18px 28px;
+      box-shadow: 0 0 30px rgba(74, 222, 128, 0.2);
+    }
+    .answer-hero .label {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--accent-green);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .answer-hero .val {
+      font-size: 46px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      text-shadow: 0 0 16px rgba(74, 222, 128, 0.4);
+    }
+
+    /* ── [슬라이드 0: 인트로 화면] ── */
+    .intro-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .intro-main-card {
+      background: linear-gradient(135deg, #182849 0%, #0f1a30 100%);
+      border: 2px solid var(--border-accent);
+      border-radius: 20px;
+      padding: 36px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .intro-tag {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent-sky);
+      background: rgba(56, 189, 248, 0.15);
+      border-radius: 20px;
+      padding: 6px 18px;
+      display: inline-block;
+      width: fit-content;
+    }
+
+    .intro-title {
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: -0.03em;
+      margin: 16px 0;
+    }
+
+    .intro-title em {
+      color: var(--accent-yellow);
+      font-style: normal;
+    }
+
+    .intro-desc {
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .mission-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .mission-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 24px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px 18px;
+      border-radius: 12px;
+      border-left: 5px solid var(--accent-yellow);
+    }
+
+    .intro-side-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-soft);
+      border-radius: 20px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .method-card {
+      background: var(--bg-card-sub);
+      border-radius: 14px;
+      padding: 16px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .method-card h4 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent-sky);
+      margin-bottom: 6px;
+    }
+    .method-card p {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-dim);
+      line-height: 1.45;
+    }
+
+    /* ── [슬라이드 6: 정리 화면] ── */
+    .summary-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .summary-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-soft);
+      border-radius: 18px;
+      padding: 26px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease;
+    }
+    .summary-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-sky);
+    }
+    .summary-icon {
+      font-size: 44px;
+      margin-bottom: 10px;
+    }
+    .summary-card h3 {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--accent-yellow);
+      margin-bottom: 12px;
+    }
+    .summary-card p {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+    .summary-card .example-pill {
+      margin-top: 14px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 21px;
+      font-weight: 700;
+      color: var(--accent-green);
+      text-align: center;
+    }
+
+    /* =========================================================
+       5. 하단 네비게이션 & 액션 툴바
+       ========================================================= */
+    footer {
+      flex: none;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 2px solid var(--border-soft);
+      padding-top: 12px;
+      position: relative;
+      z-index: 50;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slide-dot {
+      font-family: var(--font-main);
+      font-size: 20px;
+      font-weight: 800;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid var(--border-soft);
+      color: var(--text-dim);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .slide-dot:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .slide-dot.active {
+      background: var(--accent-yellow);
+      border-color: var(--accent-yellow);
+      color: #0b1320;
+      font-weight: 900;
+      box-shadow: 0 0 16px rgba(253, 224, 71, 0.4);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .action-btn {
+      font-family: var(--font-main);
+      font-size: 20px;
+      font-weight: 800;
+      padding: 10px 22px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn.prev, .action-btn.next {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border: 1.5px solid var(--border-soft);
+    }
+    .action-btn.prev:hover, .action-btn.next:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .action-btn.reveal-all {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+    .action-btn.reveal-all:hover {
+      background: linear-gradient(135deg, #047857, #059669);
+      transform: translateY(-1px);
+    }
+
+    /* =========================================================
+       6. 팝업 / 교사용 서랍 / 펜 도구함
+       ========================================================= */
+    /* 교사용 지도서 서랍 */
+    #teacherDrawer {
+      position: absolute;
+      left: 36px;
+      right: 36px;
+      bottom: 84px;
+      max-height: 480px;
+      background: #09101f;
+      border: 2px solid var(--accent-sky);
+      border-radius: 18px;
+      padding: 24px 30px;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+      z-index: 80;
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      animation: slideUp 0.25s ease-out;
+    }
+    #teacherDrawer.active {
+      display: flex;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1.5px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 10px;
+    }
+    .drawer-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--accent-sky);
+    }
+    .drawer-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 26px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .drawer-content {
+      font-size: 22px;
+      font-weight: 500;
+      line-height: 1.6;
+      color: var(--text-dim);
+    }
+    .drawer-content b {
+      color: var(--accent-yellow);
+    }
+    .drawer-content ul {
+      margin-left: 24px;
+      margin-top: 8px;
+    }
+
+    /* 펜 도구 모달 바 */
+    #penToolbar {
+      position: absolute;
+      right: 40px;
+      top: 90px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px solid var(--border-soft);
+      border-radius: 14px;
+      padding: 8px 14px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      z-index: 90;
+      box-shadow: var(--shadow-lg);
+    }
+    #penToolbar.active {
+      display: flex;
+    }
+
+    .pen-color-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s;
+    }
+    .pen-color-dot:hover {
+      transform: scale(1.15);
+    }
+    .pen-color-dot.selected {
+      border-color: #ffffff;
+      transform: scale(1.2);
+    }
+
+    /* 인라인 수정 모드 표시 테두리 */
+    [contenteditable="true"] {
+      outline: 2px dashed var(--accent-yellow) !important;
+      background: rgba(253, 224, 71, 0.08) !important;
+      border-radius: 6px;
+      cursor: text !important;
+    }
+
+    /* =========================================================
+       7. 인쇄 최적화 (A4 학습지 인쇄 모드)
+       ========================================================= */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        overflow: visible !important;
+      }
+      #stage {
+        position: static !important;
+        background: none !important;
+      }
+      #viewport {
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+        transform: none !important;
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+      header, footer, #penToolbar, #teacherDrawer, #drawCanvas {
+        display: none !important;
+      }
+      .slide {
+        display: block !important;
+        position: static !important;
+        opacity: 1 !important;
+        transform: none !important;
+        page-break-after: always;
+        margin-bottom: 20mm;
+      }
+      .card, .interactive-panel {
+        background: #ffffff !important;
+        border: 1px solid #333333 !important;
+        color: #000000 !important;
+      }
+      .problem-text, .shift-desc, .answer-hero .val {
+        color: #000000 !important;
+      }
+      .panel-body {
+        opacity: 1 !important;
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="viewport">
+    <!-- 전자칠판 판서 드로잉 캔버스 -->
+    <canvas id="drawCanvas" width="1600" height="900"></canvas>
+
+    <!-- ── 상단 머리글 ── -->
+    <header>
+      <div class="brand-wrap">
+        <div class="unit-pill">초등 6-2 수학 · 2단원</div>
+        <h1 class="lesson-title">
+          소수의 나눗셈
+          <span contenteditable="false" id="titleSub">실생활 문장제 해결하기</span>
+        </h1>
+      </div>
+
+      <!-- 제어 및 보조 도구 -->
+      <div class="top-controls">
+        <!-- 3분 타이머 -->
+        <div class="timer-badge" id="timerBtn" title="클릭하여 타이머 시작/정지/리셋">
+          ⏱️ <span id="timerDisplay">03:00</span>
+        </div>
+
+        <!-- 펜 판서 토글 -->
+        <button class="icon-btn" id="penToggleBtn" title="전자칠판 판서 모드">
+          ✏️ <span>판서펜</span>
+        </button>
+
+        <!-- 교사용 지도서 서랍 토글 -->
+        <button class="icon-btn" id="teacherBtn" title="교사용 지도 팁 (단축키 T)">
+          📋 <span>교사용 팁</span>
+        </button>
+
+        <!-- 인라인 텍스트 고치기 토글 -->
+        <button class="icon-btn" id="editBtn" title="문제 문장 직접 수정하기">
+          ✎ <span>고치기</span>
+        </button>
+
+        <!-- 전체화면 토글 -->
+        <button class="icon-btn" id="fullscreenBtn" title="전체화면 전환 (단축키 F)">
+          ⛶ <span>전체화면</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 펜 판서 도구 팝업 -->
+    <div id="penToolbar">
+      <div class="pen-color-dot selected" style="background:#fde047;" data-color="#fde047" title="노랑"></div>
+      <div class="pen-color-dot" style="background:#38bdf8;" data-color="#38bdf8" title="하늘"></div>
+      <div class="pen-color-dot" style="background:#4ade80;" data-color="#4ade80" title="초록"></div>
+      <div class="pen-color-dot" style="background:#fb7185;" data-color="#fb7185" title="분홍"></div>
+      <div class="pen-color-dot" style="background:#ffffff;" data-color="#ffffff" title="흰색"></div>
+      <button class="icon-btn" id="clearPenBtn" style="padding:4px 10px; font-size:16px;">모두 지우기</button>
+    </div>
+
+    <!-- ── 슬라이드 본문 컨테이너 ── -->
+    <main id="slideContainer">
+
+      <!-- ====================================================
+           [Slide 0] 도입 / 학습 목표 및 원리 탐구
+           ==================================================== -->
+      <section class="slide active" data-slide="0" data-tip="오늘 수업의 핵심: (소수 두 자리 수) ÷ (소수 한 자리 수)의 계산 원리를 이해하고, 실생활 문제 상황에서 올바른 식을 세워 소수점의 위치를 정확히 옮겨 계산할 수 있도록 지도합니다.">
+        <div class="intro-grid">
+          <div class="intro-main-card">
+            <div>
+              <span class="intro-tag">💡 오늘의 학습 목표</span>
+              <h2 class="intro-title">
+                <em>(소수 두 자리 수) ÷ (소수 한 자리 수)</em><br>
+                실생활 문장제 완전 정복!
+              </h2>
+              <p class="intro-desc">
+                우리 주변의 텃밭 가꾸기, 자전거 타기, 친환경 페인트칠, 반려동물 돌보기 등<br>
+                실제 생활 속 장면에서 <strong>소수의 나눗셈이 왜 쓰이는지</strong> 알아보고<br>
+                스스로 식을 세워 해결해 봅시다.
+              </p>
+            </div>
+
+            <div class="mission-list">
+              <div class="mission-item">
+                <span>🎯</span>
+                <span>문제 속 핵심 조건(단위, 주어진 수치)을 꼼꼼하게 찾아냅니다.</span>
+              </div>
+              <div class="mission-item">
+                <span>🎯</span>
+                <span>나누는 수와 나누어지는 수의 <strong>소수점을 똑같이 오른쪽으로 1칸</strong> 옮겨 계산합니다.</span>
+              </div>
+              <div class="mission-item">
+                <span>🎯</span>
+                <span>정답에 알맞은 단위(m, km, m², 배, 병)를 바르게 붙입니다.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="intro-side-card">
+            <h3 style="font-size:26px; font-weight:800; color:var(--accent-yellow); margin-bottom:14px;">
+              🔍 소수점 이동의 핵심 원리
+            </h3>
+
+            <div class="method-card">
+              <h4>1. 나누는 수를 '자연수'로 만들기</h4>
+              <p>나누는 수의 소수점을 오른쪽으로 <strong>1자리(10배)</strong> 옮기면, 나누어지는 수의 소수점도 똑같이 <strong>1자리(10배)</strong> 옮깁니다.</p>
+            </div>
+
+            <div class="method-card" style="margin-top:12px;">
+              <h4>2. 분수의 나눗셈으로 확인하기</h4>
+              <p>분모를 100으로 통분하여 분자끼리 나누는 원리와 정확히 같습니다.<br>
+              예: 7.56 ÷ 1.4 = 756/100 ÷ 140/100 = 756 ÷ 140 = 5.4</p>
+            </div>
+
+            <div style="background:rgba(253, 224, 71, 0.1); border:1.5px solid var(--accent-yellow); border-radius:14px; padding:14px; margin-top:14px; text-align:center;">
+              <span style="font-size:22px; font-weight:800; color:var(--accent-yellow);">
+                👉 이제 여섯 가지 실생활 문제(함정 조건 극복 포함!)에 도전해 볼까요?
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           [Slide 1] 문제 1 : 친환경 학교 텃밭 가로의 길이 구하기
+           ==================================================== -->
+      <section class="slide" data-slide="1" data-tip="[지도 팁: 문제 1] 직사각형의 넓이 공식을 상기시킵니다. 넓이 = 가로 × 세로 이므로, 가로 = 넓이 ÷ 세로 입니다. 7.56 ÷ 1.4에서 나누는 수 1.4를 자연수로 만들기 위해 소수점을 오른쪽으로 1칸 이동(14)하면, 나누어지는 수 7.56도 똑같이 오른쪽으로 1칸 이동(75.6)한다는 점을 강조하세요.">
+        <!-- 상단 문제 제시 카드 -->
+        <div class="card problem-card">
+          <div class="problem-header">
+            <div class="problem-badge">🌱 문제 1번</div>
+            <div class="category-tag">학교 텃밭 가꾸기 · 넓이와 변</div>
+          </div>
+          <p class="problem-text editable">
+            모덕초 6학년 학생들이 상추와 방울토마토를 심기 위해 직사각형 모양의 텃밭을 만들었습니다.
+            이 텃밭의 <span class="highlight-target">넓이는 </span><span class="highlight-num">7.56 m²</span>이고,
+            <span class="highlight-target">세로는 </span><span class="highlight-num">1.4 m</span>입니다.
+            텃밭의 <span class="highlight-target">가로는 몇 m</span>일까요?
+          </p>
+          <div style="font-size:22px; color:var(--text-muted); font-weight:600;">
+            💡 텃밭의 가로 길이를 구하는 식을 세우고, 소수점의 위치에 유의하여 계산해 봅시다.
+          </div>
+        </div>
+
+        <!-- 하단 인터랙션 그리드 (힌트 / 식 / 풀이 / 정답) -->
+        <div class="interaction-grid">
+          <!-- 좌측 패널: 힌트 & 식 세우기 -->
+          <div class="interactive-panel" id="p1-left">
+            <button class="panel-header-btn" onclick="togglePanel('p1-left')">
+              <span>💡 1단계 : 힌트 및 식 세우기</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="hint-box">
+                직사각형의 <b>넓이 = (가로) × (세로)</b> 입니다.<br>
+                따라서 <b>(가로) = (넓이) ÷ (세로)</b> 로 식을 세울 수 있습니다.
+              </div>
+              <div class="formula-banner">
+                <span class="lbl">수학식</span>
+                <span class="math">7.56 ÷ 1.4</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 우측 패널: 소수점 이동 & 풀이 & 정답 -->
+          <div class="interactive-panel" id="p1-right">
+            <button class="panel-header-btn" onclick="togglePanel('p1-right')">
+              <span>📐 2단계 : 계산 과정 및 최종 정답</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="step-shift-box">
+                <span class="shift-tag">소수점 이동</span>
+                <span class="shift-desc">
+                  1.4를 <em>10배</em>(→ 14), 7.56도 <em>10배</em>(→ 75.6) 옮겨 계산합니다!
+                </span>
+              </div>
+
+              <div class="vertical-calc-wrap">
+                <div class="vertical-calc">
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.4</div>
+                  <div class="middle-line">14 ) 75.6</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;70&nbsp;&nbsp;</div>
+                  <div class="middle-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.6</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.6</div>
+                  <div class="middle-line remainder">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</div>
+                </div>
+
+                <div class="answer-hero" style="flex:1;">
+                  <div>
+                    <div class="label">✅ 텃밭의 가로</div>
+                    <div class="val">5.4 m</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           [Slide 2] 문제 2 : 자전거 1시간 동안 달린 거리 (속력/시간)
+           ==================================================== -->
+      <section class="slide" data-slide="2" data-tip="[지도 팁: 문제 2] 1시간 동안 달린 거리를 구하려면 전체 거리를 달린 시간으로 나누어야 합니다. (전체 거리) ÷ (걸린 시간) = 9.72 ÷ 1.8 입니다. 소수점을 각각 오른쪽으로 1자리씩 옮기면 97.2 ÷ 18이 됩니다. 18에 몇을 곱해야 97에 가까워지는지 어림(18 × 5 = 90)해 보도록 지도하세요.">
+        <div class="card problem-card">
+          <div class="problem-header">
+            <div class="problem-badge">🚴 문제 2번</div>
+            <div class="category-tag">자전거 하이킹 · 거리와 시간</div>
+          </div>
+          <p class="problem-text editable">
+            지우는 가족들과 함께 낙동강 자전거길을 달렸습니다.
+            자전거를 타고 일정한 빠르기로 <span class="highlight-num">1.8시간</span> 동안
+            <span class="highlight-num">9.72 km</span>를 달렸습니다.
+            지우가 <span class="highlight-target">1시간 동안 달린 거리는 몇 km</span>일까요?
+          </p>
+          <div style="font-size:22px; color:var(--text-muted); font-weight:600;">
+            💡 1.8시간 동안 간 거리로 1시간 동안 간 평균 거리를 구하는 방법을 생각해 봅시다.
+          </div>
+        </div>
+
+        <div class="interaction-grid">
+          <div class="interactive-panel" id="p2-left">
+            <button class="panel-header-btn" onclick="togglePanel('p2-left')">
+              <span>💡 1단계 : 힌트 및 식 세우기</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="hint-box">
+                <b>1시간 동안 달린 거리</b>를 구하려면<br>
+                <b>(전체 달린 거리) ÷ (달린 시간)</b>을 계산해야 합니다.
+              </div>
+              <div class="formula-banner">
+                <span class="lbl">수학식</span>
+                <span class="math">9.72 ÷ 1.8</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="interactive-panel" id="p2-right">
+            <button class="panel-header-btn" onclick="togglePanel('p2-right')">
+              <span>📐 2단계 : 계산 과정 및 최종 정답</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="step-shift-box">
+                <span class="shift-tag">소수점 이동</span>
+                <span class="shift-desc">
+                  1.8을 <em>10배</em>(→ 18), 9.72도 <em>10배</em>(→ 97.2) 옮겨 계산합니다!
+                </span>
+              </div>
+
+              <div class="vertical-calc-wrap">
+                <div class="vertical-calc">
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.4</div>
+                  <div class="middle-line">18 ) 97.2</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;90&nbsp;&nbsp;</div>
+                  <div class="middle-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;7.2</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;7.2</div>
+                  <div class="middle-line remainder">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</div>
+                </div>
+
+                <div class="answer-hero" style="flex:1;">
+                  <div>
+                    <div class="label">✅ 1시간 동안 달린 거리</div>
+                    <div class="val">5.4 km</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           [Slide 3] 문제 3 : 나무 벤치 페인트칠하기 (단위 넓이당 양)
+           ==================================================== -->
+      <section class="slide" data-slide="3" data-tip="[지도 팁: 문제 3] 전체 페인트 양 5.76 L를 1 m²를 칠하는 데 필요한 1.2 L로 나누면 칠할 수 있는 넓이가 나옵니다. 5.76 ÷ 1.2에서 소수점을 1자리씩 오른쪽으로 이동하면 57.6 ÷ 12가 됩니다. 몫의 자연수 부분이 4이고, 소수점 위치를 맞춰 몫이 4.8이 됨을 직접 확인하게 하세요.">
+        <div class="card problem-card">
+          <div class="problem-header">
+            <div class="problem-badge">🎨 문제 3번</div>
+            <div class="category-tag">환경 지킴이 활동 · 페인트칠 넓이</div>
+          </div>
+          <p class="problem-text editable">
+            환경 동아리 학생들이 낡은 나무 벤치를 칠하기 위해 친환경 페인트
+            <span class="highlight-num">5.76 L</span>를 준비했습니다.
+            벤치 <span class="highlight-target">1 m²를 칠하는 데 페인트 </span><span class="highlight-num">1.2 L</span>가 든다면,
+            준비한 페인트로 칠할 수 있는 벤치의 <span class="highlight-target">넓이는 몇 m²</span>일까요?
+          </p>
+          <div style="font-size:22px; color:var(--text-muted); font-weight:600;">
+            💡 전체 페인트양 속에 1.2 L가 몇 번 들어가는지 나눗셈으로 해결해 봅시다.
+          </div>
+        </div>
+
+        <div class="interaction-grid">
+          <div class="interactive-panel" id="p3-left">
+            <button class="panel-header-btn" onclick="togglePanel('p3-left')">
+              <span>💡 1단계 : 힌트 및 식 세우기</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="hint-box">
+                <b>칠할 수 있는 넓이</b>는<br>
+                <b>(준비한 페인트 전체 양) ÷ (1 m²에 드는 페인트 양)</b> 입니다.
+              </div>
+              <div class="formula-banner">
+                <span class="lbl">수학식</span>
+                <span class="math">5.76 ÷ 1.2</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="interactive-panel" id="p3-right">
+            <button class="panel-header-btn" onclick="togglePanel('p3-right')">
+              <span>📐 2단계 : 계산 과정 및 최종 정답</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="step-shift-box">
+                <span class="shift-tag">소수점 이동</span>
+                <span class="shift-desc">
+                  1.2를 <em>10배</em>(→ 12), 5.76도 <em>10배</em>(→ 57.6) 옮겨 계산합니다!
+                </span>
+              </div>
+
+              <div class="vertical-calc-wrap">
+                <div class="vertical-calc">
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.8</div>
+                  <div class="middle-line">12 ) 57.6</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;48&nbsp;&nbsp;</div>
+                  <div class="middle-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;9.6</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;9.6</div>
+                  <div class="middle-line remainder">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</div>
+                </div>
+
+                <div class="answer-hero" style="flex:1;">
+                  <div>
+                    <div class="label">✅ 칠할 수 있는 벤치 넓이</div>
+                    <div class="val">4.8 m²</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           [Slide 4] 문제 4 : 반려동물 몸무게 비교하기 (배수 관계)
+           ==================================================== -->
+      <section class="slide" data-slide="4" data-tip="[지도 팁: 문제 4] '~의 몇 배인가'를 묻는 문제는 (비교하는 양) ÷ (기준량) 입니다. 마루의 몸무게 8.84 kg ÷ 보리의 몸무게 2.6 kg 입니다. 소수점을 각각 오른쪽으로 1자리 이동하면 88.4 ÷ 26이 되며, 26 × 3 = 78, 104 ÷ 26 = 4 이므로 몫은 3.4배가 됩니다. 배수를 묻는 문제이므로 단위가 '배'임에 주의시킵니다.">
+        <div class="card problem-card">
+          <div class="problem-header">
+            <div class="problem-badge">🐶 문제 4번</div>
+            <div class="category-tag">동물 보호소 봉사 · 몸무게 비교(배수)</div>
+          </div>
+          <p class="problem-text editable">
+            수의사를 꿈꾸는 민우가 유기동물 보호소에서 봉사활동을 하며 동물들의 몸무게를 쟀습니다.
+            씩씩한 진돗개 '마루'의 <span class="highlight-target">몸무게는 </span><span class="highlight-num">8.84 kg</span>이고,
+            아기 고양이 '보리'의 <span class="highlight-target">몸무게는 </span><span class="highlight-num">2.6 kg</span>입니다.
+            마루의 몸무게는 보리 몸무게의 <span class="highlight-target">몇 배</span>일까요?
+          </p>
+          <div style="font-size:22px; color:var(--text-muted); font-weight:600;">
+            💡 기준이 되는 보리의 몸무게로 마루의 몸무게를 나누어 몇 배인지 구해 봅시다.
+          </div>
+        </div>
+
+        <div class="interaction-grid">
+          <div class="interactive-panel" id="p4-left">
+            <button class="panel-header-btn" onclick="togglePanel('p4-left')">
+              <span>💡 1단계 : 힌트 및 식 세우기</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="hint-box">
+                <b>(비교하는 양) ÷ (기준이 되는 양)</b> 공식에 따라<br>
+                <b>(마루의 몸무게) ÷ (보리의 몸무게)</b> 로 식을 세웁니다.
+              </div>
+              <div class="formula-banner">
+                <span class="lbl">수학식</span>
+                <span class="math">8.84 ÷ 2.6</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="interactive-panel" id="p4-right">
+            <button class="panel-header-btn" onclick="togglePanel('p4-right')">
+              <span>📐 2단계 : 계산 과정 및 최종 정답</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="step-shift-box">
+                <span class="shift-tag">소수점 이동</span>
+                <span class="shift-desc">
+                  2.6을 <em>10배</em>(→ 26), 8.84도 <em>10배</em>(→ 88.4) 옮겨 계산합니다!
+                </span>
+              </div>
+
+              <div class="vertical-calc-wrap">
+                <div class="vertical-calc">
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3.4</div>
+                  <div class="middle-line">26 ) 88.4</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;78&nbsp;&nbsp;</div>
+                  <div class="middle-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10.4</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10.4</div>
+                  <div class="middle-line remainder">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</div>
+                </div>
+
+                <div class="answer-hero" style="flex:1;">
+                  <div>
+                    <div class="label">✅ 마루는 보리의</div>
+                    <div class="val">3.4 배</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           [Slide 5] 문제 5 : 매실청 유리병에 나누어 담기
+           ==================================================== -->
+      <section class="slide" data-slide="5" data-tip="[지도 팁: 문제 5] 전체 매실청 8.28 L를 1.8 L들이 병에 나누어 담을 때 몇 병 분량인지를 구하는 문제입니다. 8.28 ÷ 1.8에서 소수점을 오른쪽으로 1자리씩 옮기면 82.8 ÷ 18이 됩니다. 18 × 4 = 72, 82 - 72 = 10, 108 ÷ 18 = 6 이므로 4.6병이 됩니다. 실생활에서는 4병을 가득 채우고 5번째 병의 60%가 찬다는 뜻임을 설명해 주면 좋습니다.">
+        <div class="card problem-card">
+          <div class="problem-header">
+            <div class="problem-badge">🍯 문제 5번</div>
+            <div class="category-tag">전통 음식 만들기 · 나누어 담기</div>
+          </div>
+          <p class="problem-text editable">
+            할머니와 함께 정성껏 담근 유기농 매실청 <span class="highlight-num">8.28 L</span>가 있습니다.
+            이 매실청을 한 병에 <span class="highlight-num">1.8 L</span>씩 들어가는 유리병에
+            남김없이 똑같이 나누어 담으려고 합니다.
+            유리병 <span class="highlight-target">몇 병 분량</span>이 될까요?
+          </p>
+          <div style="font-size:22px; color:var(--text-muted); font-weight:600;">
+            💡 전체 매실청을 한 병에 들어갈 양으로 나누어 몇 병이 채워지는지 구해 봅시다.
+          </div>
+        </div>
+
+        <div class="interaction-grid">
+          <div class="interactive-panel" id="p5-left">
+            <button class="panel-header-btn" onclick="togglePanel('p5-left')">
+              <span>💡 1단계 : 힌트 및 식 세우기</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="hint-box">
+                <b>채울 수 있는 병의 수</b>는<br>
+                <b>(전체 매실청의 양) ÷ (한 병에 들어가는 양)</b> 으로 구합니다.
+              </div>
+              <div class="formula-banner">
+                <span class="lbl">수학식</span>
+                <span class="math">8.28 ÷ 1.8</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="interactive-panel" id="p5-right">
+            <button class="panel-header-btn" onclick="togglePanel('p5-right')">
+              <span>📐 2단계 : 계산 과정 및 최종 정답</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="step-shift-box">
+                <span class="shift-tag">소수점 이동</span>
+                <span class="shift-desc">
+                  1.8을 <em>10배</em>(→ 18), 8.28도 <em>10배</em>(→ 82.8) 옮겨 계산합니다!
+                </span>
+              </div>
+
+              <div class="vertical-calc-wrap">
+                <div class="vertical-calc">
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.6</div>
+                  <div class="middle-line">18 ) 82.8</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;72&nbsp;&nbsp;</div>
+                  <div class="middle-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10.8</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10.8</div>
+                  <div class="middle-line remainder">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</div>
+                </div>
+
+                <div class="answer-hero" style="flex:1;">
+                  <div>
+                    <div class="label">✅ 나누어 담은 유리병</div>
+                    <div class="val">4.6 병</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           [Slide 6] 심화 문제 6 : 현장체험학습 버스 기름 (함정 조건 극복)
+           ==================================================== -->
+      <section class="slide" data-slide="6" data-tip="[지도 팁: 문제 6] 문제 지문에 학생 수(72명), 교사 수(5명), 대절 비용(65만 원), 출발 시각(오전 9시 20분), 휴게소 시간(25분), 빠르기(시속 70 km) 등 불필요한 조건이 많이 섞여 있습니다. 구하려는 것('1시간 동안 사용한 휘발유 양')에 꼭 필요한 조건이 무엇인지(총 걸린 시간 2.5시간, 사용한 휘발유 8.75 L) 학생 스스로 찾게 하세요. 색깔 힌트가 일절 없으므로 문장을 꼼꼼히 끊어 읽고 핵심 정보를 가려내는 수학적 독해력 훈련에 매우 효과적입니다.">
+        <div class="card problem-card">
+          <div class="problem-header">
+            <div class="problem-badge" style="background:rgba(251, 113, 133, 0.15); border-color:var(--accent-coral); color:var(--accent-coral);">🔥 심화 문제 6번</div>
+            <div class="category-tag" style="color:var(--accent-coral); border-color:rgba(251, 113, 133, 0.4); background:rgba(251, 113, 133, 0.1);">함정 조건 구별하기 · 거리와 연료</div>
+          </div>
+          <!-- 색깔 힌트 없이 순수 텍스트로만 제공 -->
+          <p class="problem-text editable" style="color:#ffffff;">
+            모덕초 6학년 3개 학급 학생 72명과 선생님 5명이 65만 원을 내고 대형 버스를 대절하여 현장체험학습을 다녀왔습니다. 이 버스는 오전 9시 20분에 학교를 출발하여 휴게소에서 25분 동안 쉬었습니다. 버스가 시속 70 km의 일정한 빠르기로 고속도로를 2.5시간 동안 달렸을 때 사용한 휘발유는 모두 8.75 L였습니다. 이 버스가 1시간 동안 사용한 휘발유의 양은 몇 L일까요?
+          </p>
+          <div style="font-size:22px; color:var(--text-muted); font-weight:600;">
+            ⚠️ 문제 속에 계산에 필요 없는 숫자가 섞여 있습니다! 구하려는 것에 꼭 필요한 정보만 골라 식을 세워 보세요.
+          </div>
+        </div>
+
+        <div class="interaction-grid">
+          <!-- 좌측 패널: 함정 조건 분석 & 식 세우기 -->
+          <div class="interactive-panel" id="p6-left">
+            <button class="panel-header-btn" onclick="togglePanel('p6-left')">
+              <span>💡 1단계 : 함정 조건 걸러내기 &amp; 식 세우기</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="hint-box" style="font-size:22px; line-height:1.5;">
+                <div style="color:var(--accent-coral); font-weight:800; margin-bottom:4px;">
+                  ❌ 문제 해결에 전혀 필요 없는 함정 조건:
+                </div>
+                • 3개 학급, 학생 72명, 선생님 5명, 65만 원<br>
+                • 오전 9시 20분 출발, 휴게소 25분 휴식, 시속 70 km<br>
+                <div style="color:var(--accent-green); font-weight:800; margin-top:8px; margin-bottom:4px;">
+                  ⭕ 1시간 동안 쓴 휘발유를 구하는 데 꼭 필요한 조건:
+                </div>
+                • 달린 총 시간: <b>2.5시간</b> &nbsp;|&nbsp; 사용한 휘발유 양: <b>8.75 L</b>
+              </div>
+              <div class="formula-banner">
+                <span class="lbl">수학식</span>
+                <span class="math">8.75 ÷ 2.5</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 우측 패널: 소수점 이동 & 세로셈 & 최종 정답 -->
+          <div class="interactive-panel" id="p6-right">
+            <button class="panel-header-btn" onclick="togglePanel('p6-right')">
+              <span>📐 2단계 : 계산 과정 및 최종 정답</span>
+              <span class="btn-status">터치하여 열기</span>
+            </button>
+            <div class="panel-body">
+              <div class="step-shift-box">
+                <span class="shift-tag">소수점 이동</span>
+                <span class="shift-desc">
+                  2.5를 <em>10배</em>(→ 25), 8.75도 <em>10배</em>(→ 87.5) 옮겨 계산합니다!
+                </span>
+              </div>
+
+              <div class="vertical-calc-wrap">
+                <div class="vertical-calc">
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3.5</div>
+                  <div class="middle-line">25 ) 87.5</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;75&nbsp;&nbsp;</div>
+                  <div class="middle-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;12.5</div>
+                  <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;12.5</div>
+                  <div class="middle-line remainder">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</div>
+                </div>
+
+                <div class="answer-hero" style="flex:1;">
+                  <div>
+                    <div class="label">✅ 1시간 동안 쓴 휘발유</div>
+                    <div class="val">3.5 L</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           [Slide 7] 학습 마무리 / 핵심 계산 원리 정리
+           ==================================================== -->
+      <section class="slide" data-slide="7" data-tip="[마무리 정리] 오늘 푼 6문제의 공통점은 모두 (소수 두 자리 수) ÷ (소수 한 자리 수)이며, 나누는 수를 자연수로 만들기 위해 소수점을 오른쪽으로 1자리(10배) 옮길 때 나누어지는 수의 소수점도 똑같이 오른쪽으로 1자리(10배) 옮긴다는 핵심 규칙을 확인시킵니다.">
+        <div style="flex:none; margin-bottom:6px;">
+          <h2 style="font-size:36px; font-weight:900; color:var(--accent-yellow);">
+            ✨ 오늘 배운 소수의 나눗셈 핵심 원리 총정리
+          </h2>
+          <p style="font-size:22px; color:var(--text-dim); margin-top:4px;">
+            (소수 두 자리 수) ÷ (소수 한 자리 수) 계산할 때 이것만은 꼭 기억해요!
+          </p>
+        </div>
+
+        <div class="summary-grid">
+          <!-- 1번 원리 -->
+          <div class="summary-card">
+            <div>
+              <div class="summary-icon">1️⃣</div>
+              <h3>나누는 수를 자연수로!</h3>
+              <p>나누는 수(오른쪽 수)의 소수점을 <strong>오른쪽으로 1자리(10배)</strong> 옮겨서 자연수로 먼저 만듭니다.</p>
+            </div>
+            <div class="example-pill">
+              1.4 → 14 &nbsp;|&nbsp; 1.8 → 18
+            </div>
+          </div>
+
+          <!-- 2번 원리 -->
+          <div class="summary-card">
+            <div>
+              <div class="summary-icon">2️⃣</div>
+              <h3>나누어지는 수도 똑같이!</h3>
+              <p>나누어지는 수의 소수점도 나누는 수와 똑같이 <strong>오른쪽으로 1자리(10배)</strong> 이동합니다.</p>
+            </div>
+            <div class="example-pill">
+              7.56 → 75.6 &nbsp;|&nbsp; 9.72 → 97.2
+            </div>
+          </div>
+
+          <!-- 3번 원리 -->
+          <div class="summary-card">
+            <div>
+              <div class="summary-icon">3️⃣</div>
+              <h3>몫의 소수점 위치 콕!</h3>
+              <p>자연수의 나눗셈과 같은 방법으로 계산한 뒤, <strong>옮겨진 소수점의 위치</strong>를 그대로 몫에 올려 찍습니다.</p>
+            </div>
+            <div class="example-pill">
+              75.6 ÷ 14 = 5.4 🎯
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ── 교사용 지도 팁 서랍 (Drawer) ── -->
+    <div id="teacherDrawer">
+      <div class="drawer-header">
+        <div class="drawer-title">📋 교사용 수업 지도 팁 & 발문 가이드</div>
+        <button class="drawer-close" onclick="toggleTeacherDrawer()">✕</button>
+      </div>
+      <div class="drawer-content" id="teacherDrawerBody">
+        <!-- 현재 슬라이드에 맞는 팁이 JS로 동적 렌더링됩니다 -->
+      </div>
+    </div>
+
+    <!-- ── 하단 컨트롤 바 ── -->
+    <footer>
+      <div class="nav-left">
+        <button class="action-btn prev" onclick="prevSlide()" title="이전 (왼쪽 방향키)">◀ 이전</button>
+        <button class="action-btn next" onclick="nextSlide()" title="다음 (오른쪽 방향키 / 스페이스바)">다음 ▶</button>
+      </div>
+
+      <!-- 슬라이드 번호 알약 바로가기 -->
+      <div class="nav-center" id="slideDots">
+        <button class="slide-dot active" onclick="goToSlide(0)">시작</button>
+        <button class="slide-dot" onclick="goToSlide(1)">1번</button>
+        <button class="slide-dot" onclick="goToSlide(2)">2번</button>
+        <button class="slide-dot" onclick="goToSlide(3)">3번</button>
+        <button class="slide-dot" onclick="goToSlide(4)">4번</button>
+        <button class="slide-dot" onclick="goToSlide(5)">5번</button>
+        <button class="slide-dot" onclick="goToSlide(6)">6번(도전)</button>
+        <button class="slide-dot" onclick="goToSlide(7)">정리</button>
+      </div>
+
+      <div class="nav-right">
+        <!-- 현재 슬라이드 답안 일괄 보기 토글 버튼 -->
+        <button class="action-btn reveal-all" id="revealBtn" onclick="toggleCurrentSlideAnswers()">
+          👁️ 풀이·정답 열기
+        </button>
+      </div>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+  /* =========================================================
+     자바스크립트: 화면 확대 스케일러, 슬라이드 내비게이션,
+     단계별 아코디언 토글, 타이머, 전자칠판 판서 드로잉, 로컬 스토리지
+     ========================================================= */
+
+  let currentSlide = 0;
+  const totalSlides = 8;
+  const slides = document.querySelectorAll('.slide');
+  const dots = document.querySelectorAll('.slide-dot');
+  const viewport = document.getElementById('viewport');
+
+  // 1. 화면 스케일러 (1600x900 비율을 유지하며 창 크기에 맞춰 선명하게 확장)
+  function fitViewport() {
+    const sw = window.innerWidth;
+    const sh = window.innerHeight;
+    const baseW = 1600;
+    const baseH = 900;
+    const scale = Math.min(sw / baseW, sh / baseH);
+    viewport.style.transform = `scale(${scale})`;
+  }
+  window.addEventListener('resize', fitViewport);
+  window.addEventListener('DOMContentLoaded', () => {
+    fitViewport();
+    loadEditedContent();
+    updateSlideView();
+  });
+
+  // 2. 슬라이드 전환 로직
+  function goToSlide(index) {
+    if (index < 0 || index >= totalSlides) return;
+    currentSlide = index;
+    updateSlideView();
+  }
+
+  function nextSlide() {
+    if (currentSlide < totalSlides - 1) {
+      goToSlide(currentSlide + 1);
+    }
+  }
+
+  function prevSlide() {
+    if (currentSlide > 0) {
+      goToSlide(currentSlide - 1);
+    }
+  }
+
+  function updateSlideView() {
+    slides.forEach((s, idx) => {
+      s.classList.toggle('active', idx === currentSlide);
+    });
+    dots.forEach((d, idx) => {
+      d.classList.toggle('active', idx === currentSlide);
+    });
+
+    // 교사용 팁 내용 업데이트
+    const activeSlide = slides[currentSlide];
+    const tipText = activeSlide.getAttribute('data-tip') || '지도 팁이 없습니다.';
+    document.getElementById('teacherDrawerBody').innerHTML = `
+      <p style="font-size:23px; line-height:1.6; color:#ffffff;">${tipText}</p>
+    `;
+
+    // 일괄 열기 버튼 텍스트 상태 동기화
+    updateRevealButtonText();
+  }
+
+  // 3. 아코디언 패널 토글 (1단계 힌트/식, 2단계 풀이/정답)
+  function togglePanel(panelId) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    const isOpened = panel.classList.toggle('opened');
+    const statusSpan = panel.querySelector('.btn-status');
+    if (statusSpan) {
+      statusSpan.textContent = isOpened ? '닫기' : '터치하여 열기';
+    }
+    updateRevealButtonText();
+  }
+
+  // 4. 현재 문제 풀이/정답 전체 일괄 토글
+  function toggleCurrentSlideAnswers() {
+    const activeSlide = slides[currentSlide];
+    const panels = activeSlide.querySelectorAll('.interactive-panel');
+    if (panels.length === 0) return;
+
+    // 만약 하나라도 닫혀있으면 모두 열고, 모두 열려있으면 모두 닫음
+    const anyClosed = Array.from(panels).some(p => !p.classList.contains('opened'));
+
+    panels.forEach(p => {
+      p.classList.toggle('opened', anyClosed);
+      const statusSpan = p.querySelector('.btn-status');
+      if (statusSpan) {
+        statusSpan.textContent = anyClosed ? '닫기' : '터치하여 열기';
+      }
+    });
+
+    updateRevealButtonText();
+  }
+
+  function updateRevealButtonText() {
+    const activeSlide = slides[currentSlide];
+    const panels = activeSlide.querySelectorAll('.interactive-panel');
+    const revealBtn = document.getElementById('revealBtn');
+
+    if (panels.length === 0) {
+      revealBtn.style.display = 'none';
+      return;
+    }
+    revealBtn.style.display = 'inline-flex';
+
+    const allOpened = Array.from(panels).every(p => p.classList.contains('opened'));
+    revealBtn.innerHTML = allOpened ? '🙈 풀이·정답 가리기' : '👁️ 풀이·정답 열기';
+    revealBtn.style.background = allOpened ? 'linear-gradient(135deg, #475569, #334155)' : 'linear-gradient(135deg, #059669, #10b981)';
+  }
+
+  // 5. 키보드 단축키
+  window.addEventListener('keydown', (e) => {
+    // 편집 중일 때는 키보드 단축키 무시
+    if (e.target.isContentEditable) return;
+
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+      e.preventDefault();
+      nextSlide();
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault();
+      prevSlide();
+    } else if (e.key >= '0' && e.key <= '7') {
+      goToSlide(parseInt(e.key));
+    } else if (e.key.toLowerCase() === 't' || e.key === 'ㅅ') {
+      toggleTeacherDrawer();
+    } else if (e.key.toLowerCase() === 'f' || e.key === 'ㄹ') {
+      toggleFullscreen();
+    } else if (e.key.toLowerCase() === 'a' || e.key === 'ㅁ') {
+      toggleCurrentSlideAnswers();
+    }
+  });
+
+  // 6. 교사용 지도 팁 서랍 토글
+  function toggleTeacherDrawer() {
+    const drawer = document.getElementById('teacherDrawer');
+    const btn = document.getElementById('teacherBtn');
+    drawer.classList.toggle('active');
+    btn.classList.toggle('active', drawer.classList.contains('active'));
+  }
+  document.getElementById('teacherBtn').addEventListener('click', toggleTeacherDrawer);
+
+  // 7. 전체화면 토글
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+  document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+
+  // 8. 전자칠판 3분 타이머 위젯
+  let timerInterval = null;
+  let remainingSeconds = 180; // 3분 기본값
+  let isTimerRunning = false;
+
+  const timerBtn = document.getElementById('timerBtn');
+  const timerDisplay = document.getElementById('timerDisplay');
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = (sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  timerBtn.addEventListener('click', () => {
+    if (!isTimerRunning) {
+      if (remainingSeconds <= 0) remainingSeconds = 180;
+      isTimerRunning = true;
+      timerBtn.style.borderColor = 'var(--accent-green)';
+      timerInterval = setInterval(() => {
+        remainingSeconds--;
+        timerDisplay.textContent = formatTime(remainingSeconds);
+        if (remainingSeconds <= 0) {
+          clearInterval(timerInterval);
+          isTimerRunning = false;
+          timerBtn.style.borderColor = 'var(--accent-coral)';
+          alert('⏰ 시간이 종료되었습니다! 함께 해결해 볼까요?');
+        }
+      }, 1000);
+    } else {
+      // 멈춤
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      timerBtn.style.borderColor = 'var(--accent-yellow)';
+    }
+  });
+
+  // 우클릭 시 타이머 리셋
+  timerBtn.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    clearInterval(timerInterval);
+    isTimerRunning = false;
+    remainingSeconds = 180;
+    timerDisplay.textContent = '03:00';
+    timerBtn.style.borderColor = 'rgba(253, 224, 71, 0.4)';
+  });
+
+  // 9. 전자칠판 판서 (HTML5 캔버스 드로잉)
+  const canvas = document.getElementById('drawCanvas');
+  const ctx = canvas.getContext('2d');
+  const penToggleBtn = document.getElementById('penToggleBtn');
+  const penToolbar = document.getElementById('penToolbar');
+  const clearPenBtn = document.getElementById('clearPenBtn');
+  let isDrawing = false;
+  let penActive = false;
+  let penColor = '#fde047';
+  let penWidth = 4;
+
+  penToggleBtn.addEventListener('click', () => {
+    penActive = !penActive;
+    canvas.classList.toggle('pen-active', penActive);
+    penToggleBtn.classList.toggle('active', penActive);
+    penToolbar.classList.toggle('active', penActive);
+  });
+
+  document.querySelectorAll('.pen-color-dot').forEach(dot => {
+    dot.addEventListener('click', (e) => {
+      document.querySelectorAll('.pen-color-dot').forEach(d => d.classList.remove('selected'));
+      dot.classList.add('selected');
+      penColor = dot.getAttribute('data-color');
+    });
+  });
+
+  clearPenBtn.addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  });
+
+  function getCanvasCoords(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }
+
+  function startDraw(e) {
+    if (!penActive) return;
+    isDrawing = true;
+    const pos = getCanvasCoords(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }
+
+  function drawMove(e) {
+    if (!isDrawing || !penActive) return;
+    const pos = getCanvasCoords(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = penColor;
+    ctx.lineWidth = penWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+
+  function stopDraw() {
+    isDrawing = false;
+  }
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', drawMove);
+  canvas.addEventListener('mouseup', stopDraw);
+  canvas.addEventListener('mouseleave', stopDraw);
+
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove', (e) => { e.preventDefault(); drawMove(e); }, { passive: false });
+  canvas.addEventListener('touchend', stopDraw);
+
+  // 10. 인라인 텍스트 고치기 & LocalStorage 영구 보관
+  const editBtn = document.getElementById('editBtn');
+  let isEditMode = false;
+
+  editBtn.addEventListener('click', () => {
+    isEditMode = !isEditMode;
+    editBtn.classList.toggle('active', isEditMode);
+
+    const editables = document.querySelectorAll('.editable');
+    editables.forEach(el => {
+      el.contentEditable = isEditMode ? 'true' : 'false';
+    });
+
+    if (!isEditMode) {
+      saveEditedContent();
+      alert('💾 수정된 문제 내용이 브라우저에 안전하게 저장되었습니다!');
+    }
+  });
+
+  function saveEditedContent() {
+    const data = {};
+    document.querySelectorAll('.editable').forEach((el, index) => {
+      data[`math_slide_prob_${index}`] = el.innerHTML;
+    });
+    localStorage.setItem('modeok_math_6_2_unit2_slides', JSON.stringify(data));
+  }
+
+  function loadEditedContent() {
+    const saved = localStorage.getItem('modeok_math_6_2_unit2_slides');
+    if (!saved) return;
+    try {
+      const data = JSON.parse(saved);
+      document.querySelectorAll('.editable').forEach((el, index) => {
+        if (data[`math_slide_prob_${index}`]) {
+          el.innerHTML = data[`math_slide_prob_${index}`];
+        }
+      });
+    } catch (e) {
+      console.warn('저장된 내용 불러오기 실패:', e);
+    }
+  }
+</script>
+</body>
+</html>
