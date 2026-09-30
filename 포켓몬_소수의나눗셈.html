@@ -2742,6 +2742,11 @@
           <div style="font-size: 15px; color: #94a3b8;">
             <b>접속 주소:</b><br>
             <span id="displayConnectUrl" style="color: #facc15; font-size: 14px; word-break: break-all;">-</span>
+            <div style="margin-top: 8px;">
+              <button type="button" class="btn-modal primary" onclick="copyStudentJoinUrl()" style="font-size: 15px; padding: 8px 14px;">📋 학생 주소 복사</button>
+              <span id="copyStudentUrlStatus" role="status" aria-live="polite" style="margin-left: 8px; font-size: 13px; color: #4ade80;"></span>
+            </div>
+            <div style="margin-top: 6px; font-size: 12px; color: #94a3b8;">교사 화면을 새로고침하면 학생 주소가 바뀝니다.</div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 16px; font-weight: 800; color: #4ade80;">● 실시간 연결 상태:</span>
@@ -5258,6 +5263,7 @@
       const joinUrl = base.href;
 
       document.getElementById("displayConnectUrl").textContent = joinUrl;
+      document.getElementById("copyStudentUrlStatus").textContent = "";
 
       const qrContainer = document.getElementById("qrcodeCanvas");
       qrContainer.innerHTML = "";
@@ -5273,6 +5279,37 @@
       }
 
       document.getElementById("modalMultiplayer").style.display = "flex";
+    }
+
+    async function copyStudentJoinUrl() {
+      const url = document.getElementById("displayConnectUrl").textContent.trim();
+      const status = document.getElementById("copyStudentUrlStatus");
+      if (!/^https?:\/\//.test(url)) {
+        status.textContent = "학생 주소를 먼저 생성해주세요.";
+        return;
+      }
+      let copied = false;
+      if (navigator.clipboard?.writeText) {
+        try { await navigator.clipboard.writeText(url); copied = true; } catch (e) {}
+      }
+      // Local HTTP and browsers that deny clipboard access use a selected text field.
+      if (!copied) {
+        const previousFocus = document.activeElement;
+        const field = document.createElement("textarea");
+        field.value = url;
+        field.setAttribute("readonly", "");
+        field.style.cssText = "position:fixed;left:-9999px;top:0;";
+        document.body.appendChild(field);
+        field.select();
+        try { copied = document.execCommand("copy"); } catch (e) {}
+        finally { field.remove(); previousFocus?.focus(); }
+      }
+      if (copied) {
+        status.textContent = "복사 완료! 학생들에게 붙여넣어 공유하세요.";
+      } else {
+        status.textContent = "자동 복사가 차단되었습니다. 아래 창에서 주소를 복사하세요.";
+        window.prompt("학생 주소를 복사하세요 (Ctrl+C 또는 길게 누르기)", url);
+      }
     }
 
     function closeMultiplayerModal() {
