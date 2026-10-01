@@ -17,7 +17,6 @@ const {STAGES_DATA, RAID_BOSSES, EVOLUTION_CHAINS} = vm.runInNewContext(
 const voiceDir = path.join(root,'assets','voice');
 const savedManifest = JSON.parse(fs.readFileSync(path.join(voiceDir,'manifest.json'),'utf8'));
 const lines = new Set([
-  ...Object.keys(savedManifest.lines || {}),
   '가라, 몬스터볼!', '슈퍼볼 투척!', '하이퍼볼 투척!',
   '계산이 맞지 않습니다. 다시 풀어보세요!',
   '앗! 볼에서 빠져나왔다!',
@@ -40,17 +39,7 @@ for (const chain of Object.values(EVOLUTION_CHAINS)) {
   }
 }
 
-// Include learning prompts and each selectable method, preserving all existing event recordings.
-const practiceContext = {STAGES_DATA,RAID_BOSSES,EVOLUTION_CHAINS};
-vm.createContext(practiceContext);
-vm.runInContext(fs.readFileSync(path.join(root,'process-quizzes.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'guided-practice.js'),'utf8')+'\nthis.voicePractice={PROCESS_QUIZZES,GUIDED_QUIZZES,RAID_REASONING_QUIZZES};',practiceContext);
-const {PROCESS_QUIZZES,GUIDED_QUIZZES,RAID_REASONING_QUIZZES}=practiceContext.voicePractice;
-for (const quiz of [...Object.values(PROCESS_QUIZZES).flat(),...Object.values(GUIDED_QUIZZES).flat(),...RAID_REASONING_QUIZZES]) {
-  lines.add(quiz.stem); lines.add(quiz.explanation);
-  for(const method of quiz.methods || []) {lines.add(method.instruction);lines.add(method.explanation);}
-}
-for(const name of ['꼬렛','구구']) { lines.add(`야생의 ${name}가 나타났다!`);lines.add(`신난다! ${name}을 잡았다!`); }
-for(const text of ['정답을 하나 고른 뒤 풀이 이유를 확인하세요.','각 칸에 직접 입력하세요. 풀이가 길면 이 영역 안을 아래로 스크롤하세요.','아직 빈칸이 있어요. 풀이 과정을 모두 채워 주세요.','같은 포켓몬을 다시 잡으면 강화용 중복 수가 쌓입니다. 중복 두 마리로 한 번 강화할 수 있어요.'])lines.add(text);
+for(const name of ['꼬렛','구구']) { lines.add(`야생의 ${name}${name === '꼬렛' ? '이' : '가'} 나타났다!`);lines.add(`신난다! ${name}${name === '구구' ? '를' : '을'} 잡았다!`); }
 
 const manifest = Object.fromEntries([...lines].map(text => [text, crypto.createHash('sha256').update(text).digest('hex').slice(0,16)+'.wav']));
 const totalChars = [...lines].reduce((sum, text) => sum + text.length, 0);
@@ -74,7 +63,7 @@ const apiKey = process.env.TYPECAST_API_KEY || (process.platform === 'win32' ?
   require('node:child_process').execFileSync('powershell', ['-NoProfile','-Command',"[Environment]::GetEnvironmentVariable('TYPECAST_API_KEY','User')"], {encoding:'utf8'}).trim() : '');
 if (!apiKey) throw new Error('TYPECAST_API_KEY is not set in the process or Windows user environment.');
 const base = 'https://api.typecast.ai';
-const auth = {'X-API-KEY':apiKey};
+const auth = {'X-API-KEY':apiKey,'User-Agent':'typecast-direct/1 node-fetch typecast-integration/1 (source=api-docs; generated_by=codex)'};
 async function chooseVoice() {
   // Reuse the exact recorded character; never select a fresh recommendation on reruns.
   if (savedManifest.voice?.id) return savedManifest.voice;
