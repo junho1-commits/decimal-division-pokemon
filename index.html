@@ -3802,6 +3802,7 @@
         this.enabled = true;
         this.synth = window.speechSynthesis;
         this.audio = null;
+        this.audioNodes = null;
         this.lines = null;
         this.sequence = 0;
         this.ready = typeof fetch === 'function' ? fetch('assets/voice/manifest.json')
@@ -3823,25 +3824,70 @@
           }).catch(() => {}) : Promise.resolve();
       }
 
+      stopAudio() {
+        if (this.audio) {
+          this.audio.pause();
+          this.audio = null;
+        }
+        if (this.audioNodes) {
+          this.audioNodes.forEach(node => node.disconnect());
+          this.audioNodes = null;
+        }
+      }
+
+      boostAudio(audio) {
+        try {
+          sound.init();
+          const context = sound.ctx;
+          if (!context?.createMediaElementSource) return;
+          const source = context.createMediaElementSource(audio);
+          const gain = context.createGain();
+          const limiter = context.createDynamicsCompressor();
+          gain.gain.value = 8;
+          limiter.threshold.value = -9;
+          limiter.knee.value = 6;
+          limiter.ratio.value = 12;
+          limiter.attack.value = 0.003;
+          limiter.release.value = 0.18;
+          source.connect(gain);
+          gain.connect(limiter);
+          limiter.connect(context.destination);
+          this.audioNodes = [source, gain, limiter];
+        } catch (e) {
+          console.warn('Voice amplification unavailable:', e);
+        }
+      }
+
       async speak(text) {
         if (!this.enabled) return;
         const sequence = ++this.sequence;
         try {
           this.synth?.cancel();
-          if (this.audio) { this.audio.pause(); this.audio = null; }
+          this.stopAudio();
           await this.ready;
           if (sequence !== this.sequence || !this.enabled) return;
           const file = this.lines?.[text];
           if (file) {
-            this.audio = new Audio('assets/voice/' + file);
-            await this.audio.play();
-            return;
+            const audio = new Audio('assets/voice/' + file);
+            this.audio = audio;
+            this.boostAudio(audio);
+            audio.addEventListener('ended', () => {
+              if (this.audio === audio) this.stopAudio();
+            }, { once: true });
+            try {
+              await audio.play();
+              return;
+            } catch (e) {
+              this.stopAudio();
+              console.warn('Recorded voice playback error:', e);
+            }
           }
-          if (!this.synth) return;
+          if (sequence !== this.sequence || !this.enabled || !this.synth) return;
           const utter = new SpeechSynthesisUtterance(text);
           utter.lang = 'ko-KR';
           utter.rate = 1.15;
           utter.pitch = 1.05;
+          utter.volume = 1;
           this.synth.speak(utter);
         } catch (e) {
           console.warn("Voice playback error:", e);
