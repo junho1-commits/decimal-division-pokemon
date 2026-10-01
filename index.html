@@ -2182,7 +2182,7 @@
                 <label>정답 몫 :</label>
                 <div class="answer-display active-target" id="displayMainAns" onclick="focusAnswerField('main')"></div>
               </div>
-              <!-- 몫 & 나머지 복합 입력 모드 (Stage 6용) -->
+              <!-- 몫 & 남는 양 복합 입력 모드 (Stage 6용) -->
               <div class="single-input-box" id="remainderInputBox" style="display: none;">
                 <label style="color: #fde047;">남는 양 :</label>
                 <div class="answer-display" id="displayRemainderAns" onclick="focusAnswerField('remainder')"></div>
@@ -2264,7 +2264,7 @@
             <button class="quick-pill" onclick="enterStage(3)">3차시(자리다름)</button>
             <button class="quick-pill" onclick="enterStage(4)">4차시(자연수÷소수)</button>
             <button class="quick-pill" onclick="enterStage(5)">5차시(반올림)</button>
-            <button class="quick-pill" onclick="enterStage(6)">6차시(나머지)</button>
+            <button class="quick-pill" onclick="enterStage(6)">6차시(남는 양)</button>
             <button class="quick-pill raid" onclick="startRaidBattle()">🔥보스 레이드</button>
           </div>
         </div>
@@ -2526,6 +2526,7 @@
         </div>
       </div>
 
+      <div id="studentEncounterChoices" class="encounter-choices" aria-label="포획할 포켓몬 선택"></div>
       </section>
       <section class="student-answer-panel" aria-label="문제 풀기">
       <!-- 나눗셈 퀴즈 수식 카드 -->
@@ -2575,7 +2576,7 @@
       <!-- 피드백 배너 -->
       <div id="studentSoloFeedback" style="display: none; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 800; text-align: center;">
       </div>
-      <p class="student-input-help">정답을 고른 뒤 이유를 확인하세요. 키보드 1~4번으로도 선택할 수 있어요.</p>
+      <p class="student-input-help">선택 문제는 1~4번으로 고르세요. 풀이 실습은 칸에 입력하고 Enter로 확인하세요.</p>
       </section>
       </div>
     </div>
@@ -2974,7 +2975,7 @@
             question: "길을 막고 잠든 잠만보를 깨우기 위해 나눗셈을 풀어주세요!",
             formula: "7.35 ÷ 0.35",
             ansMain: "21",
-            hint: "소수점을 2자리씩 옮기면 <b>735 ÷ 35</b>가 됩니다.<br>73 ÷ 35 = 2 (나머지 3) ➔ 35 ÷ 35 = 1 이므로 정답은 <b>21</b>입니다."
+            hint: "소수점을 2자리씩 옮기면 <b>735 ÷ 35</b>가 됩니다.<br>73 ÷ 35 = 2 (남는 양 3) ➔ 35 ÷ 35 = 1 이므로 정답은 <b>21</b>입니다."
           },
           {
             id: 54,
@@ -2996,7 +2997,7 @@
             question: "느긋하게 쉬고 있는 야도란을 잡으려면 몫을 맞춰야 합니다.",
             formula: "4.92 ÷ 0.12",
             ansMain: "41",
-            hint: "소수점을 2자리씩 옮기면 <b>492 ÷ 12</b>가 됩니다.<br>49 ÷ 12 = 4 (나머지 1) ➔ 12 ÷ 12 = 1 이므로 정답은 <b>41</b>입니다."
+            hint: "소수점을 2자리씩 옮기면 <b>492 ÷ 12</b>가 됩니다.<br>49 ÷ 12 = 4 (남는 양 1) ➔ 12 ÷ 12 = 1 이므로 정답은 <b>41</b>입니다."
           },
           {
             id: 131,
@@ -3018,7 +3019,7 @@
             question: "양손에 숟가락을 든 지혜의 포켓몬 후딘! 높은 집중력이 필요합니다.",
             formula: "9.36 ÷ 0.78",
             ansMain: "12",
-            hint: "소수점을 2자리씩 이동하면 <b>936 ÷ 78</b>이 됩니다.<br>93 ÷ 78 = 1 (나머지 15) ➔ 156 ÷ 78 = 2 이므로 정답은 <b>12</b>입니다."
+            hint: "소수점을 2자리씩 이동하면 <b>936 ÷ 78</b>이 됩니다.<br>93 ÷ 78 = 1 (남는 양 15) ➔ 156 ÷ 78 = 2 이므로 정답은 <b>12</b>입니다."
           }
         ]
       },
@@ -3049,7 +3050,7 @@
             question: "거대한 폭포에서 용솟음치는 갸라도스입니다. 정확히 계산하세요!",
             formula: "8.82 ÷ 4.2",
             ansMain: "2.1",
-            hint: "나누는 수 4.2에 맞춰 소수점을 1자리만 옮기면 <b>88.2 ÷ 42</b>가 됩니다.<br>88 ÷ 42 = 2 (나머지 4) ➔ 4.2 ÷ 42 = 0.1 이므로 정답은 <b>2.1</b>입니다."
+            hint: "나누는 수 4.2에 맞춰 소수점을 1자리만 옮기면 <b>88.2 ÷ 42</b>가 됩니다.<br>88 ÷ 42 = 2 (남는 양 4) ➔ 4.2 ÷ 42 = 0.1 이므로 정답은 <b>2.1</b>입니다."
           },
           {
             id: 59,
@@ -3060,7 +3061,7 @@
             question: "바람처럼 빠른 포켓몬 윈디! 침착하게 소수점을 찍으세요.",
             formula: "9.72 ÷ 1.8",
             ansMain: "5.4",
-            hint: "소수점을 각각 1자리씩 오른쪽으로 이동하면 <b>97.2 ÷ 18</b>이 됩니다.<br>97 ÷ 18 = 5 (나머지 7) ➔ 7.2 ÷ 18 = 0.4 이므로 정답은 <b>5.4</b>입니다."
+            hint: "소수점을 각각 1자리씩 오른쪽으로 이동하면 <b>97.2 ÷ 18</b>이 됩니다.<br>97 ÷ 18 = 5 (남는 양 7) ➔ 7.2 ÷ 18 = 0.4 이므로 정답은 <b>5.4</b>입니다."
           },
           {
             id: 68,
@@ -3071,7 +3072,7 @@
             question: "네 개의 팔을 가진 강력한 괴력몬! 나눗셈의 힘을 보여주세요.",
             formula: "7.56 ÷ 1.4",
             ansMain: "5.4",
-            hint: "소수점을 1자리만 옮기면 <b>75.6 ÷ 14</b>가 됩니다.<br>75 ÷ 14 = 5 (나머지 5) ➔ 5.6 ÷ 14 = 0.4 이므로 정답은 <b>5.4</b>입니다."
+            hint: "소수점을 1자리만 옮기면 <b>75.6 ÷ 14</b>가 됩니다.<br>75 ÷ 14 = 5 (남는 양 5) ➔ 5.6 ÷ 14 = 0.4 이므로 정답은 <b>5.4</b>입니다."
           },
           {
             id: 149,
@@ -3082,7 +3083,7 @@
             question: "넓은 바다를 건너온 망나뇽입니다. 완벽한 몫을 구해 보세요!",
             formula: "5.76 ÷ 1.2",
             ansMain: "4.8",
-            hint: "소수점을 1자리만 이동하면 <b>57.6 ÷ 12</b>가 됩니다.<br>57 ÷ 12 = 4 (나머지 9) ➔ 9.6 ÷ 12 = 0.8 이므로 정답은 <b>4.8</b>입니다."
+            hint: "소수점을 1자리만 이동하면 <b>57.6 ÷ 12</b>가 됩니다.<br>57 ÷ 12 = 4 (남는 양 9) ➔ 9.6 ÷ 12 = 0.8 이므로 정답은 <b>4.8</b>입니다."
           },
           {
             id: 448,
@@ -3093,7 +3094,7 @@
             question: "파동을 느끼는 루카리오! 배수 관계를 나타내는 소수의 나눗셈입니다.",
             formula: "8.84 ÷ 2.6",
             ansMain: "3.4",
-            hint: "소수점을 1자리만 이동하면 <b>88.4 ÷ 26</b>이 됩니다.<br>88 ÷ 26 = 3 (나머지 10) ➔ 10.4 ÷ 26 = 0.4 이므로 정답은 <b>3.4</b>입니다."
+            hint: "소수점을 1자리만 이동하면 <b>88.4 ÷ 26</b>이 됩니다.<br>88 ÷ 26 = 3 (남는 양 10) ➔ 10.4 ÷ 26 = 0.4 이므로 정답은 <b>3.4</b>입니다."
           }
         ]
       },
@@ -3157,7 +3158,7 @@
             question: "하늘을 날고 싶어 하던 보만다! 소수 몫이 나오는 자연수의 나눗셈입니다.",
             formula: "6 ÷ 0.8",
             ansMain: "7.5",
-            hint: "소수점을 1자리 이동하면 <b>60 ÷ 8</b>이 됩니다.<br>60 ÷ 8 = 7 이고 나머지 4 뒤에 0을 붙이면 40 ÷ 8 = 5 입니다.<br>따라서 몫은 <b>7.5</b>입니다."
+            hint: "소수점을 1자리 이동하면 <b>60 ÷ 8</b>이 됩니다.<br>60 ÷ 8 = 7 이고 남는 양 4 뒤에 0을 붙이면 40 ÷ 8 = 5 입니다.<br>따라서 몫은 <b>7.5</b>입니다."
           },
           {
             id: 212,
@@ -3240,7 +3241,7 @@
         stageId: 6,
         title: "신비의 호수",
         themeClass: "theme-stage6",
-        concept: "나누어 주고 남는 양 구하기 (몫과 나머지)",
+        concept: "나누어 주고 남는 양 구하기 (몫과 남는 양)",
         desc: "몫은 자연수, 남는 양은 처음 나누어지는 수의 소수점 자리를 그대로 내립니다.",
         isRemainderMode: true,
         pokemons: [
@@ -3320,14 +3321,14 @@
       ],
       3: [
         {id:92,name:"고오스",type:"고스트/독",typeBg:"#7c3aed",cp:560,question:"지언은 8.64 ÷ 2.4에서 나누는 수만 자연수로 만들려 합니다.",formula:"8.64 ÷ 2.4",ansMain:"3.6",hint:"두 수를 모두 10배 하면 86.4 ÷ 24 = <b>3.6</b>입니다."},
-        {id:87,name:"쥬레곤",type:"물/얼음",typeBg:"#0891b2",cp:1050,question:"서희는 12.6 ÷ 3.5를 126 ÷ 35로 바꿉니다.",formula:"12.6 ÷ 3.5",ansMain:"3.6",hint:"두 수를 모두 10배 했으므로 몫은 그대로 <b>3.6</b>입니다."}
+        {id:87,name:"쥬레곤",type:"물/얼음",typeBg:"#0891b2",cp:1050,question:"서희는 12.96 ÷ 3.6를 129.6 ÷ 36로 바꿉니다.",formula:"12.96 ÷ 3.6",ansMain:"3.6",hint:"두 수를 모두 10배 했으므로 몫은 그대로 <b>3.6</b>입니다."}
       ],
       4: [
         {id:81,name:"코일",type:"전기/강철",typeBg:"#64748b",cp:620,question:"수은은 42 ÷ 3.5를 자연수 나눗셈으로 고치려고 합니다.",formula:"42 ÷ 3.5",ansMain:"12",hint:"42를 420으로, 3.5를 35로 함께 10배 하면 <b>12</b>입니다."},
         {id:111,name:"뿔카노",type:"땅/바위",typeBg:"#a16207",cp:960,question:"보민은 63 ÷ 2.1에서 63 뒤에 0을 붙입니다. 왜일까요?",formula:"63 ÷ 2.1",ansMain:"30",hint:"두 수를 모두 10배 하면 630 ÷ 21 = <b>30</b>입니다."}
       ],
       5: [
-        {id:280,name:"랄토스",type:"에스퍼/페어리",typeBg:"#db2777",cp:330,question:"지우는 7.4 ÷ 3.1의 몫을 소수 첫째 자리까지 나타냅니다.",formula:"7.4 ÷ 3.1",ansMain:"2.4",hint:"몫 2.387…의 소수 둘째 자리가 8이므로 첫째 자리까지는 <b>2.4</b>입니다."},
+        {id:280,name:"랄토스",type:"에스퍼/페어리",typeBg:"#db2777",cp:330,question:"지우는 7.4 ÷ 3.1의 몫을 반올림하여 소수 첫째 자리까지 나타냅니다.",formula:"7.4 ÷ 3.1",ansMain:"2.4",hint:"몫 2.387…의 소수 둘째 자리가 8이므로 첫째 자리까지는 <b>2.4</b>입니다."},
         {id:459,name:"눈쓰개",type:"풀/얼음",typeBg:"#16a34a",cp:460,question:"희경은 5.9 ÷ 2.4의 몫을 소수 둘째 자리까지 반올림합니다.",formula:"5.9 ÷ 2.4",ansMain:"2.46",hint:"몫 2.458…의 소수 셋째 자리가 8이므로 둘째 자리까지는 <b>2.46</b>입니다."}
       ],
       6: [
@@ -5887,6 +5888,7 @@
 
   </script>
   <script src="process-quizzes.js"></script>
+  <script src="guided-practice.js"></script>
   <script src="classroom-adventure.js"></script>
 </body>
 </html>

@@ -30,10 +30,35 @@ let teacherSoloQuiz = null;
 let teacherSoloChoice = -1;
 let adventureBattleLog = [];
 const raidFighters = new Map();
+// Every lesson starts with common encounters, independent of its math difficulty.
+for (const stage of STAGES_DATA) {
+  for (const poke of [{id:19,name:'꼬렛',type:'노말',typeBg:'#a78bfa',cp:180},{id:16,name:'구구',type:'노말/비행',typeBg:'#a16207',cp:240}]) {
+    if (!stage.pokemons.some(p=>p.id===poke.id)) stage.pokemons.push({...poke,question:'차시에 맞는 문제를 풀어 포획하세요.',formula:'',ansMain:''});
+  }
+  stage.pokemons.sort((a,b)=>a.cp-b.cp);
+}
+function encounterLevel(poke) {
+  if ([1,4,7,25,37,39].includes(poke.id)) return 2;
+  if (poke.id===133) return 3;
+  return poke.cp<800?1:poke.cp<1500?2:poke.cp<2400?3:poke.cp<2900?4:5;
+}
+function captureCount(id) { return Math.max(studentCaughtList.includes(id)?1:0,safeXP(activeStudentProfile?.captureCounts?.[id])); }
+function duplicateCount(id) { return safeXP(activeStudentProfile?.duplicates?.[id]); }
+function recordPokemonCapture(id) {
+  activeStudentProfile.captureCounts[id]=captureCount(id)+1;
+  if(studentCaughtList.includes(id)) activeStudentProfile.duplicates[id]=duplicateCount(id)+1;
+  else studentCaughtList.push(id);
+}
+function selectStudentEncounter(index) {
+  if(soloCaptureBusy) return;
+  const stage=STAGES_DATA.find(s=>s.stageId===studentCurrentStageId), poke=stage?.pokemons[index];
+  if(!poke || encounterLevel(poke)>trainerLevel(myStudentXP))return;
+  studentCurrentPokeIdx=index; currentSoloQuiz=null; renderStudentSoloGame(); saveStudentProfile();
+}
 const adventureCatalog = new Map(STAGES_DATA.flatMap(stage => stage.pokemons).map(poke => [poke.id, poke]));
 for (const boss of RAID_BOSSES) adventureCatalog.set(boss.bossId, {id:boss.bossId,name:boss.name.split(' ')[0],type:boss.type,typeBg:boss.typeBg,cp:3000});
-const studentDexEntries = STAGES_DATA.flatMap(stage => stage.pokemons.map(poke => ({...poke,stageId:stage.stageId,stageTitle:stage.title})))
-  .concat(RAID_BOSSES.map(boss => ({id:boss.bossId,name:boss.name.split(' ')[0],type:boss.type,stageId:'RAID',stageTitle:'전설 레이드'})));
+const studentDexEntries = [...new Map(STAGES_DATA.flatMap(stage => stage.pokemons.map(poke => ({...poke,stageId:stage.stageId,stageTitle:stage.title})))
+  .concat(RAID_BOSSES.map(boss => ({id:boss.bossId,name:boss.name.split(' ')[0],type:boss.type,stageId:'RAID',stageTitle:'전설 레이드'}))).map(p=>[p.id,p])).values()];
 let studentDexFilter = 'all';
 const savedClassRoster = new Map();
 try {
@@ -110,6 +135,8 @@ function loadStudentProfile(name) {
   if (!/^stu_[a-z0-9_]+$/i.test(saved.id)) saved.id = 'stu_' + Math.random().toString(36).slice(2);
   saved.stageProgress = saved.stageProgress && typeof saved.stageProgress === 'object' ? saved.stageProgress : {};
   saved.raidWins = safeXP(saved.raidWins);
+  saved.captureCounts = saved.captureCounts && typeof saved.captureCounts === 'object' ? saved.captureCounts : Object.fromEntries(validCaught(saved.caught).map(id=>[id,1]));
+  saved.duplicates = saved.duplicates && typeof saved.duplicates === 'object' ? saved.duplicates : {};
   saved.training = saved.training && typeof saved.training === 'object' ? saved.training : {};
   saved.power = saved.power && typeof saved.power === 'object' ? saved.power : {};
   saved.captureSteps = saved.captureSteps && typeof saved.captureSteps === 'object' ? saved.captureSteps : {};
@@ -157,15 +184,13 @@ function resolveStudentRaidCapture(raidId,bossId,roll=Math.random(),shiny=false)
   if (!RAID_BOSSES.some(boss=>boss.bossId===bossId)) return '보스 정보를 확인할 수 없어 포획할 수 없었어요.';
   const name=adventureCatalog.get(bossId).name;
   if (studentCaughtList.includes(bossId)) {
-    if(shiny && !activeStudentProfile.shinyCaught.includes(bossId)){
-      activeStudentProfile.shinyCaught.push(bossId);saveStudentProfile();renderStudentCollection();
-      return '✨ '+name+'이(가) 이로치 모습으로 도감에 등록됐어요!';
-    }
-    activeStudentProfile.training[bossId]=(Number(activeStudentProfile.training[bossId])||0)+3;
-    return '이미 잡은 '+name+'입니다. 대신 강화 에너지 3개를 얻었어요!';
+    if (roll>=RAID_CAPTURE_CHANCE) return name+'이(가) 몬스터볼에서 빠져나왔어요.';
+    if(shiny && !activeStudentProfile.shinyCaught.includes(bossId)) activeStudentProfile.shinyCaught.push(bossId);
+    recordPokemonCapture(bossId); saveStudentProfile(); renderStudentCollection();
+    return name+' 추가 포획! 누적 '+captureCount(bossId)+'마리 · 강화용 중복 '+duplicateCount(bossId)+'마리';
   }
   if (roll>=RAID_CAPTURE_CHANCE) return name+'이(가) 몬스터볼에서 빠져나왔어요. 다음 레이드에서 다시 도전하세요!';
-  studentCaughtList.push(bossId);
+  recordPokemonCapture(bossId);
   if(shiny && !activeStudentProfile.shinyCaught.includes(bossId))activeStudentProfile.shinyCaught.push(bossId);
   if (!selectedStudentPokemon) selectedStudentPokemon=bossId;
   activeStudentProfile.captureHistory[bossId]=[...(activeStudentProfile.raidAnswered[raidId]||[])];
@@ -223,36 +248,38 @@ selectStudentStage = function (stageId) {
 };
 
 function nextSoloQuiz(stageId) {
-  const bank = PROCESS_QUIZZES[stageId];
-  if (!soloQuizQueue[stageId]?.length) {
-    soloQuizQueue[stageId] = shuffledQuizIndices(bank.length);
-    if (bank.length > 1 && bank[soloQuizQueue[stageId][0]].id === lastSoloQuizId[stageId]) {
-      [soloQuizQueue[stageId][0],soloQuizQueue[stageId][1]] = [soloQuizQueue[stageId][1],soloQuizQueue[stageId][0]];
-    }
-  }
-  const quiz = shuffledQuiz(bank[soloQuizQueue[stageId].shift()]);
-  lastSoloQuizId[stageId] = quiz.id;
+  const guidedKey='guided-'+stageId, reasonKey='reason-'+stageId, turnKey='turn-'+stageId;
+  const guided=(soloQuizQueue[turnKey]||0)%2===0;
+  const key=guided?guidedKey:reasonKey, bank=guided?GUIDED_QUIZZES[stageId]:PROCESS_QUIZZES[stageId];
+  if(!soloQuizQueue[key]?.length)soloQuizQueue[key]=shuffledQuizIndices(bank.length);
+  const source=bank[soloQuizQueue[key].shift()];
+  soloQuizQueue[turnKey]=(soloQuizQueue[turnKey]||0)+1;
+  const quiz=guided?{...source,methodIndex:Math.floor((soloQuizQueue[turnKey]-1)/2)%source.methods.length}:shuffledQuiz(source);
+  lastSoloQuizId[stageId]=quiz.id;
   return quiz;
 }
 function renderReasonOptions(target,quiz,choice,selectFunction,locked=false) {
+  if(quiz.kind==='guided'){renderGuidedPractice(target,quiz,locked);return;}
   const el=document.getElementById(target);
   el.innerHTML=quiz.choices.map((label,index)=>'<button type="button" class="reason-option" aria-pressed="'+(choice===index)+'" onclick="'+selectFunction+'('+index+')" '+(locked?'disabled':'')+'><b>'+(index+1)+'.</b> '+escapeClassroomText(label)+'</button>').join('');
 }
 renderStudentSoloGame = function () {
-  adventureBase.soloRender();
   const stage=STAGES_DATA.find(s=>s.stageId===studentCurrentStageId);
   if(!stage)return;
+  if(!stage.pokemons[studentCurrentPokeIdx] || encounterLevel(stage.pokemons[studentCurrentPokeIdx])>trainerLevel(myStudentXP)) studentCurrentPokeIdx=0;
+  adventureBase.soloRender();
+  document.getElementById('studentEncounterChoices').innerHTML=stage.pokemons.map((p,index)=>'<button type="button" class="adventure-button" onclick="selectStudentEncounter('+index+')" '+(encounterLevel(p)>trainerLevel(myStudentXP)?'disabled':'')+' aria-pressed="'+(index===studentCurrentPokeIdx)+'">'+escapeClassroomText(p.name)+' · Lv.'+encounterLevel(p)+' · 누적 '+captureCount(p.id)+'마리'+(encounterLevel(p)>trainerLevel(myStudentXP)?' 🔒':'')+'</button>').join('');
   const poke=stage.pokemons[studentCurrentPokeIdx];
   if(!currentSoloQuiz) currentSoloQuiz=nextSoloQuiz(stage.stageId);
   soloQuizChoice=-1; soloCaptureBusy=false;
-  document.getElementById('studentSoloFormula').textContent='어떤 생각이 맞을까요?';
+  document.getElementById('studentSoloFormula').textContent=currentSoloQuiz.kind==='guided'?currentSoloQuiz.formula:'어떤 생각이 맞을까요?';
   document.getElementById('studentSoloQuestion').textContent=currentSoloQuiz.stem;
-  document.getElementById('studentTrainingProgress').textContent='🔴 '+poke.name+' 포획: '+(activeStudentProfile?.captureSteps[poke.id]||0)+'/2개 이해 · 정답마다 훈련 에너지 +1';
-  document.getElementById('studentSoloSubmit').textContent='선택한 생각 확인하기';
+  document.getElementById('studentTrainingProgress').textContent='🔴 '+poke.name+' 포획: '+(activeStudentProfile?.captureSteps[poke.id]||0)+'/2개 정답 · 누적 '+captureCount(poke.id)+'마리 · 트레이너 Lv.'+trainerLevel(myStudentXP);
+  document.getElementById('studentSoloSubmit').textContent=currentSoloQuiz.kind==='guided'?'풀이 과정 확인하기':'선택한 생각 확인하기';
   renderReasonOptions('studentSoloOptions',currentSoloQuiz,-1,'chooseStudentSoloOption');
 };
 function chooseStudentSoloOption(index) {
-  if(soloCaptureBusy || !currentSoloQuiz || index<0 || index>=currentSoloQuiz.choices.length)return;
+  if(soloCaptureBusy || !currentSoloQuiz || currentSoloQuiz.kind==='guided' || index<0 || index>=currentSoloQuiz.choices.length)return;
   soloQuizChoice=index;
   renderReasonOptions('studentSoloOptions',currentSoloQuiz,index,'chooseStudentSoloOption');
 }
@@ -279,12 +306,12 @@ function effectiveness(type, bossId) {
 function renderStudentCollection() {
   const cards = studentCaughtList.map(id => {
     const power = Math.max(0,Math.floor(Number(activeStudentProfile?.power[id])||0));
-    const energy = Math.max(0,Math.floor(Number(activeStudentProfile?.training[id])||0));
+    const energy = duplicateCount(id);
     const poke = pokemonBattleStats(id,myStudentXP,power), selected = id === selectedStudentPokemon;
     return '<div class="partner-choice" aria-pressed="' + selected + '"><button type="button" class="partner-select" onclick="selectStudentPartner(' + id + ')">' +
       '<img src="' + studentArtworkUrl(id) + '" alt="' + escapeClassroomText(poke.name) + '" loading="lazy"><strong>' + (activeStudentProfile?.shinyCaught?.includes(id)?'✨ ':'')+escapeClassroomText(poke.name) +
-      '</strong><small>CP ' + poke.cp + ' · 강화 +' + power + ' · ' + escapeClassroomText(poke.type) + '</small><span class="selected-label">' + (selected ? '✓ 출전 파트너' : '출전 선택') + '</span></button>' +
-      '<button type="button" class="strengthen-button" onclick="strengthenStudentPokemon(' + id + ')" ' + (energy < 3 || power >= 20 ? 'disabled' : '') + '>⚡ 강화 ' + energy + '/3</button></div>';
+      '</strong><small>CP ' + poke.cp + ' · 강화 +' + power + ' · 누적 '+captureCount(id)+'마리 · ' + escapeClassroomText(poke.type) + '</small><span class="selected-label">' + (selected ? '✓ 출전 파트너' : '출전 선택') + '</span></button>' +
+      '<button type="button" class="strengthen-button" onclick="strengthenStudentPokemon(' + id + ')" ' + (energy < 2 || power >= 20 ? 'disabled' : '') + '>⚡ 중복 ' + energy + '마리 / 2마리로 강화</button></div>';
   }).join('');
   for (const id of ['studentCollection','studentRaidTeam']) {
     const el = document.getElementById(id);
@@ -318,10 +345,10 @@ function selectStudentPartner(id) {
 }
 function strengthenStudentPokemon(id) {
   if (!activeStudentProfile || !studentCaughtList.includes(id)) return;
-  const energy = Math.max(0,Math.floor(Number(activeStudentProfile.training[id])||0));
+  const energy = duplicateCount(id);
   const power = Math.max(0,Math.floor(Number(activeStudentProfile.power[id])||0));
-  if (energy < 3 || power >= 20) return;
-  activeStudentProfile.training[id] = energy - 3;
+  if (energy < 2 || power >= 20) return;
+  activeStudentProfile.duplicates[id] = energy - 2;
   activeStudentProfile.power[id] = power + 1;
   if (studentFighter?.pokemonId === id) studentFighter = null;
   saveStudentProfile(); renderStudentCollection(); sendStudentPresence();
@@ -378,11 +405,11 @@ function showStudentDexDetail(id) {
   const caught=studentCaughtList.includes(id), detail=document.getElementById('studentDexDetail');
   if(!caught){ detail.innerHTML='<strong>No. '+String(id).padStart(3,'0')+' · 미발견</strong><span>'+(p.stageId==='RAID'?'전설 레이드에 참여하면 만날 수 있어요.':p.stageId+'차시 '+escapeClassroomText(p.stageTitle)+'에서 만날 수 있어요. 퀴즈를 풀어 포획해 보세요.')+'</span>'; return; }
   const power=Math.max(0,Math.floor(Number(activeStudentProfile?.power[id])||0));
-  const energy=Math.max(0,Math.floor(Number(activeStudentProfile?.training[id])||0));
+  const energy=duplicateCount(id);
   const stats=pokemonBattleStats(id,myStudentXP,power);
   const history=Array.isArray(activeStudentProfile?.captureHistory[id])?activeStudentProfile.captureHistory[id]:[];
   const questions=history.length ? history.map((item,index)=>'<li><strong>문제 '+(index+1)+':</strong> '+escapeClassroomText(item.stem)+(item.answer?'<br><b>맞힌 답:</b> '+escapeClassroomText(item.answer):'')+'<br><small>'+escapeClassroomText(item.explanation||'')+'</small></li>').join('') : '<li>기록 기능을 추가하기 전에 포획한 포켓몬이라 당시 맞힌 문제는 저장되어 있지 않아요.</li>';
-  detail.innerHTML='<img src="'+studentArtworkUrl(id)+'" alt="'+escapeClassroomText(p.name)+'"><div><strong>No. '+String(id).padStart(3,'0')+' · '+(activeStudentProfile?.shinyCaught?.includes(id)?'✨ 이로치 ':'')+escapeClassroomText(p.name)+'</strong><span>'+escapeClassroomText(p.type)+' · '+(p.stageId==='RAID'?'전설 레이드':p.stageId+'차시')+' · Lv.'+stats.level+' · CP '+stats.cp+'</span><span>강화 +'+power+' · 에너지 '+energy+'/3 · '+(selectedStudentPokemon===id?'현재 출전 파트너':'보유 중')+'</span><button type="button" class="adventure-button" onclick="selectStudentPartner('+id+');showStudentDexDetail('+id+')">'+(selectedStudentPokemon===id?'✓ 출전 중':'레이드 파트너로 선택')+'</button><section class="student-dex-questions"><b>📘 포획할 때 맞힌 문제</b><ol>'+questions+'</ol></section></div>';
+  detail.innerHTML='<img src="'+studentArtworkUrl(id)+'" alt="'+escapeClassroomText(p.name)+'"><div><strong>No. '+String(id).padStart(3,'0')+' · '+(activeStudentProfile?.shinyCaught?.includes(id)?'✨ 이로치 ':'')+escapeClassroomText(p.name)+'</strong><span>'+escapeClassroomText(p.type)+' · '+(p.stageId==='RAID'?'전설 레이드':p.stageId+'차시')+' · Lv.'+stats.level+' · CP '+stats.cp+'</span><span>강화 +'+power+' · 누적 '+captureCount(id)+'마리 · 강화용 중복 '+energy+'마리 / 2 · '+(selectedStudentPokemon===id?'현재 출전 파트너':'보유 중')+'</span><button type="button" class="adventure-button" onclick="selectStudentPartner('+id+');showStudentDexDetail('+id+')">'+(selectedStudentPokemon===id?'✓ 출전 중':'레이드 파트너로 선택')+'</button><section class="student-dex-questions"><b>📘 포획할 때 맞힌 문제</b><ol>'+questions+'</ol></section></div>';
 }
 window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!document.getElementById('studentDexModal').hidden)closeStudentDex();});
 sendStudentPresence = function () {
@@ -484,21 +511,24 @@ loadCurrentBattle = function () {
   adventureBase.soloLoad();
   const stage=STAGES_DATA.find(s=>s.stageId===gameState.currentStageIndex);
   teacherSoloQuiz=nextSoloQuiz(stage.stageId); teacherSoloChoice=-1;
-  document.getElementById('quizDifficultyTag').textContent='🧠 '+stage.concept+' · 생각 퀴즈';
+  document.getElementById('quizDifficultyTag').textContent='🧠 '+stage.concept+(teacherSoloQuiz.kind==='guided'?' · 풀이 실습':' · 생각 퀴즈');
   document.getElementById('quizQuestionText').textContent=teacherSoloQuiz.stem;
   renderTeacherSoloChoices();
   document.getElementById('answerInputsContainer').style.display='none';
   document.querySelector('.touch-keypad').style.display='none';
 };
 function renderTeacherSoloChoices() {
+  if(teacherSoloQuiz.kind==='guided'){renderGuidedPractice('quizFormulaBox',teacherSoloQuiz);document.getElementById('quizFormulaBox').innerHTML+='<button class="teacher-check-choice" onclick="checkTeacherSoloOption()">풀이 과정 확인하기</button>';return;}
   document.getElementById('quizFormulaBox').innerHTML=teacherSoloQuiz.choices.map((choice,index)=>
     '<button type="button" class="teacher-reason-choice" aria-pressed="'+(teacherSoloChoice===index)+'" onclick="chooseTeacherSoloOption('+index+')">'+(index+1)+'. '+escapeClassroomText(choice)+'</button>').join('')+
     '<button type="button" class="teacher-check-choice" onclick="checkTeacherSoloOption()">선택한 생각 확인하기</button>';
 }
 function chooseTeacherSoloOption(index) { teacherSoloChoice=index; renderTeacherSoloChoices(); }
 function checkTeacherSoloOption() {
-  if(teacherSoloChoice<0){showNoticeBanner('💡','풀이 방법을 하나 골라주세요.');return;}
-  if(teacherSoloChoice!==teacherSoloQuiz.correct){sound.playError();showNoticeBanner('💡',escapeClassroomText(teacherSoloQuiz.explanation));return;}
+  const guidedResult=teacherSoloQuiz.kind==='guided'?assessGuidedPractice('quizFormulaBox',teacherSoloQuiz):undefined;
+  if(guidedResult===null)return;
+  if(teacherSoloQuiz.kind!=='guided' && teacherSoloChoice<0){showNoticeBanner('💡','풀이 방법을 하나 골라주세요.');return;}
+  if(guidedResult===false || (teacherSoloQuiz.kind!=='guided' && teacherSoloChoice!==teacherSoloQuiz.correct)){sound.playError();showNoticeBanner('💡',escapeClassroomText(teacherSoloQuiz.explanation));teacherSoloQuiz=nextSoloQuiz(gameState.currentStageIndex);teacherSoloChoice=-1;document.getElementById('quizQuestionText').textContent=teacherSoloQuiz.stem;renderTeacherSoloChoices();return;}
   const stage=STAGES_DATA.find(s=>s.stageId===gameState.currentStageIndex);
   const poke=stage.pokemons[gameState.currentPokeIndex];
   handleCaptureSuccess(poke.id,poke.name,teacherSoloQuiz.explanation);
@@ -680,40 +710,42 @@ returnToStudentSoloGame = function () {
 sendStudentSoloAnswer = function () {
   if (!activeStudentProfile || !currentSoloQuiz) return;
   if (soloCaptureBusy) { currentSoloQuiz=null; renderStudentSoloGame(); return; }
-  if (soloQuizChoice<0) { alert('풀이 생각을 하나 골라주세요!'); return; }
+  if (currentSoloQuiz.kind!=='guided' && soloQuizChoice<0) { alert('풀이 생각을 하나 골라주세요!'); return; }
   const stage=STAGES_DATA.find(s=>s.stageId===studentCurrentStageId);
   const poke=stage.pokemons[studentCurrentPokeIdx];
-  const correct=soloQuizChoice===currentSoloQuiz.correct;
+  if(encounterLevel(poke)>trainerLevel(myStudentXP)){currentSoloQuiz=null;renderStudentSoloGame();return;}
+  const correct=currentSoloQuiz.kind==='guided'?assessGuidedPractice('studentSoloOptions',currentSoloQuiz):soloQuizChoice===currentSoloQuiz.correct;
+  if(correct===null)return;
   const fb=document.getElementById('studentSoloFeedback'); fb.style.display='block';
   fb.style.background=correct?'#143c2b':'#451d29'; fb.style.color=correct?'#86efac':'#fecaca';
   let reward='';
   if(correct){
     sound.playCatchSuccess(); myStudentXP+=30;
-    const trainingId=selectedStudentPokemon||poke.id;
-    activeStudentProfile.training[trainingId]=(Number(activeStudentProfile.training[trainingId])||0)+1;
     const steps=(Number(activeStudentProfile.captureSteps[poke.id])||0)+1;
     const evidence=Array.isArray(activeStudentProfile.captureEvidence[poke.id])?activeStudentProfile.captureEvidence[poke.id]:[];
-    evidence.push({stem:currentSoloQuiz.stem,answer:currentSoloQuiz.choices[currentSoloQuiz.correct],explanation:currentSoloQuiz.explanation});
+    evidence.push({stem:currentSoloQuiz.stem,answer:currentSoloQuiz.completedAnswer||currentSoloQuiz.choices[currentSoloQuiz.correct],explanation:currentSoloQuiz.explanation});
     activeStudentProfile.captureEvidence[poke.id]=evidence.slice(-2);
     if(steps>=2){
       activeStudentProfile.captureSteps[poke.id]=0;
       const first=!studentCaughtList.includes(poke.id);
-      if(first){studentCaughtList.push(poke.id);myStudentXP+=100;activeStudentProfile.captureHistory[poke.id]=[...activeStudentProfile.captureEvidence[poke.id]];}
+      recordPokemonCapture(poke.id); myStudentXP+=100;
+      activeStudentProfile.captureHistory[poke.id]=[...activeStudentProfile.captureEvidence[poke.id]];
       activeStudentProfile.captureEvidence[poke.id]=[];
       if(!selectedStudentPokemon) selectedStudentPokemon=poke.id;
-      reward=first?' 🎉 '+poke.name+' 포획! +100 XP. 이제 레이드에 출전할 수 있어요.':' '+poke.name+' 훈련 완료!';
-      studentCurrentPokeIdx=Math.min(studentCurrentPokeIdx+1,stage.pokemons.length-1);
+      reward=' 🎉 '+poke.name+' 포획! +100 XP · 누적 '+captureCount(poke.id)+'마리 · 강화용 중복 '+duplicateCount(poke.id)+'마리';
+      const next=studentCurrentPokeIdx+1;
+      if(first && stage.pokemons[next] && encounterLevel(stage.pokemons[next])<=trainerLevel(myStudentXP)) studentCurrentPokeIdx=next;
       if(first)sendClassroomMessage(mqttStudentClient,'to_host',{type:'POKE_CAUGHT',studentId:myStudentId,name:myStudentName,pokeName:poke.name,stageId:stage.stageId});
     }else activeStudentProfile.captureSteps[poke.id]=steps;
     reward+=awardDailyStudyCorrect();
     saveStudentProfile(); updateStudentHeaderStats(); sendStudentPresence();
-  }else { sound.playError(); reward+=loseRandomStudentPokemon(); }
-  fb.textContent=(correct?'✓ 이해했어요! +30 XP · 훈련 에너지 +1.':'다시 생각해 봐요.')+' '+currentSoloQuiz.explanation+reward;
+  }else { sound.playError(); }
+  fb.textContent=(correct?'✓ 이해했어요! +30 XP.':'다시 생각해 봐요.')+' '+currentSoloQuiz.explanation+reward;
   soloCaptureBusy=true;
   renderReasonOptions('studentSoloOptions',currentSoloQuiz,soloQuizChoice,'chooseStudentSoloOption',true);
-  [...(document.getElementById('studentSoloOptions').children||[])].forEach((button,index)=>button.classList.add(index===currentSoloQuiz.correct?'correct':index===soloQuizChoice?'incorrect':''));
+  if(currentSoloQuiz.kind!=='guided') [...(document.getElementById('studentSoloOptions').children||[])].forEach((button,index)=>button.classList.add(index===currentSoloQuiz.correct?'correct':index===soloQuizChoice?'incorrect':''));
   document.getElementById('studentSoloSubmit').textContent='다음 생각 문제 →';
-  document.getElementById('studentTrainingProgress').textContent='정답 2개마다 새 포켓몬 포획 · 훈련 에너지 3개로 강화 가능';
+  document.getElementById('studentTrainingProgress').textContent='정답 2개마다 포획 · 같은 포켓몬 중복 2마리로 강화 · 오답 뒤에도 새 문제에 도전하세요';
 };
 // Keep audio and the keyboard shortcut working after removing the toolbar buttons.
 toggleAudio = function () { sound.sfxMuted = !sound.sfxMuted; };
@@ -721,6 +753,7 @@ toggleBGM = function () { sound.init(); sound.setBgmMute(!sound.bgmMuted); };
 toggleVoice = function () { voice.enabled = !voice.enabled; };
 // Intercept student shortcuts before the legacy numeric keypad handler.
 window.addEventListener('keydown',event=>{
+  if(event.target?.classList?.contains('practice-input')){if(event.key==='Enter'){event.preventDefault();event.stopImmediatePropagation();if(new URLSearchParams(location.search).get('role')==='student')sendStudentSoloAnswer();else checkTeacherSoloOption();}return;}
   if(new URLSearchParams(location.search).get('role')!=='student' || !studentReady || event.target?.closest?.('input, textarea, [contenteditable=true]'))return;
   if(!document.getElementById('studentMemoOverlay').hidden){if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();closeStudentMemo();}return;}
   if(event.key.toLowerCase()==='n'){event.preventDefault();event.stopImmediatePropagation();openStudentMemo();return;}

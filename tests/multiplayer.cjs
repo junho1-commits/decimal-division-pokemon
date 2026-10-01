@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const {randomUUID} = require('node:crypto');
 const html = fs.readFileSync('index.html','utf8');
-const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n') + '\n' + fs.readFileSync('process-quizzes.js','utf8') + '\n' + fs.readFileSync('classroom-adventure.js','utf8');
+const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n') + '\n' + fs.readFileSync('process-quizzes.js','utf8') + '\n' + fs.readFileSync('guided-practice.js','utf8') + '\n' + fs.readFileSync('classroom-adventure.js','utf8');
 const clients=[], queue=[];
 let drop=()=>false;
 class Client {
@@ -45,7 +45,7 @@ flush();assert.equal(host.run('connectedStudents.size'),30);assert.ok(students.e
 host.run('startRaidBattle()');flush();assert.ok(students.every(c=>c.run('isStudentInRaid')));
 assert.ok(host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.every(p=>p.choices.length===4 && !Object.hasOwn(p,"ansMain"))'),'raid phases ask for reasoning choices');
 const a=students[0];
-assert.equal(a.el('studentDexHeaderCount').textContent,'1/52');
+assert.equal(a.el('studentDexHeaderCount').textContent,'1/54');
 a.run('openStudentDex()');assert.equal(a.el('studentDexModal').hidden,false);
 assert.match(a.el('studentDexGrid').innerHTML,/피카츄/);
 a.run('setStudentDexFilter("caught")');assert.doesNotMatch(a.el('studentDexGrid').innerHTML,/미발견/);
@@ -129,8 +129,8 @@ const hostReload=context('http://localhost:8200/index.html',host.memory);assert.
 assert.ok(!html.includes('id="btnBgm"')&&!html.includes('id="btnVoice"')&&!html.includes('id="btnAudio"'));
 assert.equal(profileTab.run('sound.bgmMuted'),false);assert.equal(profileTab.run('voice.enabled'),true);
 // Reasoning bank, shuffled order, nickname progress, capture and strengthening.
-assert.equal(profileTab.run('Object.values(PROCESS_QUIZZES).flat().length'),60);
-assert.equal(profileTab.run('RAID_REASONING_QUIZZES.length'),16);
+assert.ok(profileTab.run('Object.values(PROCESS_QUIZZES).every(bank=>bank.length>=40)'));
+assert.equal(profileTab.run('RAID_REASONING_QUIZZES.length'),22);
 profileTab.run('renderRaidBossChoices()');
 assert.equal((profileTab.el('raidBossChoice').innerHTML.match(/<option /g)||[]).length,12,'six legendary bosses each have normal and shiny choices');
 assert.equal(profileTab.run('effectiveness("땅",483)'),1.5);
@@ -142,22 +142,51 @@ assert.ok(named.every(name=>stems.includes(name)));
 assert.ok(!stems.includes('김가빈')&&!stems.includes('박세은'));
 const order=profileTab.run('Array.from({length:10},()=>nextSoloQuiz(1).id)');
 assert.equal(new Set(order).size,10,'stage questions form a shuffled nonrepeating round');
+function fillGuided(c,target,quizName,wrong=false) {
+ c.run('guidedMethod('+quizName+').fields.forEach((f,i)=>document.getElementById(guidedInputId('+JSON.stringify(target)+',i)).value=String(Number(f.answer)'+(''+(wrong?'+(i===0?1:0)':''))+'))');
+}
+function completeSolo(c) {
+ if(c.run('currentSoloQuiz.kind==="guided"'))fillGuided(c,'studentSoloOptions','currentSoloQuiz');
+ else c.run('chooseStudentSoloOption(currentSoloQuiz.correct)');
+ c.run('sendStudentSoloAnswer();sendStudentSoloAnswer()');
+}
 const quizTab=context(join,new Map());quizTab.run('loadStudentProfile("퀴즈학생"); renderStudentSoloGame()');
-for(let i=0;i<3;i++)quizTab.run('chooseStudentSoloOption(currentSoloQuiz.correct);sendStudentSoloAnswer();sendStudentSoloAnswer()');
+for(let i=0;i<3;i++)completeSolo(quizTab);
 assert.equal(quizTab.run('studentCaughtList.length'),1,'two correct explanations capture the first Pokemon');
-quizTab.run('openStudentDex();showStudentDexDetail(25)');
+quizTab.run('openStudentDex();showStudentDexDetail(19)');
 assert.match(quizTab.el('studentDexDetail').innerHTML,/맞힌 답:/);
 assert.match(quizTab.el('studentDexDetail').innerHTML,/문제 1:/);
-assert.equal(quizTab.run('activeStudentProfile.training[25]'),3);
+assert.equal(quizTab.run('captureCount(19)'),1);
+assert.equal(quizTab.run('duplicateCount(19)'),0,'answering alone does not create strengthening material');
+quizTab.run('selectStudentEncounter(0)');
+for(let i=0;i<4;i++)completeSolo(quizTab);
+assert.equal(quizTab.run('captureCount(19)'),3);
+assert.equal(quizTab.run('duplicateCount(19)'),2);
+const oldQuiz=quizTab.run('currentSoloQuiz.id');
+if(quizTab.run('currentSoloQuiz.kind==="guided"'))fillGuided(quizTab,'studentSoloOptions','currentSoloQuiz',true);else quizTab.run('chooseStudentSoloOption((currentSoloQuiz.correct+1)%4)');
+quizTab.run('sendStudentSoloAnswer();sendStudentSoloAnswer()');
+assert.notEqual(quizTab.run('currentSoloQuiz.id'),oldQuiz,'wrong answers lead to a new problem');
+assert.equal(quizTab.run('captureCount(19)'),3,'wrong answers keep the collection');
+const lockTab=context(join,new Map());lockTab.run('loadStudentProfile("레벨검증");selectStudentStage(3)');
+assert.equal(lockTab.run('STAGES_DATA[2].pokemons[studentCurrentPokeIdx].id'),19);
+lockTab.run('selectStudentEncounter(STAGES_DATA[2].pokemons.findIndex(p=>p.id===149))');
+assert.equal(lockTab.run('studentCurrentPokeIdx'),0,'low levels cannot select a powerful Pokemon');
+lockTab.run('myStudentXP=1200;selectStudentEncounter(STAGES_DATA[2].pokemons.findIndex(p=>p.id===149))');
+assert.equal(lockTab.run('STAGES_DATA[2].pokemons[studentCurrentPokeIdx].id'),149,'level 5 unlocks powerful Pokemon');
+assert.ok(profileTab.run('Array.from({length:20},()=>variedBattleQuizzes()).every(round=>round.some(q=>q.category==="실생활" && q.id.startsWith("raid-word-")))'),'every raid includes a word problem with distracting information');
 quizTab.run('awardDailyStudyCorrect();awardDailyStudyCorrect()');
 assert.equal(quizTab.run('activeStudentProfile.pvpTickets'),1,'five correct study quizzes grant one daily battle ticket');
-const baseDamage=quizTab.run('pokemonBattleStats(25,myStudentXP,0).damage');
-quizTab.run('strengthenStudentPokemon(25)');
-assert.equal(quizTab.run('activeStudentProfile.power[25]'),1);
-assert.equal(quizTab.run('pokemonBattleStats(25,myStudentXP,activeStudentProfile.power[25]).damage'),baseDamage+4);
+const baseDamage=quizTab.run('pokemonBattleStats(19,myStudentXP,0).damage');
+quizTab.run('strengthenStudentPokemon(19)');
+assert.equal(quizTab.run('activeStudentProfile.power[19]'),1);
+assert.equal(quizTab.run('duplicateCount(19)'),0,'strengthening consumes two duplicates');
+assert.equal(quizTab.run('captureCount(19)'),3,'lifetime capture count stays intact');
+quizTab.run('strengthenStudentPokemon(19)');
+assert.equal(quizTab.run('activeStudentProfile.power[19]'),1,'cannot strengthen without duplicates');
+assert.equal(quizTab.run('pokemonBattleStats(19,myStudentXP,activeStudentProfile.power[19]).damage'),baseDamage+4);
 const quizRestore=context(join,quizTab.memory);quizRestore.run('loadStudentProfile("퀴즈학생")');
-assert.equal(quizRestore.run('activeStudentProfile.power[25]'),1,'strengthening persists by nickname');
-quizRestore.run('showStudentDexDetail(25)');assert.match(quizRestore.el('studentDexDetail').innerHTML,/맞힌 답:/,'capture question survives reload');
+assert.equal(quizRestore.run('activeStudentProfile.power[19]'),1,'strengthening persists by nickname');
+quizRestore.run('showStudentDexDetail(19)');assert.match(quizRestore.el('studentDexDetail').innerHTML,/맞힌 답:/,'capture question survives reload');
 quizTab.run('openStudentMemo()');
 assert.equal(quizTab.el('studentMemoOverlay').hidden,false);
 assert.equal(quizTab.el('studentMemoProblem').textContent,quizTab.run('currentSoloQuiz.stem'));
@@ -228,3 +257,40 @@ assert.match(raidCatchTab.el('studentDexDetail').innerHTML,/두 수에 함께 10
 assert.equal(raidCatchTab.run('trainerLevel(1000000)'),50);
 console.log('PASS: nickname isolation/reload, legacy migration, saved trainer roster, storage failure feedback, owned partners, counterattack/revive, switching, type effectiveness, sound retained');
 console.log('PASS: 30 students, teacher ACK, QR/broker routing, dropped-result retry, duplicate answers/rewards, stale answers, phase/HP sync, reconnect, teacher loss, raid end, bundled API, matching HTML copies');
+
+for(const stage of [1,2,3,4]) {
+ const rows=profileTab.run('PROCESS_QUIZZES['+stage+'].slice(10).filter(q=>q.id.startsWith("stage-"))');
+ for(const quiz of rows) {
+   const match=quiz.stem.match(/([\d.]+) ÷ ([\d.]+)/);
+   if(match) assert.ok(Math.abs(Number(match[1])/Number(match[2])-Number(quiz.choices[quiz.correct]))<1e-8,quiz.stem);
+ }
+}
+console.log('PASS: level unlocks, duplicate capture/consumption/save, changed questions after errors, generated arithmetic, raid word problems');
+
+for(let stage=1;stage<=6;stage++) {
+ const c=context(join,new Map());c.run('loadStudentProfile("풀이검증'+stage+'");selectStudentStage('+stage+')');
+ for(let index=0;index<c.run('GUIDED_QUIZZES['+stage+'].length');index++) {
+  c.run('currentSoloQuiz={...GUIDED_QUIZZES['+stage+']['+index+']}');
+  for(let method=0;method<c.run('currentSoloQuiz.methods.length');method++) {
+   c.run('currentSoloQuiz.methodIndex='+method+';renderGuidedPractice("studentSoloOptions",currentSoloQuiz)');
+   fillGuided(c,'studentSoloOptions','currentSoloQuiz');
+   assert.equal(c.run('assessGuidedPractice("studentSoloOptions",currentSoloQuiz)'),true,'all method fields score');
+   fillGuided(c,'studentSoloOptions','currentSoloQuiz',true);
+   assert.equal(c.run('assessGuidedPractice("studentSoloOptions",currentSoloQuiz)'),false,'wrong intermediate step cannot earn a capture');
+   c.el('studentSoloOptions-field-0').value='';
+   assert.equal(c.run('assessGuidedPractice("studentSoloOptions",currentSoloQuiz)'),null,'blank intermediate step cannot earn a capture');
+  }
+ }
+}
+assert.equal(profileTab.run('Object.values(GUIDED_QUIZZES).flat().length'),64);
+assert.ok(profileTab.run('Object.values(GUIDED_QUIZZES).flat().every(q=>!q.stem.includes("나머지"))'));
+console.log('PASS: 64 guide-aligned activities, all fraction/natural/long-division/rounding/subtraction methods, wrong and blank intermediate steps');
+
+const methods=profileTab.run('Object.values(GUIDED_QUIZZES).flat().flatMap(q=>q.methods).filter(m=>m.type==="division")');
+for(const m of methods)for(const row of m.rows){
+ const digit=Number(m.fields[row.offset].answer), product=Number(m.fields[row.offset+1].answer), remain=Number(m.fields[row.offset+2].answer);
+ assert.equal(m.divisor*digit,product);assert.equal(row.partial-product,remain);assert.ok(remain>=0 && remain<m.divisor);
+}
+const cycle=context(join,new Map());cycle.run('loadStudentProfile("출제순환")');
+const seen=cycle.run('Array.from({length:PROCESS_QUIZZES[1].length*2},()=>nextSoloQuiz(1)).filter(q=>q.kind!=="guided").map(q=>q.id)');
+assert.equal(new Set(seen).size,seen.length,'all reasoning questions rotate before repeating');
