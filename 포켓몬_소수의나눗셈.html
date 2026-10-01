@@ -3794,7 +3794,8 @@
     }
 
     function getPokemonGifUrl(id) {
-      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${id}.gif`;
+      // Large battle artwork stays sharp on classroom displays and tablets.
+      return getPokemonArtworkUrl(id);
     }
     function getPokemonArtworkUrl(id) {
       return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
@@ -3913,7 +3914,8 @@
       pokeImg.style.opacity = "1";
       pokeImg.src = getPokemonGifUrl(poke.id);
       pokeImg.onerror = () => {
-        pokeImg.src = getPokemonArtworkUrl(poke.id);
+        pokeImg.onerror = null;
+        pokeImg.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${poke.id}.png`;
       };
 
       document.getElementById("quizDifficultyTag").textContent = `🎯 STAGE ${stage.stageId} : ${stage.concept}`;
@@ -3977,7 +3979,8 @@
       pokeImg.style.opacity = "1";
       pokeImg.src = getPokemonGifUrl(boss.bossId);
       pokeImg.onerror = () => {
-        pokeImg.src = getPokemonArtworkUrl(boss.bossId);
+        pokeImg.onerror = null;
+        pokeImg.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${boss.bossId}.png`;
       };
 
       document.getElementById("quizDifficultyTag").textContent = `🔥 FINAL RAID : 실생활 문장제 & 함정 극복`;
