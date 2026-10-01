@@ -2422,7 +2422,7 @@
       <button type="button" class="student-dex-open" onclick="openStudentDex()">📖 내 도감 <span id="studentDexHeaderCount">0/52</span></button>
     </div>
 
-    <div id="studentMemoOverlay" class="student-memo-overlay" role="dialog" aria-modal="true" aria-labelledby="studentMemoTitle" hidden>
+    <div id="studentMemoOverlay" class="student-memo-overlay" role="dialog" aria-modal="false" aria-labelledby="studentMemoTitle" hidden>
       <div class="student-memo-dialog">
         <div class="student-memo-heading"><h2 id="studentMemoTitle">📝 나의 계산 메모장</h2></div>
         <p id="studentMemoProblem" class="student-memo-problem"></p>
@@ -2528,6 +2528,7 @@
       </div>
 
       <details class="encounter-menu"><summary>🔴 잡을 포켓몬 바꾸기</summary><div id="studentEncounterChoices" class="encounter-choices" aria-label="포획할 포켓몬 선택"></div></details>
+      <button type="button" id="studentReturnRaid" class="adventure-button" onclick="returnToPendingRaid()" hidden>↩ 레이드 문제로 돌아가기</button>
       </section>
       <section class="student-answer-panel" aria-label="문제 풀기">
       <!-- 나눗셈 퀴즈 수식 카드 -->
@@ -2582,15 +2583,14 @@
       </div>
     </div>
 
-    <div class="student-box pvp-arena" id="studentPvpBox" style="display:none">
-      <h2>⚔️ 친구 대전</h2>
+      <div class="student-box pvp-arena" id="studentPvpBox" style="display:none">
+      <div class="pvp-arena-heading"><h2>⚔️ 친구 대전</h2><button type="button" id="studentPvpReturn" class="adventure-button pvp-return" onclick="returnFromStudentPvp()" hidden>↩ 공부 화면으로 돌아가기</button></div>
       <div id="studentPvpScore" class="pvp-score"></div>
       <div id="studentPvpTimer" class="pvp-timer" role="timer"></div>
       <div id="studentPvpQuestion" class="pvp-question"></div>
       <div id="studentPvpOptions" class="reason-options" role="group" aria-label="대전 풀이 선택"></div>
       <button type="button" id="studentPvpSubmit" class="btn-student-primary" onclick="submitStudentPvpAnswer()">선택한 생각으로 공격하기</button>
       <p id="studentPvpLog" role="status"></p>
-      <button type="button" id="studentPvpReturn" class="adventure-button" onclick="returnFromStudentPvp()" hidden>공부 화면으로 돌아가기</button>
     </div>
 
     <!-- 2단계 B: [실시간 협동 보스전 모드] (교사가 레이드 열면 자동 전환) -->
@@ -2638,7 +2638,7 @@
         <div id="studentRaidTeam" class="partner-grid compact"></div>
         <button type="button" id="studentPartnerRecover" class="adventure-button" onclick="recoverStudentPartner()" hidden>💚 응원 받고 체력 회복</button>
         <button type="button" id="studentGoCapture" class="adventure-button" onclick="goCaptureForRaid()" hidden>🌿 포켓몬 잡으러 가기</button>
-        <p class="adventure-note">정답이면 파트너가 기술을 사용해요. 틀리면 보스가 반격해요! 쓰러져도 회복하거나 친구를 교체할 수 있어요.</p>
+        <p class="adventure-note">정답이면 파트너가 기술을 사용해요. 아직 포켓몬이 없어도 풀이를 제출해 팀을 응원할 수 있어요. 포켓몬이 쓰러지면 회복하거나 교체하세요.</p>
       </section>
       <div id="studentBattleLog" class="battle-log" aria-live="polite">출전 준비!</div>
       </section>

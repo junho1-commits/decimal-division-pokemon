@@ -285,6 +285,17 @@
 .student-pvp-menu .pvp-lobby { position:absolute; right:0; top:calc(100% + 8px); width:min(430px,calc(100vw - 48px)); box-sizing:border-box; z-index:30; padding:18px 18px 62px; box-shadow:0 12px 36px #0009; }
 .pvp-menu-close { position:absolute; right:18px; top:calc(100% + 8px); transform:translateY(12px); z-index:31; }
 .student-pvp-menu .pvp-lobby>div:first-child { padding-top:36px; }
+
+/* Put the working paper over the character side while the question remains usable. */
+.student-memo-overlay { pointer-events:none; background:transparent; padding:0; display:block; }
+.student-memo-dialog { pointer-events:auto; position:absolute; left:max(12px,calc((100vw - 1280px)/2 + 24px)); top:72px; width:min(43vw,580px); height:calc(100dvh - 84px); min-height:0; box-sizing:border-box; }
+.student-memo-problem { white-space:pre-line; max-height:180px; overflow:auto; }
+@media (max-width:679px) { .student-memo-dialog { left:8px; top:auto; bottom:8px; width:calc(100vw - 16px); height:min(48dvh,420px); } }
+
+.pvp-arena-heading { position:sticky; top:0; z-index:3; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; background:#1e293b; }
+.pvp-arena-heading h2 { margin:0; }
+.pvp-return { font-weight:900; border-color:#facc15; color:#fff2a8; }
+.pvp-return[hidden] { display:none; }
 @media(min-width:680px) { #studentSoloBox .student-columns { grid-template-columns:minmax(240px,.7fr) minmax(0,1.3fr); } }
 @media(max-width:679px) { .profile-toolbar { flex-wrap:wrap; } #studentSoloBox .student-answer-panel { order:-1; } }
 

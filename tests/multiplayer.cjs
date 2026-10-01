@@ -58,11 +58,11 @@ a.run('setStudentRaidAnswerInput("2")');assert.equal(a.run('raidQuizChoice'),1);
 assert.equal(a.el('studentRaidAnswerInput').value,'2');
 function answer(student){const value=host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[gameState.currentRaidPhase].correct');student.run('chooseStudentRaidOption('+value+'); sendStudentRaidAnswer()');}
 // Lost result: retry must return the same result without applying damage or XP twice.
-drop=(client,message)=>JSON.parse(message.payloadString).type==='RESULT';answer(a);const packet=a.run('JSON.stringify(pendingAnswer)');flush();assert.equal(host.run('raidHp'),2225);assert.equal(a.run('myStudentXP'),0);
-drop=()=>false;a.pulse();flush();assert.equal(host.run('raidHp'),2225);assert.equal(a.run('myStudentXP'),100);
-host.run('handleHostIncomingMessage('+packet+')');flush();assert.equal(host.run('raidHp'),2225);assert.equal(a.run('myStudentXP'),100);
+drop=(client,message)=>JSON.parse(message.payloadString).type==='RESULT';answer(a);const packet=a.run('JSON.stringify(pendingAnswer)');flush();const firstRaidHp=host.run('raidHp');assert.ok(firstRaidHp<2250);assert.equal(a.run('myStudentXP'),0);
+drop=()=>false;a.pulse();flush();assert.equal(host.run('raidHp'),firstRaidHp);assert.equal(a.run('myStudentXP'),100);
+host.run('handleHostIncomingMessage('+packet+')');flush();assert.equal(host.run('raidHp'),firstRaidHp);assert.equal(a.run('myStudentXP'),100);
 // Different request for an already solved question is also rejected.
-host.run('handleHostIncomingMessage({...'+packet+',requestId:"another"})');flush();assert.equal(host.run('raidHp'),2225);
+host.run('handleHostIncomingMessage({...'+packet+',requestId:"another"})');flush();assert.equal(host.run('raidHp'),firstRaidHp);
 // Advance automatically and retain HP. Delayed answer for previous problem is rejected.
 for(let i=1;i<30;i++){answer(students[i]);flush();}
 assert.equal(host.run('gameState.currentRaidPhase'),1);assert.equal(host.run('raidHp'),1500);
@@ -177,19 +177,24 @@ assert.ok(profileTab.run('Array.from({length:20},()=>variedBattleQuizzes()).ever
 quizTab.run('awardDailyStudyCorrect();awardDailyStudyCorrect()');
 assert.equal(quizTab.run('activeStudentProfile.pvpTickets'),1,'five correct study quizzes grant one daily battle ticket');
 const baseDamage=quizTab.run('pokemonBattleStats(19,myStudentXP,0).damage');
+const baseHp=quizTab.run('pokemonBattleStats(19,myStudentXP,0).maxHp');
+assert.ok(quizTab.run('pokemonBattleStats(150,myStudentXP,0).damage')>baseDamage,'higher CP yields a stronger attack');
+assert.ok(quizTab.run('pokemonBattleStats(150,myStudentXP,0).maxHp')>baseHp,'higher CP yields more HP');
 quizTab.run('strengthenStudentPokemon(19)');
 assert.equal(quizTab.run('activeStudentProfile.power[19]'),1);
 assert.equal(quizTab.run('duplicateCount(19)'),0,'strengthening consumes two duplicates');
 assert.equal(quizTab.run('captureCount(19)'),3,'lifetime capture count stays intact');
 quizTab.run('strengthenStudentPokemon(19)');
 assert.equal(quizTab.run('activeStudentProfile.power[19]'),1,'cannot strengthen without duplicates');
-assert.equal(quizTab.run('pokemonBattleStats(19,myStudentXP,activeStudentProfile.power[19]).damage'),baseDamage+4);
+assert.ok(quizTab.run('pokemonBattleStats(19,myStudentXP,activeStudentProfile.power[19]).damage')>baseDamage);
+assert.ok(quizTab.run('pokemonBattleStats(19,myStudentXP,activeStudentProfile.power[19]).maxHp')>baseHp);
 const quizRestore=context(join,quizTab.memory);quizRestore.run('loadStudentProfile("퀴즈학생")');
 assert.equal(quizRestore.run('activeStudentProfile.power[19]'),1,'strengthening persists by nickname');
 quizRestore.run('showStudentDexDetail(19)');assert.match(quizRestore.el('studentDexDetail').innerHTML,/맞힌 답:/,'capture question survives reload');
 quizTab.run('openStudentMemo()');
 assert.equal(quizTab.el('studentMemoOverlay').hidden,false);
-assert.equal(quizTab.el('studentMemoProblem').textContent,quizTab.run('currentSoloQuiz.stem'));
+assert.ok(quizTab.el('studentMemoProblem').textContent.startsWith(quizTab.run('currentSoloQuiz.stem')));
+assert.ok(quizTab.el('studentMemoProblem').textContent.includes('1. ')||quizTab.run('currentSoloQuiz.kind==="guided"'),'memo repeats available answers');
 const memoCanvas=quizTab.el('studentMemoCanvas');
 memoCanvas.handlers.pointerdown({preventDefault(){},pointerId:1,currentTarget:memoCanvas,clientX:20,clientY:30});
 memoCanvas.handlers.pointermove({preventDefault(){},currentTarget:memoCanvas,clientX:80,clientY:100});
@@ -208,7 +213,7 @@ assert.ok(b.run('studentPvpInvite'));
 b.run('replyStudentPvp(true)');flush();
 assert.ok(a.run('studentPvpMatch')&&b.run('studentPvpMatch'));
 assert.equal(a.run('activeStudentProfile.pvpTickets'),0);
-assert.equal(host.run('[...pvpMatches.values()][0].hp[0]'),100,'both players start with equal HP');
+assert.equal(host.run('[...pvpMatches.values()][0].hp[0]'),host.run('[...pvpMatches.values()][0].stats[0].maxHp'),'friend battles start at calculated Pokemon HP');
 assert.equal(host.run('new Set([...pvpMatches.values()][0].quizzes.map(q=>q.category)).size'),3);
 assert.match(a.el('studentPvpTimer').textContent,/남은 시간/);
 for(let round=0;round<3&&a.run('studentPvpMatch');round++){
@@ -217,10 +222,13 @@ for(let round=0;round<3&&a.run('studentPvpMatch');round++){
  a.run('chooseStudentPvpOption('+answerIndex+');submitStudentPvpAnswer()');flush();
  if(round===0){assert.equal(host.run('[...pvpMatches.values()][0].answers[0]'),null,'lost answer has not scored');drop=()=>false;a.pulse();flush();assert.equal(host.run('[...pvpMatches.values()][0].answers[0]'),answerIndex,'answer retry reaches host');}
  b.run('chooseStudentPvpOption('+answerIndex+');submitStudentPvpAnswer()');flush();
+ if(round===0)assert.equal(host.run('[...pvpMatches.values()][0].hp[0]'),host.run('[...pvpMatches.values()][0].stats[0].maxHp-[...pvpMatches.values()][0].stats[1].damage'),'correct battle answer uses the partner attack stat');
 }
 assert.equal(a.run('studentPvpMatch'),null);
 assert.equal(b.run('studentPvpMatch'),null);
 assert.match(a.el('studentPvpLog').textContent,/XP/);
+assert.equal(a.el('studentPvpReturn').hidden,false,'exit is visible after a battle');
+a.run('returnFromStudentPvp()');assert.equal(a.el('studentSoloBox').style.display,'flex');assert.equal(a.el('studentPvpBox').style.display,'none');
 const pvpXp=a.run('myStudentXP');a.run('sendStudentPresence()');flush();
 assert.equal(a.run('myStudentXP'),pvpXp,'replayed battle result cannot award XP twice');
 for(const student of [a,b])student.run('activeStudentProfile.pvpTickets=1;studentCaughtList=[25,94];selectedStudentPokemon=25;saveStudentProfile();sendStudentPresence()');
@@ -241,6 +249,21 @@ assert.equal(host.run('raidShiny'),true);
 assert.equal(host.run('new Set(RAID_BOSSES[gameState.currentRaidBossIndex].phases.map(q=>RAID_REASONING_QUIZZES.find(item=>item.id===q.id).category)).size'),3);
 assert.match(host.el('battlePokeImg').src,/official-artwork\/shiny\/249\.png$/);
 assert.match(a.el('studentRaidBossImg').src,/official-artwork\/shiny\/249\.png$/);
+const rejoining=students[2];rejoining.run('goCaptureForRaid()');assert.equal(rejoining.run('isStudentInRaid'),false);
+assert.equal(rejoining.el('studentReturnRaid').hidden,false);
+rejoining.run('returnToPendingRaid()');flush();assert.equal(rejoining.run('isStudentInRaid'),true,'a student can return to the current raid after catching a partner');
+const supportStudent=students[3];
+supportStudent.run('studentCaughtList=[];selectedStudentPokemon=0;saveStudentProfile();sendStudentPresence()');flush();
+assert.equal(supportStudent.el('studentRaidAttackButton').disabled,true,'a reasoning choice is still required');
+const supportChoice=host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[gameState.currentRaidPhase].correct');
+supportStudent.run('chooseStudentRaidOption('+supportChoice+')');
+assert.equal(supportStudent.el('studentRaidAttackButton').disabled,false,'students without Pokemon can solve raid reasoning');
+supportStudent.run('sendStudentRaidAnswer()');flush();
+assert.ok(supportStudent.run('activeStudentProfile.raidQualified.includes(studentRaidSessionId)'),'a correct support answer earns a boss capture chance');
+const priorRaidStats=host.run('JSON.stringify(hostFighter('+JSON.stringify(a.run('myStudentId'))+'))');
+a.run('activeStudentProfile.power[selectedStudentPokemon]=(activeStudentProfile.power[selectedStudentPokemon]||0)+1;saveStudentProfile();sendStudentPresence()');flush();
+assert.ok(host.run('hostFighter('+JSON.stringify(a.run('myStudentId'))+').maxHp')>JSON.parse(priorRaidStats).maxHp,'strengthening refreshes live raid HP');
+assert.ok(host.run('hostFighter('+JSON.stringify(a.run('myStudentId'))+').damage')>JSON.parse(priorRaidStats).damage,'strengthening refreshes live raid damage');
 a.run('activeStudentProfile.raidQualified.push("shiny-test");resolveStudentRaidCapture("shiny-test",249,0,true)');
 assert.ok(a.run('activeStudentProfile.shinyCaught.includes(249)'));
 const shinyRestore=context(join,a.memory);shinyRestore.run('loadStudentProfile("test0")');
@@ -254,6 +277,10 @@ raidCatchTab.run('loadStudentProfile("레이드학생");activeStudentProfile.rai
 assert.ok(raidCatchTab.run('studentCaughtList.includes(150)'));
 assert.match(raidCatchTab.el('studentDexDetail').innerHTML,/어떤 풀이가 맞을까요/);
 assert.match(raidCatchTab.el('studentDexDetail').innerHTML,/두 수에 함께 10을 곱한다/);
+raidCatchTab.run('activeStudentProfile.raidQualified.push("round-2")');
+assert.match(raidCatchTab.run('resolveStudentRaidCapture("round-2",249,.99)'),/포획 성공/,'first qualified victory guarantees a new boss');
+raidCatchTab.run('activeStudentProfile.raidQualified.push("round-3")');
+assert.match(raidCatchTab.run('resolveStudentRaidCapture("round-3",249,.99)'),/빠져나왔/,'repeat captures use the stated probability');
 assert.equal(raidCatchTab.run('trainerLevel(1000000)'),50);
 console.log('PASS: nickname isolation/reload, legacy migration, saved trainer roster, storage failure feedback, owned partners, counterattack/revive, switching, type effectiveness, sound retained');
 console.log('PASS: 30 students, teacher ACK, QR/broker routing, dropped-result retry, duplicate answers/rewards, stale answers, phase/HP sync, reconnect, teacher loss, raid end, bundled API, matching HTML copies');

@@ -11,7 +11,7 @@ const PROFILE_PREFIX = 'pokemon_student_profile_v2:';
 const PROFILE_INDEX = 'pokemon_student_names_v2';
 const CLASS_ROSTER_KEY = 'pokemon_class_roster_v1';
 const PVP_STUDY_PER_TICKET = 5;
-const RAID_CAPTURE_CHANCE = 0.35;
+const RAID_CAPTURE_CHANCE = 0.7;
 let activeStudentProfile = null;
 function studentArtworkUrl(id){return getPokemonArtworkUrl(id,!!activeStudentProfile?.shinyCaught?.includes(id));}
 let selectedStudentPokemon = 0;
@@ -190,7 +190,7 @@ function resolveStudentRaidCapture(raidId,bossId,roll=Math.random(),shiny=false)
     recordPokemonCapture(bossId); saveStudentProfile(); renderStudentCollection();
     return name+' 추가 포획! 누적 '+captureCount(bossId)+'마리 · 강화용 중복 '+duplicateCount(bossId)+'마리';
   }
-  if (roll>=RAID_CAPTURE_CHANCE) return name+'이(가) 몬스터볼에서 빠져나왔어요. 다음 레이드에서 다시 도전하세요!';
+  // A student's first qualified victory against this boss earns the boss.
   recordPokemonCapture(bossId);
   if(shiny && !activeStudentProfile.shinyCaught.includes(bossId))activeStudentProfile.shinyCaught.push(bossId);
   if (!selectedStudentPokemon) selectedStudentPokemon=bossId;
@@ -283,6 +283,7 @@ renderStudentSoloGame = function () {
   document.getElementById('studentSoloFormula').textContent=currentSoloQuiz.kind==='guided'?currentSoloQuiz.formula:'어떤 생각이 맞을까요?';
   document.getElementById('studentSoloQuestion').textContent=currentSoloQuiz.stem;
   document.getElementById('studentTrainingProgress').textContent='🔴 '+poke.name+' 포획: '+(activeStudentProfile?.captureSteps[poke.id]||0)+'/2개 정답 · 누적 '+captureCount(poke.id)+'마리 · 트레이너 Lv.'+trainerLevel(myStudentXP);
+  document.getElementById('studentReturnRaid').hidden=!studentTrainingRaidId||!studentCaughtList.length;
   document.getElementById('studentSoloSubmit').textContent=currentSoloQuiz.kind==='guided'?'풀이 과정 확인하기':'선택한 생각 확인하기';
   renderReasonOptions('studentSoloOptions',currentSoloQuiz,-1,'chooseStudentSoloOption');
   const encounter=stage.stageId+':'+poke.id;
@@ -306,7 +307,7 @@ function pokemonBattleStats(id, xp, power = 0) {
   power = Math.max(0,Math.min(20,Math.floor(Number(power)||0)));
   const cp=Math.round((pokemon.cp || 500) * (0.55 + level * 0.03) * (1 + power * 0.05));
   return {pokemonId:id,name:pokemon.name,type,move:moves[type] || '몸통박치기',level,power,cp,
-    damage:25 + Math.floor((pokemon.cp || 500) / 800) * 5 + (level - 1) * 2 + power * 4,maxHp:60 + level * 4 + power * 6};
+    damage:Math.round(14 + cp / 75 + level * .7 + power * 3),maxHp:Math.round(70 + cp / 15 + level * 2 + power * 7)};
 }
 function effectiveness(type, bossId) {
   if (bossId === 150 && ['고스트','악','벌레'].includes(type)) return 1.5;
@@ -324,7 +325,7 @@ function renderStudentCollection() {
     const poke = pokemonBattleStats(id,myStudentXP,power), selected = id === selectedStudentPokemon;
     return '<div class="partner-choice" aria-pressed="' + selected + '"><button type="button" class="partner-select" onclick="selectStudentPartner(' + id + ')">' +
       '<img src="' + studentArtworkUrl(id) + '" alt="' + escapeClassroomText(poke.name) + '" loading="lazy"><strong>' + (activeStudentProfile?.shinyCaught?.includes(id)?'✨ ':'')+escapeClassroomText(poke.name) +
-      '</strong><small>CP ' + poke.cp + ' · 강화 +' + power + ' · 누적 '+captureCount(id)+'마리 · ' + escapeClassroomText(poke.type) + '</small><span class="selected-label">' + (selected ? '✓ 출전 파트너' : '출전 선택') + '</span></button>' +
+      '</strong><small>CP ' + poke.cp + ' · 공격 ' + poke.damage + ' · HP ' + poke.maxHp + ' · 강화 +' + power + ' · 누적 '+captureCount(id)+'마리 · ' + escapeClassroomText(poke.type) + '</small><span class="selected-label">' + (selected ? '✓ 출전 파트너' : '출전 선택') + '</span></button>' +
       '<button type="button" class="strengthen-button" onclick="strengthenStudentPokemon(' + id + ')" ' + (energy < 2 || power >= 20 ? 'disabled' : '') + '>⚡ 중복 ' + energy + '마리 / 2마리로 강화</button></div>';
   }).join('');
   for (const id of ['studentCollection','studentRaidTeam']) {
@@ -338,18 +339,18 @@ function renderStudentPartner() {
   const img = document.getElementById('studentPartnerImg');
   img.hidden = !stats;
   if (stats) { img.src = studentArtworkUrl(stats.pokemonId); img.alt = stats.name; }
-  document.getElementById('studentPartnerName').textContent = stats ? (activeStudentProfile?.shinyCaught?.includes(stats.pokemonId)?'✨ 이로치 ':'')+stats.name : '먼저 포켓몬을 잡아주세요';
+  document.getElementById('studentPartnerName').textContent = stats ? (activeStudentProfile?.shinyCaught?.includes(stats.pokemonId)?'✨ 이로치 ':'')+stats.name : '포켓몬이 없어도 풀이로 팀 응원!';
   document.getElementById('studentPartnerLevel').textContent = stats ? 'Lv.' + stats.level + ' · CP ' + stats.cp + ' · 강화 +' + (stats.power||0) : '';
   const fighter = studentFighter?.pokemonId === selectedStudentPokemon ? studentFighter : null;
   const hp = fighter ? fighter.hp : stats?.maxHp || 0, maxHp = fighter?.maxHp || stats?.maxHp || 1;
   document.getElementById('studentPartnerHpBar').style.width = hp / maxHp * 100 + '%';
   document.getElementById('studentPartnerHpText').textContent = stats ? 'HP ' + hp + ' / ' + maxHp : '';
-  document.getElementById('studentPartnerMove').textContent = stats ? stats.move + ' · 기본 위력 ' + stats.damage + ' · 유리한 상성 ×1.5' : '내 도감의 포켓몬으로만 출전할 수 있어요.';
+  document.getElementById('studentPartnerMove').textContent = stats ? stats.move + ' · 기본 위력 ' + stats.damage + ' · 유리한 상성 ×1.5' : '정답을 고르면 팀 응원으로 10 대미지를 보낼 수 있어요.';
   document.getElementById('studentPartnerRecover').hidden = !stats || !fighter || hp > 0;
   document.getElementById('studentGoCapture').hidden = !!stats;
   const attack = document.getElementById('studentRaidAttackButton');
-  attack.disabled = !stats || hp <= 0 || studentSolved || !!pendingAnswer || !studentReady || raidQuizChoice<0;
-  attack.textContent = !stats ? '🌿 먼저 포켓몬을 잡아주세요' : studentSolved ? '✓ 공격 완료 · 다음 문제 대기' : pendingAnswer ? '공격 확인 중…' : raidQuizChoice<0 ? '✏️ 답을 고르거나 입력하세요' : '⚡ ' + stats.move + ' 사용!';
+  attack.disabled = !!stats && hp <= 0 || studentSolved || !!pendingAnswer || !studentReady || raidQuizChoice<0;
+  attack.textContent = studentSolved ? '✓ 풀이 완료 · 다음 문제 대기' : pendingAnswer ? '풀이 확인 중…' : raidQuizChoice<0 ? '✏️ 답을 고르거나 입력하세요' : stats ? '⚡ ' + stats.move + ' 사용!' : '🤝 풀이 제출 · 팀 응원!';
 }
 function selectStudentPartner(id) {
   if (!studentCaughtList.includes(id) || pendingAnswer) return;
@@ -370,6 +371,14 @@ function strengthenStudentPokemon(id) {
 function goCaptureForRaid() {
   studentTrainingRaidId = studentRaidSessionId;
   adventureBase.returnSolo();
+  renderStudentSoloGame();
+}
+function returnToPendingRaid(){
+  if(!studentTrainingRaidId||!studentCaughtList.length)return;
+  if(!studentReady||!mqttStudentClient?.isConnected()){alert('선생님 연결을 확인한 뒤 다시 눌러주세요.');return;}
+  studentTrainingRaidId='';
+  document.getElementById('studentReturnRaid').hidden=true;
+  sendStudentPresence();
 }
 function recoverStudentPartner() {
   if (!studentReady || !studentFighter || studentFighter.hp > 0) return;
@@ -449,10 +458,12 @@ function hostFighter(studentId) {
   const student = connectedStudents.get(studentId);
   if (!student || !student.caught?.includes(student.selectedPokemon)) return null;
   const key = studentId + ':' + student.selectedPokemon;
-  if (!raidFighters.has(key)) {
-    const stats = pokemonBattleStats(student.selectedPokemon,student.xp,student.power);
-    if (!stats) return null;
-    raidFighters.set(key,{...stats,hp:stats.maxHp});
+  const stats = pokemonBattleStats(student.selectedPokemon,student.xp,student.power);
+  if (!stats) return null;
+  const previous=raidFighters.get(key);
+  if(!previous)raidFighters.set(key,{...stats,hp:stats.maxHp});
+  else if(previous.power!==stats.power||previous.level!==stats.level){
+    raidFighters.set(key,{...stats,hp:previous.hp===0?0:Math.min(stats.maxHp,previous.hp+stats.maxHp-previous.maxHp)});
   }
   return raidFighters.get(key);
 }
@@ -561,27 +572,28 @@ handleStudentAnswerSubmit = function (data) {
   const active = gameState.isRaidMode && !raidFinished && data.problemId === currentProblemId();
   const duplicate = acceptedAnswers.has(key);
   const student = connectedStudents.get(data.studentId), fighter = hostFighter(data.studentId);
-  const eligible = fighter && fighter.pokemonId === data.pokemonId && fighter.hp > 0;
+  const support = student && !student.caught?.length && data.pokemonId === 0;
+  const eligible = support || fighter && fighter.pokemonId === data.pokemonId && fighter.hp > 0;
   const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
   const phase = boss.phases[gameState.currentRaidPhase];
   const value = String(data.answer ?? '').trim();
   const correct = !!(active && !duplicate && eligible && value === String(phase.correct));
   const multiplier = fighter ? effectiveness(fighter.type,boss.bossId) : 1;
-  const damage = correct ? Math.round(fighter.damage * multiplier) : 0;
-  const counter = active && !duplicate && eligible && !correct ? Math.min(12,fighter.hp) : 0;
+  const damage = correct ? support ? 10 : Math.round(fighter.damage * multiplier) : 0;
+  const counter = active && !duplicate && eligible && !support && !correct ? Math.min(12,fighter.hp) : 0;
   if (counter) fighter.hp -= counter;
   const result = {type:'RESULT',requestId:data.requestId,problemId:data.problemId,isCorrect:correct,isWrongAnswer:!!(active&&!duplicate&&eligible&&!correct),earnedXP:correct ? 100 : 0,
-    pokemonId:data.pokemonId,damage,move:fighter?.move,multiplier,fighter:fighter ? {...fighter} : null,
-    message:!active ? '문제가 바뀌었거나 레이드가 끝났습니다.' : duplicate ? '이미 공격했어요. 다음 문제를 기다리세요.' : !eligible ? '잡은 포켓몬을 선택하고 체력을 확인해주세요.' : counter ? '보스의 반격! HP −' + counter + (fighter.hp === 0 ? ' · 응원받고 회복하거나 포켓몬을 교체하세요.' : ' · 풀이 이유를 다시 살펴보세요.') : '',
+    pokemonId:data.pokemonId,damage,move:support?'팀 응원':fighter?.move,multiplier,fighter:fighter ? {...fighter} : null,
+    message:!active ? '문제가 바뀌었거나 레이드가 끝났습니다.' : duplicate ? '이미 풀이를 제출했어요. 다음 문제를 기다리세요.' : !eligible ? '출전 포켓몬의 체력을 확인해주세요.' : counter ? '보스의 반격! HP −' + counter + (fighter.hp === 0 ? ' · 응원받고 회복하거나 포켓몬을 교체하세요.' : ' · 풀이 이유를 다시 살펴보세요.') : '',
     explanation:active ? phase.explanation : '',correctChoice:active ? phase.correct : -1};
   answerResults.set(cacheKey,result);
   if (answerResults.size > 3000) answerResults.delete(answerResults.keys().next().value);
   if (correct) acceptedAnswers.add(key);
   sendClassroomMessage(mqttHostClient,'to_student/' + data.studentId,result);
   if (correct) {
-    const attack = {type:'RAID_ATTACK',raidId:raidSessionId,studentId:data.studentId,name:student.name,pokemonId:fighter.pokemonId,shiny:student.shinySelected,move:fighter.move,damage,multiplier};
+    const attack = {type:'RAID_ATTACK',raidId:raidSessionId,studentId:data.studentId,name:student.name,pokemonId:support?0:fighter.pokemonId,shiny:student.shinySelected,move:support?'팀 응원':fighter.move,damage,multiplier};
     sendClassroomMessage(mqttHostClient,'broadcast',attack);
-    showAttackToast('<img src="' + getPokemonArtworkUrl(fighter.pokemonId,student.shinySelected) + '" alt="" style="width:40px;height:40px;vertical-align:middle"> <b>' + escapeClassroomText(student.name) + '</b>의 ' + escapeClassroomText(fighter.name) + ' · ' + fighter.move + '! −' + damage + ' HP','#67e8f9');
+    showAttackToast((support?'🤝':'<img src="' + getPokemonArtworkUrl(fighter.pokemonId,student.shinySelected) + '" alt="" style="width:40px;height:40px;vertical-align:middle">')+' <b>' + escapeClassroomText(student.name) + '</b>의 ' + (support?'팀 응원':escapeClassroomText(fighter.name)+' · '+fighter.move) + '! −' + damage + ' HP','#67e8f9');
     sound.playCatchSuccess();
     const before = gameState.currentRaidPhase;
     applyRaidDamage(damage);
@@ -615,7 +627,7 @@ handleStudentIncomingData = function (data) {
   if (data.type === 'RAID_TEAM_BONUS' && data.raidId === studentRaidSessionId) { addStudentBattleLog('🤝 전원 정답! 협동 보너스 −' + data.damage + ' HP · 다음 단계로!'); return; }
   if (data.type === 'RAID_ATTACK') {
     if (data.raidId !== studentRaidSessionId || !isStudentInRaid) return;
-    const name = adventureCatalog.get(data.pokemonId)?.name || '포켓몬';
+    const name = adventureCatalog.get(data.pokemonId)?.name || '팀 응원';
     addStudentBattleLog(data.name + '의 ' + (data.shiny?'✨ 이로치 ':'') + name + '! ' + data.move + ' −' + data.damage + ' HP' + (data.multiplier > 1 ? ' · 효과가 굉장했다!' : ''));
     animateBattleSprite('studentRaidBossImg','hit');
     playStudentRaidHit();
@@ -694,7 +706,7 @@ handleStudentIncomingData = function (data) {
   adventureBase.incoming(data);
 };
 sendStudentRaidAnswer = function () {
-  if (!studentCaughtList.includes(selectedStudentPokemon)) { alert('차시 문제를 풀어 포켓몬을 잡고 출전해주세요!'); return; }
+  if (studentCaughtList.length && !studentCaughtList.includes(selectedStudentPokemon)) { alert('잡은 포켓몬을 선택해주세요!'); return; }
   if (studentFighter?.pokemonId === selectedStudentPokemon && studentFighter.hp <= 0) { alert('응원을 받고 회복하거나 다른 포켓몬으로 교체해주세요.'); return; }
   if (!studentReady || Date.now()-lastTeacherAck>15000 || !mqttStudentClient?.isConnected()) { alert('선생님 연결을 확인해주세요.'); return; }
   if (!isStudentInRaid || studentSolved || pendingAnswer) return;
@@ -758,6 +770,7 @@ sendStudentSoloAnswer = function () {
     }else activeStudentProfile.captureSteps[poke.id]=steps;
     reward+=awardDailyStudyCorrect();
     saveStudentProfile(); updateStudentHeaderStats(); sendStudentPresence();
+    if(steps>=2&&studentTrainingRaidId&&studentReady){reward+=' 레이드 문제로 돌아갑니다.';returnToPendingRaid();}
   }else { sound.playError(); }
   fb.textContent=(correct?'✓ 이해했어요! +30 XP.':'다시 생각해 봐요.')+' '+currentSoloQuiz.explanation+reward;
   soloCaptureBusy=true;
@@ -844,7 +857,7 @@ function pvpFinish(match, reason='', refund=false) {
 function pvpResolveRound(match) {
   if(!pvpMatches.has(match.id))return;
   clearTimeout(match.timer);
-  const quiz=match.quizzes[match.round], hit=match.answers.map(answer=>answer===quiz.correct), damage=hit.map(correct=>correct?35:0);
+  const quiz=match.quizzes[match.round], hit=match.answers.map(answer=>answer===quiz.correct), damage=hit.map((correct,index)=>correct?match.stats[index].damage:0);
   match.hp[0]=Math.max(0,match.hp[0]-damage[1]);match.hp[1]=Math.max(0,match.hp[1]-damage[0]);
   for(let i=0;i<2;i++) pvpSend(match.ids[i],{type:'PVP_RESULT',matchId:match.id,round:match.round+1,correct:hit[i],
     answered:match.answers[i]!==null,correctChoice:quiz.correct,correctAnswer:quiz.choices[quiz.correct],explanation:quiz.explanation,ownDamage:damage[i],opponentDamage:damage[1-i],hp:match.hp});
@@ -879,8 +892,8 @@ function pvpHostMessage(data) {
     }
     const ids=[invite.from,invite.to], students=ids.map(id=>connectedStudents.get(id));
     const stats=students.map(s=>pokemonBattleStats(s.selectedPokemon,s.xp,s.power));
-    const match={id:crypto.randomUUID(),ids,players:students.map((s,i)=>({name:s.name,pokemonId:s.selectedPokemon,cp:stats[i].cp,shiny:s.shinySelected})),
-      stats,hp:[100,100],round:0,answers:[null,null],quizzes:variedBattleQuizzes()};
+    const match={id:crypto.randomUUID(),ids,players:students.map((s,i)=>({name:s.name,pokemonId:s.selectedPokemon,cp:stats[i].cp,maxHp:stats[i].maxHp,damage:stats[i].damage,shiny:s.shinySelected})),
+      stats,hp:stats.map(s=>s.maxHp),round:0,answers:[null,null],quizzes:variedBattleQuizzes()};
     ids.forEach(id=>pvpRecentEnds.delete(id));
     pvpMatches.set(match.id,match);
     ids.forEach((id,i)=>{pvpBusy.set(id,match.id);students[i].pvpTickets--;pvpSend(id,{type:'PVP_START',matchId:match.id,players:match.players,seat:i,hp:match.hp});});
@@ -939,7 +952,7 @@ function pvpStartClock(remainingMs){
 function pvpRenderScore(players,hp,seat){
   document.getElementById('studentPvpScore').innerHTML=players.map((player,index)=>
     '<div class="pvp-fighter"><img src="'+getPokemonArtworkUrl(player.pokemonId,player.shiny)+'" alt=""><div><strong>'+
-    escapeClassroomText(player.name)+' · '+(player.shiny?'✨ 이로치 ':'')+escapeClassroomText(adventureCatalog.get(player.pokemonId)?.name||'포켓몬')+'</strong><small>HP '+hp[index]+' / 100</small><div class="pvp-hp-track"><span style="width:'+hp[index]+'%"></span></div></div></div>'
+    escapeClassroomText(player.name)+' · '+(player.shiny?'✨ 이로치 ':'')+escapeClassroomText(adventureCatalog.get(player.pokemonId)?.name||'포켓몬')+'</strong><small>CP '+player.cp+' · 공격 '+player.damage+' · HP '+hp[index]+' / '+player.maxHp+'</small><div class="pvp-hp-track"><span style="width:'+Math.max(0,Math.min(100,Math.round(hp[index]/player.maxHp*100)))+'%"></span></div></div></div>'
   ).join('<span class="pvp-versus">VS</span>');
 }
 function pvpMarkTicketSpent(matchId){
@@ -978,6 +991,7 @@ function returnFromStudentPvp(){
   if(studentPvpMatch)return;
   document.getElementById('studentPvpBox').style.display='none';document.getElementById('studentSoloBox').style.display='flex';
   document.getElementById('studentPvpReturn').hidden=true;renderStudentPvpStatus();
+  document.getElementById('studentSoloBox').scrollIntoView?.({block:'start'});
 }
 function studentPvpIncoming(data){
   if(data.type==='PVP_ROSTER'){pvpRoster=Array.isArray(data.roster)?data.roster:[];renderStudentPvpStatus();return;}
@@ -1008,7 +1022,7 @@ function studentPvpIncoming(data){
     document.getElementById('studentPvpInvite').hidden=true;
     refreshDailyStudy();pvpMarkTicketSpent(data.matchId);activeStudentProfile.pvpActiveMatch=data.matchId;saveStudentProfile();
     document.getElementById('studentSoloBox').style.display='none';document.getElementById('studentPvpBox').style.display='flex';
-    document.getElementById('studentPvpReturn').hidden=true;pvpNotice('대전 시작! 세 문제를 풀어요. 두 선수 모두 HP 100, 정답 공격은 35 대미지입니다.');return;
+    document.getElementById('studentPvpReturn').hidden=true;pvpNotice('대전 시작! 세 문제를 풀어요. CP와 강화에 따라 공격력과 HP가 달라집니다.');return;
   }
   if(data.type==='PVP_ROUND'){
     if(!studentPvpMatch||studentPvpMatch.id!==data.matchId)return;
@@ -1049,6 +1063,7 @@ function studentPvpIncoming(data){
       studentPvpMatch=null;studentPvpRound=null;pvpClearPending();pvpStopClock();
       document.getElementById('studentPvpTimer').textContent='대전 종료';
       document.getElementById('studentPvpSubmit').disabled=true;document.getElementById('studentPvpReturn').hidden=false;
+      document.getElementById('studentPvpBox').scrollIntoView?.({block:'start'});
     }
     return;
   }
@@ -1059,6 +1074,10 @@ handleStudentIncomingData=function(data){
   if(data.type?.startsWith('PVP_')){studentPvpIncoming(data);return;}
   adventureStudentPvp(data);
   if(data.type==='RAID_START'&&isStudentInRaid)document.getElementById('studentPvpBox').style.display='none';
+  if(data.type==='RAID_END'){
+    studentTrainingRaidId='';
+    document.getElementById('studentReturnRaid').hidden=true;
+  }
   if(data.type==='JOIN_ACK')renderStudentPvpStatus();
 };
 const adventureStartRaidPvp=startRaidBattle;
@@ -1115,8 +1134,10 @@ function initStudentMemo(){
   window.addEventListener('resize',()=>{if(!document.getElementById('studentMemoOverlay').hidden)studentMemoResize();});
 }
 function openStudentMemo(){
-  const prompt=studentPvpMatch&&studentPvpRound?.stem ? studentPvpRound.stem : isStudentInRaid ? document.getElementById('studentRaidQuestion').textContent : currentSoloQuiz?.stem;
-  document.getElementById('studentMemoProblem').textContent=prompt||'모눈에 세로셈과 소수점 위치를 적어 보세요.';
+  const quiz=studentPvpMatch&&studentPvpRound?.stem?studentPvpRound:isStudentInRaid?currentRaidQuiz:currentSoloQuiz;
+  const stem=studentPvpMatch&&studentPvpRound?.stem?studentPvpRound.stem:isStudentInRaid?document.getElementById('studentRaidQuestion').textContent:currentSoloQuiz?.stem;
+  const choices=quiz?.kind!=='guided'&&Array.isArray(quiz?.choices)?quiz.choices.map((choice,index)=>(index+1)+'. '+choice).join('\n'):'';
+  document.getElementById('studentMemoProblem').textContent=[stem,choices].filter(Boolean).join('\n')||'모눈에 세로셈과 소수점 위치를 적어 보세요.';
   document.getElementById('studentMemoOverlay').hidden=false;
   initStudentMemo();requestAnimationFrame(studentMemoResize);
 }
