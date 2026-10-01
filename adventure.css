@@ -65,6 +65,34 @@
 #studentSoloQuestion, #studentRaidQuestion { font-size:16px !important; line-height:1.6; }
 #studentSoloFormula, #studentRaidFormula { font-size:clamp(30px,3vw,42px) !important; }
 .student-input-help { margin:0; color:#a5b4cf; font-size:12px; line-height:1.5; text-align:center; }
+.student-dex-open { border:2px solid #facc15; border-radius:12px; padding:8px 14px; background:#3b2c18; color:#fef3c7; font:inherit; font-size:15px; font-weight:900; cursor:pointer; }
+.student-dex-open:hover { background:#59401c; }
+.student-dex-overlay[hidden] { display:none; }
+.student-dex-overlay { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:20px; background:#020617d9; }
+.student-dex-dialog { width:min(100%,960px); max-height:calc(100vh - 40px); display:flex; flex-direction:column; gap:14px; overflow:auto; padding:22px; border:2px solid #facc15; border-radius:20px; background:#101e34; color:#e2e8f0; box-shadow:0 24px 70px #0009; }
+.student-dex-heading { display:flex; justify-content:space-between; align-items:start; gap:15px; }
+.student-dex-heading h2 { margin:0; color:#facc15; font-size:25px; }
+.student-dex-heading p { margin:4px 0 0; color:#bae6fd; font-size:14px; }
+.student-dex-filters { display:flex; gap:8px; }
+.student-dex-filters button { border:1px solid #64748b; border-radius:10px; padding:8px 14px; background:#1e293b; color:#e2e8f0; font:inherit; cursor:pointer; }
+.student-dex-filters button[aria-pressed="true"] { border-color:#facc15; background:#59401c; color:#fff; }
+.student-dex-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:10px; overflow:auto; min-height:100px; }
+.student-dex-card { display:flex; flex-direction:column; align-items:center; gap:3px; min-height:148px; border:1px solid #475569; border-radius:12px; padding:7px; background:#182b43; color:white; font:inherit; cursor:pointer; }
+.student-dex-card.caught { border-color:#38bdf8; }
+.student-dex-card.locked { color:#94a3b8; }
+.student-dex-card img { width:76px; height:76px; object-fit:contain; }
+.student-dex-card.locked img { filter:grayscale(1) brightness(.15); }
+.student-dex-card strong { font-size:13px; }
+.student-dex-card small,.student-dex-card .dex-number { font-size:11px; }
+.student-dex-detail { display:flex; align-items:center; gap:12px; min-height:75px; border:1px solid #475569; border-radius:12px; padding:10px 14px; background:#17283e; line-height:1.6; }
+.student-dex-detail img { width:76px; height:76px; object-fit:contain; }
+.student-dex-detail div { display:flex; flex-direction:column; align-items:start; }
+.student-dex-detail strong { color:#facc15; }
+.student-dex-detail span { font-size:13px; }
+.student-dex-empty { grid-column:1/-1; text-align:center; color:#cbd5e1; }
+.typecast-credit[hidden] { display:none; }
+.typecast-credit { position:fixed; z-index:999; right:8px; bottom:8px; max-width:min(75vw,580px); border:1px solid #64748b; border-radius:8px; padding:4px 8px; background:#0f172add; color:#cbd5e1; font-size:10px; line-height:1.4; }
+.typecast-credit a { color:#7dd3fc; }
 .reason-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .reason-option { min-height:76px; border:2px solid #415675; background:#15263d; color:#eef6ff; border-radius:14px; padding:12px 14px; text-align:left; font:inherit; font-size:16px; line-height:1.45; cursor:pointer; touch-action:manipulation; }
 .reason-option:hover,.reason-option[aria-pressed="true"] { border-color:#facc15; background:#314154; }
@@ -72,6 +100,11 @@
 .reason-option:disabled { cursor:default; opacity:.75; }
 .reason-option.correct { border-color:#4ade80; background:#174632; }
 .reason-option.incorrect { border-color:#f87171; background:#4b2733; }
+.raid-answer-entry { display:flex; align-items:center; gap:14px; border:2px solid #facc15; border-radius:14px; background:#302818; padding:10px 14px; color:#fef3c7; font-size:17px; font-weight:900; }
+.raid-answer-entry span { flex:1; }
+#studentRaidAnswerInput { width:156px; min-height:48px; border:2px solid #facc15; border-radius:10px; background:#0f172a; color:#fff; text-align:center; font:inherit; font-size:22px; outline:none; }
+#studentRaidAnswerInput:focus-visible { box-shadow:0 0 0 3px #facc1566; }
+#studentRaidAnswerInput:disabled { opacity:.65; }
 .training-progress { color:#fde68a; font-size:14px; font-weight:800; text-align:center; }
 .strengthen-button { border:1px solid #facc15; background:#51411a; color:#fff0a5; border-radius:9px; font:inherit; font-size:12px; font-weight:800; padding:6px 8px; cursor:pointer; }
 #studentSoloBox .student-keypad-grid,#studentRaidBox .student-keypad-grid,#studentSoloInputDisplay,#studentRaidInputDisplay { display:none; }
@@ -122,6 +155,8 @@
   .student-answer-panel { padding-left:0; border-left:0; }
   .student-context .partner-grid { max-height:140px; grid-template-columns:repeat(3,minmax(0,1fr)); }
   .reason-options { grid-template-columns:1fr; }
+  .raid-answer-entry { flex-wrap:wrap; }
+  #studentRaidAnswerInput { width:100%; }
   .student-context .student-poke-card img { width:128px; height:128px; }
   #studentRaidBox .student-poke-card img { width:108px; height:108px; }
   #studentRaidBox .partner-battle-body>img { width:116px; height:116px; }

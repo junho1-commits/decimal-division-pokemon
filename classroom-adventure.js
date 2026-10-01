@@ -29,6 +29,8 @@ let adventureBattleLog = [];
 const raidFighters = new Map();
 const adventureCatalog = new Map(STAGES_DATA.flatMap(stage => stage.pokemons).map(poke => [poke.id, poke]));
 for (const boss of RAID_BOSSES) adventureCatalog.set(boss.bossId, {id:boss.bossId,name:boss.name.split(' ')[0],type:boss.type,typeBg:boss.typeBg,cp:3000});
+const studentDexEntries = STAGES_DATA.flatMap(stage => stage.pokemons.map(poke => ({...poke,stageId:stage.stageId,stageTitle:stage.title})));
+let studentDexFilter = 'all';
 const savedClassRoster = new Map();
 try {
   const saved = JSON.parse(localStorage.getItem(CLASS_ROSTER_KEY) || '[]');
@@ -117,6 +119,7 @@ function renderSavedStudentProfiles() {
   }
 }
 function switchStudentProfile() {
+  closeStudentDex();
   saveStudentProfile();
   clearInterval(classroomPulseTimer); clearTimeout(studentRetryTimer); clearTimeout(soloCaptureTimer);
   if (mqttStudentClient) { mqttStudentClient.onConnectionLost = () => {}; if (mqttStudentClient.isConnected()) mqttStudentClient.disconnect(); }
@@ -230,8 +233,8 @@ function renderStudentPartner() {
   document.getElementById('studentPartnerRecover').hidden = !stats || !fighter || hp > 0;
   document.getElementById('studentGoCapture').hidden = !!stats;
   const attack = document.getElementById('studentRaidAttackButton');
-  attack.disabled = !stats || hp <= 0 || studentSolved || !!pendingAnswer || !studentReady;
-  attack.textContent = !stats ? '🌿 먼저 포켓몬을 잡아주세요' : studentSolved ? '✓ 공격 완료 · 다음 문제 대기' : pendingAnswer ? '공격 확인 중…' : '⚡ ' + stats.move + ' 사용!';
+  attack.disabled = !stats || hp <= 0 || studentSolved || !!pendingAnswer || !studentReady || raidQuizChoice<0;
+  attack.textContent = !stats ? '🌿 먼저 포켓몬을 잡아주세요' : studentSolved ? '✓ 공격 완료 · 다음 문제 대기' : pendingAnswer ? '공격 확인 중…' : raidQuizChoice<0 ? '✏️ 답을 고르거나 입력하세요' : '⚡ ' + stats.move + ' 사용!';
 }
 function selectStudentPartner(id) {
   if (!studentCaughtList.includes(id) || pendingAnswer) return;
@@ -259,8 +262,49 @@ function recoverStudentPartner() {
 }
 updateStudentHeaderStats = function () {
   adventureBase.stats(); renderStudentCollection();
-  document.getElementById('studentMyCaught').textContent = '🔴 도감 ' + studentCaughtList.length + '마리';
+  document.getElementById('studentMyCaught').textContent = '🔴 도감 ' + studentCaughtList.length + '/' + studentDexEntries.length;
+  renderStudentDex();
 };
+function openStudentDex() {
+  const modal=document.getElementById('studentDexModal');
+  modal.hidden=false;
+  renderStudentDex();
+  modal.querySelector('.student-dex-heading button').focus();
+}
+function closeStudentDex() {
+  const modal=document.getElementById('studentDexModal');
+  if (!modal || modal.hidden) return;
+  modal.hidden=true;
+  document.querySelector('.student-dex-open')?.focus();
+}
+function setStudentDexFilter(filter) {
+  studentDexFilter=filter==='caught'?'caught':'all';
+  renderStudentDex();
+}
+function renderStudentDex() {
+  const count=studentCaughtList.filter(id=>studentDexEntries.some(p=>p.id===id)).length;
+  document.getElementById('studentDexHeaderCount').textContent=count+'/'+studentDexEntries.length;
+  if(document.getElementById('studentDexModal').hidden)return;
+  document.getElementById('studentDexProgress').textContent=count+' / '+studentDexEntries.length+'마리 발견 · '+(activeStudentProfile?.name||'닉네임을 입력하면 기록을 볼 수 있어요');
+  document.getElementById('studentDexAllButton').setAttribute('aria-pressed',String(studentDexFilter==='all'));
+  document.getElementById('studentDexCaughtButton').setAttribute('aria-pressed',String(studentDexFilter==='caught'));
+  const entries=studentDexEntries.filter(p=>studentDexFilter==='all'||studentCaughtList.includes(p.id));
+  document.getElementById('studentDexGrid').innerHTML=entries.map(p=>{
+    const caught=studentCaughtList.includes(p.id);
+    return '<button type="button" class="student-dex-card'+(caught?' caught':' locked')+'" onclick="showStudentDexDetail('+p.id+')" aria-label="No. '+String(p.id).padStart(3,'0')+' '+(caught?escapeClassroomText(p.name):'미발견 포켓몬')+'">'+
+      '<span class="dex-number">No. '+String(p.id).padStart(3,'0')+'</span><img src="'+getPokemonArtworkUrl(p.id)+'" alt="" loading="lazy"><strong>'+(caught?escapeClassroomText(p.name):'???')+'</strong><small>'+(caught?'✓ 포획':'미발견')+'</small></button>';
+  }).join('')||'<p class="student-dex-empty">아직 잡은 포켓몬이 없어요. 퀴즈를 풀어 첫 포켓몬을 만나 보세요!</p>';
+}
+function showStudentDexDetail(id) {
+  const p=studentDexEntries.find(p=>p.id===id);
+  if(!p)return;
+  const caught=studentCaughtList.includes(id), detail=document.getElementById('studentDexDetail');
+  if(!caught){ detail.innerHTML='<strong>No. '+String(id).padStart(3,'0')+' · 미발견</strong><span>'+p.stageId+'차시 '+escapeClassroomText(p.stageTitle)+'에서 만날 수 있어요. 퀴즈를 풀어 포획해 보세요.</span>'; return; }
+  const power=Math.max(0,Math.floor(Number(activeStudentProfile?.power[id])||0));
+  const energy=Math.max(0,Math.floor(Number(activeStudentProfile?.training[id])||0));
+  detail.innerHTML='<img src="'+getPokemonArtworkUrl(id)+'" alt="'+escapeClassroomText(p.name)+'"><div><strong>No. '+String(id).padStart(3,'0')+' · '+escapeClassroomText(p.name)+'</strong><span>'+escapeClassroomText(p.type)+' · '+p.stageId+'차시 · 훈련 +'+power+' · 에너지 '+energy+'/3</span><span>'+(selectedStudentPokemon===id?'현재 레이드 출전 파트너':'내가 잡은 포켓몬')+'</span><button type="button" class="adventure-button" onclick="selectStudentPartner('+id+');showStudentDexDetail('+id+')">'+(selectedStudentPokemon===id?'✓ 출전 중':'레이드 파트너로 선택')+'</button></div>';
+}
+window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!document.getElementById('studentDexModal').hidden)closeStudentDex();});
 sendStudentPresence = function () {
   sendClassroomMessage(mqttStudentClient,'to_host',{type:'JOIN',studentId:myStudentId,name:myStudentName,
     caught:studentCaughtList,selectedPokemon:selectedStudentPokemon,xp:myStudentXP,power:activeStudentProfile?.power[selectedStudentPokemon]||0});
@@ -455,6 +499,8 @@ handleStudentIncomingData = function (data) {
     adventureBase.incoming(data);
     if(previous!==data.problemId || !currentRaidQuiz){
       currentRaidQuiz={choices:Array.isArray(data.choices)?data.choices:[]}; raidQuizChoice=-1;
+      const answerInput=document.getElementById('studentRaidAnswerInput');
+      answerInput.value=''; answerInput.disabled=false;
       renderReasonOptions('studentRaidOptions',currentRaidQuiz,-1,'chooseStudentRaidOption');
       document.getElementById('studentRaidFormula').textContent='어떤 풀이가 맞을까요?';
     }
@@ -472,8 +518,10 @@ handleStudentIncomingData = function (data) {
         feedback.textContent += ' '+data.explanation;
         if(!data.isCorrect){
           raidQuizChoice=-1;
+          document.getElementById('studentRaidAnswerInput').value='';
           renderReasonOptions('studentRaidOptions',currentRaidQuiz,-1,'chooseStudentRaidOption');
         }else{
+          document.getElementById('studentRaidAnswerInput').disabled=true;
           renderReasonOptions('studentRaidOptions',currentRaidQuiz,Number(data.correctChoice),'chooseStudentRaidOption',true);
           document.getElementById('studentRaidOptions').children?.[Number(data.correctChoice)]?.classList.add('correct');
         }
@@ -509,7 +557,16 @@ sendStudentRaidAnswer = function () {
 function chooseStudentRaidOption(index) {
   if(!currentRaidQuiz || studentSolved || pendingAnswer || index<0 || index>=currentRaidQuiz.choices.length)return;
   raidQuizChoice=index;
+  document.getElementById('studentRaidAnswerInput').value=String(index+1);
   renderReasonOptions('studentRaidOptions',currentRaidQuiz,index,'chooseStudentRaidOption');
+  renderStudentPartner();
+}
+function setStudentRaidAnswerInput(value) {
+  const input=document.getElementById('studentRaidAnswerInput');
+  const digit=String(value).replace(/[^1-4]/g,'').slice(0,1);
+  input.value=digit;
+  if(digit) chooseStudentRaidOption(Number(digit)-1);
+  else { raidQuizChoice=-1; if(currentRaidQuiz) renderReasonOptions('studentRaidOptions',currentRaidQuiz,-1,'chooseStudentRaidOption'); renderStudentPartner(); }
 }
 returnToStudentSoloGame = function () {
   if (rewardedRaids.has(studentRaidSessionId)) studentClosedRaidId = studentRaidSessionId;

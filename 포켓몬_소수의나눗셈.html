@@ -2417,6 +2417,22 @@
       <div id="studentConnStatus" style="font-size: 13px; font-weight: 800; color: #4ade80;">
         ● 연결 대기 중
       </div>
+      <button type="button" class="student-dex-open" onclick="openStudentDex()">📖 내 도감 <span id="studentDexHeaderCount">0/34</span></button>
+    </div>
+
+    <div id="studentDexModal" class="student-dex-overlay" role="dialog" aria-modal="true" aria-labelledby="studentDexTitle" hidden>
+      <div class="student-dex-dialog">
+        <div class="student-dex-heading">
+          <div><h2 id="studentDexTitle">📖 나의 포켓몬 도감</h2><p id="studentDexProgress">0 / 34마리 발견</p></div>
+          <button type="button" class="adventure-button" onclick="closeStudentDex()" aria-label="도감 닫기">닫기 ✕</button>
+        </div>
+        <div class="student-dex-filters" role="group" aria-label="도감 보기 방식">
+          <button type="button" id="studentDexAllButton" onclick="setStudentDexFilter('all')">전체</button>
+          <button type="button" id="studentDexCaughtButton" onclick="setStudentDexFilter('caught')">잡은 포켓몬</button>
+        </div>
+        <div id="studentDexGrid" class="student-dex-grid"></div>
+        <div id="studentDexDetail" class="student-dex-detail" aria-live="polite">포켓몬을 눌러 자세히 살펴보세요.</div>
+      </div>
     </div>
 
     <!-- 1단계: 이름 입력 및 입장 -->
@@ -2600,6 +2616,11 @@
       </div>
 
       <div id="studentRaidOptions" class="reason-options" role="group" aria-label="레이드 풀이 선택"></div>
+      <label class="raid-answer-entry" for="studentRaidAnswerInput">
+        <span>✏️ 답 입력 (1~4)</span>
+        <input id="studentRaidAnswerInput" type="text" inputmode="numeric" autocomplete="off" maxlength="1" placeholder="선택지 번호" oninput="setStudentRaidAnswerInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();sendStudentRaidAnswer()}" aria-describedby="studentRaidAnswerHelp">
+      </label>
+      <p id="studentRaidAnswerHelp" class="student-input-help">선택지를 누르거나 번호를 직접 적으세요.</p>
       <!-- 이전 숫자 입력창 -->
       <div style="text-align: center;">
         <div style="font-size: 13px; font-weight: 800; color: #94a3b8; margin-bottom: 2px;">내가 계산한 공격 몫:</div>
@@ -2805,6 +2826,7 @@
     </div>
   </div>
 
+  <div id="typecastCredit" class="typecast-credit" hidden></div>
   <!-- =========================================================
        12. 게임 데이터 및 스크립트 로직
        ========================================================= -->
@@ -3696,25 +3718,56 @@
     const sound = new SoundEngine();
 
     /* =========================================================
-       D. 한국어 음성 내레이션 엔진 (Web Speech API)
+       D. 미리 제작한 타입캐스트 음성 재생
        ========================================================= */
     class VoiceEngine {
       constructor() {
         this.enabled = true;
         this.synth = window.speechSynthesis;
+        this.audio = null;
+        this.lines = null;
+        this.sequence = 0;
+        this.ready = typeof fetch === 'function' ? fetch('assets/voice/manifest.json')
+          .then(response => response.ok ? response.json() : null)
+          .then(manifest => {
+            if (!manifest?.lines) return;
+            this.lines = manifest.lines;
+            const credit = document.getElementById('typecastCredit');
+            if (credit) {
+              credit.textContent = '이 콘텐츠의 음성은 AI 가상 연기자 서비스 타입캐스트로 제작되었습니다. 사용 음성: ' + manifest.voice.name + '. ';
+              const link = document.createElement('a');
+              link.href = 'https://typecast.ai';
+              link.textContent = 'typecast.ai';
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              credit.appendChild(link);
+              credit.hidden = false;
+            }
+          }).catch(() => {}) : Promise.resolve();
       }
 
-      speak(text) {
-        if (!this.enabled || !this.synth) return;
+      async speak(text) {
+        if (!this.enabled) return;
+        const sequence = ++this.sequence;
         try {
-          this.synth.cancel();
+          this.synth?.cancel();
+          if (this.audio) { this.audio.pause(); this.audio = null; }
+          await this.ready;
+          if (sequence !== this.sequence || !this.enabled) return;
+          const file = this.lines?.[text];
+          if (file) {
+            this.audio = new Audio('assets/voice/' + file);
+            await this.audio.play();
+            return;
+          }
+          if (!this.synth) return;
           const utter = new SpeechSynthesisUtterance(text);
           utter.lang = 'ko-KR';
           utter.rate = 1.15;
           utter.pitch = 1.05;
           this.synth.speak(utter);
         } catch (e) {
-          console.warn("Speech synthesis error:", e);
+          console.warn("Voice playback error:", e);
         }
       }
     }

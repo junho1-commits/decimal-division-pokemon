@@ -21,7 +21,7 @@ class Client {
 function flush(){let limit=10000;while(queue.length){assert.ok(--limit>0,'message loop');queue.shift()();}}
 function context(url, memory = new Map()){
  const elements=new Map(), intervals=new Map();let timer=0;
- const element=id=>{if(!elements.has(id))elements.set(id,{style:{},textContent:'',innerHTML:'',value:'',classList:{add(){},remove(){},contains(){return false;}},appendChild(){},remove(){},addEventListener(){},getContext(){return {};}});return elements.get(id);};
+ const element=id=>{if(!elements.has(id))elements.set(id,{style:{},textContent:'',innerHTML:'',value:'',hidden:id==='studentDexModal',classList:{add(){},remove(){},contains(){return false;}},appendChild(){},remove(){},addEventListener(){},setAttribute(){},focus(){},querySelector:element,getContext(){return {};}});return elements.get(id);};
  const storage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,String(v)),removeItem:k=>memory.delete(k)};
  const c={console,URL,URLSearchParams,Date,Math,crypto:{randomUUID},navigator:{},location:new URL(url),localStorage:storage,sessionStorage:storage,
  document:{getElementById:element,querySelector:element,querySelectorAll:()=>[],createElement:element,addEventListener(){}},
@@ -45,6 +45,14 @@ flush();assert.equal(host.run('connectedStudents.size'),30);assert.ok(students.e
 host.run('startRaidBattle()');flush();assert.ok(students.every(c=>c.run('isStudentInRaid')));
 assert.ok(host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.every(p=>p.choices.length===4 && !Object.hasOwn(p,"ansMain"))'),'raid phases ask for reasoning choices');
 const a=students[0];
+assert.equal(a.el('studentDexHeaderCount').textContent,'1/34');
+a.run('openStudentDex()');assert.equal(a.el('studentDexModal').hidden,false);
+assert.match(a.el('studentDexGrid').innerHTML,/피카츄/);
+a.run('setStudentDexFilter("caught")');assert.doesNotMatch(a.el('studentDexGrid').innerHTML,/미발견/);
+a.run('showStudentDexDetail(25)');assert.match(a.el('studentDexDetail').innerHTML,/레이드/);
+a.run('closeStudentDex()');assert.equal(a.el('studentDexModal').hidden,true);
+a.run('setStudentRaidAnswerInput("2")');assert.equal(a.run('raidQuizChoice'),1);
+assert.equal(a.el('studentRaidAnswerInput').value,'2');
 function answer(student){const value=host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[gameState.currentRaidPhase].correct');student.run('chooseStudentRaidOption('+value+'); sendStudentRaidAnswer()');}
 // Lost result: retry must return the same result without applying damage or XP twice.
 drop=(client,message)=>JSON.parse(message.payloadString).type==='RESULT';answer(a);const packet=a.run('JSON.stringify(pendingAnswer)');flush();assert.equal(host.run('raidHp'),2225);assert.equal(a.run('myStudentXP'),0);
