@@ -1914,7 +1914,7 @@
           <div class="stat-pill" title="잡은 포켓몬 수">
             <span class="icon">🔴</span>
             <span>도감</span>
-            <span class="val" id="valCaughtCount">0 / 48</span>
+            <span class="val" id="valCaughtCount">0 / 52</span>
           </div>
         </div>
 
@@ -1931,7 +1931,7 @@
           <button class="btn-action multiplayer-btn" onclick="openMultiplayerModal()" id="btnMultiplayer" title="학생 스마트폰/크롬북 실시간 연동 (P)">
             <span>📡</span> 실시간 학생 참여
           </button>
-          <select id="raidBossChoice" aria-label="레이드 보스 선택" class="raid-boss-choice"><option value="0">뮤츠</option><option value="1">레쿠쟈</option></select>
+          <select id="raidBossChoice" aria-label="레이드 보스 선택" class="raid-boss-choice"></select>
           <button class="btn-action raid-btn" onclick="startRaidBattle()">
             <span>⚡</span> 전설 레이드
           </button>
@@ -1964,7 +1964,7 @@
               </div>
               <div class="stage-bottom">
                 <div class="poke-preview-list" id="previewS1"></div>
-                <div class="stage-progress" id="progS1"><span>0</span> / 6</div>
+                <div class="stage-progress" id="progS1"><span>0</span> / 8</div>
               </div>
             </div>
 
@@ -1980,7 +1980,7 @@
               </div>
               <div class="stage-bottom">
                 <div class="poke-preview-list" id="previewS2"></div>
-                <div class="stage-progress" id="progS2"><span>0</span> / 6</div>
+                <div class="stage-progress" id="progS2"><span>0</span> / 8</div>
               </div>
             </div>
 
@@ -1996,7 +1996,7 @@
               </div>
               <div class="stage-bottom">
                 <div class="poke-preview-list" id="previewS3"></div>
-                <div class="stage-progress" id="progS3"><span>0</span> / 6</div>
+                <div class="stage-progress" id="progS3"><span>0</span> / 8</div>
               </div>
             </div>
 
@@ -2012,7 +2012,7 @@
               </div>
               <div class="stage-bottom">
                 <div class="poke-preview-list" id="previewS4"></div>
-                <div class="stage-progress" id="progS4"><span>0</span> / 6</div>
+                <div class="stage-progress" id="progS4"><span>0</span> / 8</div>
               </div>
             </div>
 
@@ -2028,7 +2028,7 @@
               </div>
               <div class="stage-bottom">
                 <div class="poke-preview-list" id="previewS5"></div>
-                <div class="stage-progress" id="progS5"><span>0</span> / 5</div>
+                <div class="stage-progress" id="progS5"><span>0</span> / 7</div>
               </div>
             </div>
 
@@ -2044,7 +2044,7 @@
               </div>
               <div class="stage-bottom">
                 <div class="poke-preview-list" id="previewS6"></div>
-                <div class="stage-progress" id="progS6"><span>0</span> / 5</div>
+                <div class="stage-progress" id="progS6"><span>0</span> / 7</div>
               </div>
             </div>
 
@@ -2053,8 +2053,8 @@
               <div style="flex: 1; white-space: nowrap;">
                 <div class="stage-badge badge-raid">FINAL BOSS RAID · 단원 마무리 종합</div>
                 <div class="stage-info">
-                  <h3>전설의 성소 (뮤츠 & 레쿠쟈 레이드 배틀)</h3>
-                  <div class="concept" style="color: #fbcfe8;">실생활 문장제 & 함정 조건 극복 (텃밭, 하이킹, 페인트, 버스 기름)</div>
+                  <h3>전설의 성소 (전설의 포켓몬 레이드 배틀)</h3>
+                  <div class="concept" style="color: #fbcfe8;">원리 · 계산 · 실생활 문제 3개로 전설의 보스에 도전</div>
                   <div class="desc" style="color: #fdf2f8;">학급의 모든 지혜를 모아 전설의 포켓몬 체력을 깎고 포획하세요!</div>
                 </div>
               </div>
@@ -2071,6 +2071,7 @@
         <div id="viewBattle" class="view-screen">
           <!-- 좌측 배틀 필드 -->
           <div class="battle-field theme-stage1" id="battleField">
+            <div id="raidHitFlash" class="raid-hit-flash" aria-hidden="true"></div>
             <!-- 상단 포켓몬 정보 HUD -->
             <div class="poke-hud">
               <div class="poke-meta">
@@ -2234,7 +2235,7 @@
               <span>📖</span> 포켓몬 도감 (POKÉDEX)
             </h2>
             <div class="pokedex-rate">
-              수집률: <span id="dexCollectRate">0%</span> (<span id="dexCollectCount">0</span> / 48 마리)
+              수집률: <span id="dexCollectRate">0%</span> (<span id="dexCollectCount">0</span> / <span id="dexTotalCount">52</span> 마리)
             </div>
             <div style="display: flex; gap: 10px; white-space: nowrap;">
               <button class="btn-action" onclick="resetPokedexData()" style="color: #fca5a5; font-size: 14px;">
@@ -2417,13 +2418,29 @@
       <div id="studentConnStatus" style="font-size: 13px; font-weight: 800; color: #4ade80;">
         ● 연결 대기 중
       </div>
-      <button type="button" class="student-dex-open" onclick="openStudentDex()">📖 내 도감 <span id="studentDexHeaderCount">0/48</span></button>
+      <button type="button" class="student-memo-button" onclick="openStudentMemo()">📝 계산 메모장</button>
+      <button type="button" class="student-dex-open" onclick="openStudentDex()">📖 내 도감 <span id="studentDexHeaderCount">0/52</span></button>
+    </div>
+
+    <div id="studentMemoOverlay" class="student-memo-overlay" role="dialog" aria-modal="true" aria-labelledby="studentMemoTitle" hidden>
+      <div class="student-memo-dialog">
+        <div class="student-memo-heading"><h2 id="studentMemoTitle">📝 나의 계산 메모장</h2></div>
+        <p id="studentMemoProblem" class="student-memo-problem"></p>
+        <div class="student-memo-tools">
+          <button type="button" id="studentMemoPen" onclick="setStudentMemoTool('pen')" aria-pressed="true">✏️ 펜</button>
+          <button type="button" id="studentMemoEraser" onclick="setStudentMemoTool('eraser')" aria-pressed="false">🧽 지우개</button>
+          <button type="button" onclick="undoStudentMemo()">↩️ 한 획 취소</button>
+          <button type="button" onclick="clearStudentMemo()">🗑️ 모두 지우기</button>
+          <button type="button" class="memo-close" onclick="closeStudentMemo()">✓ 닫기</button>
+        </div>
+        <div class="student-memo-paper"><canvas id="studentMemoCanvas" aria-label="손가락이나 펜으로 계산하는 공간"></canvas></div>
+      </div>
     </div>
 
     <div id="studentDexModal" class="student-dex-overlay" role="dialog" aria-modal="true" aria-labelledby="studentDexTitle" hidden>
       <div class="student-dex-dialog">
         <div class="student-dex-heading">
-          <div><h2 id="studentDexTitle">📖 나의 포켓몬 도감</h2><p id="studentDexProgress">0 / 48마리 발견</p></div>
+          <div><h2 id="studentDexTitle">📖 나의 포켓몬 도감</h2><p id="studentDexProgress">0 / 52마리 발견</p></div>
           <button type="button" class="adventure-button" onclick="closeStudentDex()" aria-label="도감 닫기">닫기 ✕</button>
         </div>
         <div class="student-dex-filters" role="group" aria-label="도감 보기 방식">
@@ -2468,7 +2485,7 @@
         </div>
         <div style="display: flex; gap: 12px; font-size: 15px; font-weight: 800;">
           <span style="color: #facc15;" id="studentMyXP">⭐ 0 XP</span>
-          <span style="color: #4ade80;" id="studentMyCaught">🔴 도감 0/48</span>
+          <span style="color: #4ade80;" id="studentMyCaught">🔴 도감 0/52</span>
         </div>
       </div>
 
@@ -2566,6 +2583,7 @@
     <div class="student-box pvp-arena" id="studentPvpBox" style="display:none">
       <h2>⚔️ 친구 대전</h2>
       <div id="studentPvpScore" class="pvp-score"></div>
+      <div id="studentPvpTimer" class="pvp-timer" role="timer"></div>
       <div id="studentPvpQuestion" class="pvp-question"></div>
       <div id="studentPvpOptions" class="reason-options" role="group" aria-label="대전 풀이 선택"></div>
       <button type="button" id="studentPvpSubmit" class="btn-student-primary" onclick="submitStudentPvpAnswer()">선택한 생각으로 공격하기</button>
@@ -2575,6 +2593,7 @@
 
     <!-- 2단계 B: [실시간 협동 보스전 모드] (교사가 레이드 열면 자동 전환) -->
     <div class="student-box" id="studentRaidBox" style="display: none; border-color: #ef4444;">
+      <div id="studentRaidHitFlash" class="student-raid-hit-flash" aria-hidden="true"></div>
       <!-- 비상 레이드 소환 배너 -->
       <div class="student-raid-alert-banner">
         🚨 [긴급 보스전 소환] 선생님이 전설의 보스를 소환했습니다!<br>내가 잡은 포켓몬과 함께 출전!
@@ -3389,6 +3408,17 @@
         ]
       }
     ];
+    RAID_BOSSES.push(...[
+      {bossId:249,name:'루기아 (Lugia)',type:'에스퍼/비행',typeBg:'#64748b'},
+      {bossId:250,name:'칠색조 (Ho-Oh)',type:'불꽃/비행',typeBg:'#ea580c'},
+      {bossId:483,name:'디아루가 (Dialga)',type:'강철/드래곤',typeBg:'#2563eb'},
+      {bossId:484,name:'펄기아 (Palkia)',type:'물/드래곤',typeBg:'#be185d'}
+    ].map(boss=>({...boss,maxHp:300,phases:RAID_BOSSES[0].phases.map(phase=>({...phase}))})));
+    let raidShiny = false;
+    function renderRaidBossChoices() {
+      const select=document.getElementById('raidBossChoice');
+      select.innerHTML=RAID_BOSSES.map((boss,index)=>'<option value="'+index+'">'+boss.name.split(' ')[0]+'</option><option value="'+index+'s">✨ 이로치 '+boss.name.split(' ')[0]+'</option>').join('');
+    }
 
     /* =========================================================
        B-2. 스타팅 포켓몬 진화 계통 및 승급 퀴즈 데이터
@@ -3829,6 +3859,7 @@
     let gameState = {
       xp: 0,
       caughtList: [],
+      shinyCaught: [],
       currentStageIndex: 1,
       currentPokeIndex: 0,
       isRaidMode: false,
@@ -3856,6 +3887,7 @@
           const parsed = JSON.parse(raw);
           gameState.xp = parsed.xp || 0;
           gameState.caughtList = parsed.caughtList || [];
+          gameState.shinyCaught = Array.isArray(parsed.shinyCaught) ? parsed.shinyCaught.filter(id=>RAID_BOSSES.some(boss=>boss.bossId===id)) : [];
         }
       } catch (e) {
         console.error("Save load error:", e);
@@ -3868,7 +3900,8 @@
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           xp: gameState.xp,
-          caughtList: gameState.caughtList
+          caughtList: gameState.caughtList,
+          shinyCaught: gameState.shinyCaught
         }));
       } catch (e) {
         console.error("Save error:", e);
@@ -3881,6 +3914,7 @@
       if (confirm("정말로 모든 포켓몬 도감 기록과 경험치를 초기화하시겠습니까?")) {
         gameState.xp = 0;
         gameState.caughtList = [];
+        gameState.shinyCaught = [];
         saveGame();
         renderPokedexGrid();
         alert("도감이 성공적으로 초기화되었습니다!");
@@ -3897,8 +3931,8 @@
       // Large battle artwork stays sharp on classroom displays and tablets.
       return getPokemonArtworkUrl(id);
     }
-    function getPokemonArtworkUrl(id) {
-      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+    function getPokemonArtworkUrl(id, shiny=false) {
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${shiny?'shiny/':''}${id}.png`;
     }
 
     /* =========================================================
@@ -4068,7 +4102,7 @@
         <span class="poke-type-badge" style="background: ${boss.typeBg};">${boss.type}</span>
       `;
       document.getElementById("battleStageName").textContent = `전설의 레이드 배틀 · 페이즈 ${gameState.currentRaidPhase + 1} / 3`;
-      document.getElementById("battlePokeCP").textContent = `CP ??????`;
+      document.getElementById("battlePokeCP").textContent = raidShiny ? '✨ 이로치 · CP ??????' : 'CP ??????';
 
       const curHp = raidHp;
       document.getElementById("raidHpText").textContent = `${curHp} / ${boss.maxHp}`;
@@ -4077,10 +4111,10 @@
       const pokeImg = document.getElementById("battlePokeImg");
       pokeImg.style.transform = "scale(1.2)";
       pokeImg.style.opacity = "1";
-      pokeImg.src = getPokemonGifUrl(boss.bossId);
+      pokeImg.src = getPokemonArtworkUrl(boss.bossId,raidShiny);
       pokeImg.onerror = () => {
         pokeImg.onerror = null;
-        pokeImg.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${boss.bossId}.png`;
+        pokeImg.src = getPokemonArtworkUrl(boss.bossId);
       };
 
       document.getElementById("quizDifficultyTag").textContent = `🔥 FINAL RAID : 실생활 문장제 & 함정 극복`;
@@ -4564,8 +4598,8 @@
           typeBg: b.typeBg,
           stageTitle: "전설 레이드",
           stageId: "RAID",
-          formula: b.phases[0].formula + " 등 문장제 3선",
-          ansMain: b.phases[0].ansMain
+          formula: "원리 · 계산 · 실생활 문제 3개",
+          ansMain: "정답 공격으로 토벌"
         });
       });
 
@@ -4573,6 +4607,7 @@
       const rate = Math.round((caughtCount / allPokes.length) * 100);
       document.getElementById("dexCollectRate").textContent = `${rate}%`;
       document.getElementById("dexCollectCount").textContent = caughtCount;
+      document.getElementById("dexTotalCount").textContent = allPokes.length;
 
       allPokes.forEach(p => {
         const isCaught = gameState.caughtList.includes(p.id);
@@ -4581,8 +4616,8 @@
 
         card.innerHTML = `
           <div class="dex-num">No.${String(p.id).padStart(3, '0')}</div>
-          <img src="${getPokemonArtworkUrl(p.id)}" class="dex-img" alt="${p.name}">
-          <div class="dex-name">${isCaught ? p.name : '???'}</div>
+          <img src="${getPokemonArtworkUrl(p.id,gameState.shinyCaught.includes(p.id))}" class="dex-img" alt="${p.name}">
+          <div class="dex-name">${isCaught ? (gameState.shinyCaught.includes(p.id)?'✨ 이로치 ':'')+p.name : '???'}</div>
           <div class="dex-stage-tag">${p.stageTitle}</div>
         `;
 
@@ -4598,8 +4633,8 @@
       sound.playKey();
       activeDexPoke = p;
       document.getElementById("dexDetailNum").textContent = `No. ${String(p.id).padStart(3, '0')}`;
-      document.getElementById("dexDetailImg").src = getPokemonArtworkUrl(p.id);
-      document.getElementById("dexDetailName").textContent = p.name;
+      document.getElementById("dexDetailImg").src = getPokemonArtworkUrl(p.id,gameState.shinyCaught.includes(p.id));
+      document.getElementById("dexDetailName").textContent = (gameState.shinyCaught.includes(p.id)?'✨ 이로치 ':'')+p.name;
       document.getElementById("dexDetailTypes").innerHTML = `
         <span class="poke-type-badge" style="background: ${p.typeBg}; font-size: 15px; padding: 4px 12px;">${p.type}</span>
       `;
@@ -4805,6 +4840,7 @@
 
     window.addEventListener("DOMContentLoaded", () => {
       resizeViewport();
+      renderRaidBossChoices();
       initCanvas();
       initScratchpad();
       loadSavedGame();
@@ -4901,13 +4937,14 @@
       if (!gameState.caughtList.includes(boss.bossId)) {
         gameState.caughtList.push(boss.bossId);
       }
+      if (raidShiny && !gameState.shinyCaught.includes(boss.bossId)) gameState.shinyCaught.push(boss.bossId);
       gameState.xp += 1000;
       saveGame();
 
       if (typeof broadcastRaidVictory === "function") broadcastRaidVictory(boss.name);
 
-      document.getElementById("raidVictoryImg").src = getPokemonArtworkUrl(boss.bossId);
-      document.getElementById("raidVictoryBossName").textContent = `${boss.name} 토벌 & 생포 완료!`;
+      document.getElementById("raidVictoryImg").src = getPokemonArtworkUrl(boss.bossId,raidShiny);
+      document.getElementById("raidVictoryBossName").textContent = `${raidShiny?'✨ 이로치 ':''}${boss.name} 토벌 & 생포 완료!`;
       document.getElementById("modalRaidVictory").style.display = "flex";
       voice.speak(`축하합니다! 우리 반 학급 전원의 힘으로 전설의 보스 ${boss.name}를 완벽히 토벌했습니다!`);
     }
@@ -5095,7 +5132,7 @@
       return { type: "RAID_START", raidId: raidSessionId, problemId: currentProblemId(),
         bossName: boss.name, bossId: boss.bossId, maxHp: boss.maxHp, curHp: raidHp,
         formula: phase.formula, question: phase.question, phase: gameState.currentRaidPhase,
-        finished: raidFinished };
+        finished: raidFinished, shiny:raidShiny };
     }
 
     function beginRaidSession() {
@@ -5108,6 +5145,7 @@
 
     function applyRaidDamage(amount) {
       if (!gameState.isRaidMode || raidFinished) return;
+      if (amount > 0) playRaidHitEffect(amount);
       const boss = RAID_BOSSES[gameState.currentRaidBossIndex];
       // 한 문제의 공격으로 다음 문제를 건너뛰지 않습니다.
       const floor = Math.round(boss.maxHp * (1 - (gameState.currentRaidPhase + 1) / boss.phases.length));
@@ -5120,6 +5158,18 @@
         gameState.currentRaidPhase++;
         loadCurrentRaidBattle();
       }
+    }
+
+    function playRaidHitEffect(amount) {
+      const flash=document.getElementById('raidHitFlash');
+      const sprite=document.getElementById('battlePokeImg');
+      if(!flash||!sprite)return;
+      flash.classList.remove('active');void flash.offsetWidth;flash.classList.add('active');
+      if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+        sprite.classList.remove('boss-raid-hit');void sprite.offsetWidth;sprite.classList.add('boss-raid-hit');
+        setTimeout(()=>sprite.classList.remove('boss-raid-hit'),650);
+      }
+      setTimeout(()=>flash.classList.remove('active'),600);
     }
 
     function setStudentConnection(text, ready) {
@@ -5273,7 +5323,7 @@
 
 
     function broadcastRaidVictory(bossName) {
-      sendClassroomMessage(mqttHostClient, "broadcast", { type: "RAID_VICTORY", raidId: raidSessionId, bossName, bossId:RAID_BOSSES[gameState.currentRaidBossIndex].bossId });
+      sendClassroomMessage(mqttHostClient, "broadcast", { type: "RAID_VICTORY", raidId: raidSessionId, bossName, bossId:RAID_BOSSES[gameState.currentRaidBossIndex].bossId, shiny:raidShiny });
     }
 
 
@@ -5542,7 +5592,7 @@
         if (sameProblem) {
           document.getElementById("studentRaidHpText").textContent = data.curHp + " / " + data.maxHp + " HP";
           document.getElementById("studentRaidHpBar").style.width = (data.curHp / data.maxHp * 100) + "%";
-          if (data.finished) handleStudentIncomingData({ type: "RAID_VICTORY", raidId: data.raidId, bossId:data.bossId });
+          if (data.finished) handleStudentIncomingData({ type: "RAID_VICTORY", raidId: data.raidId, bossId:data.bossId, shiny:data.shiny });
           return;
         }
         // 교사가 레이드 보스전을 시작함 -> 전원 자동 전환!
@@ -5554,8 +5604,8 @@
         document.getElementById("studentRaidBox").style.display = "flex";
         document.getElementById("studentRaidVictoryModal").style.display = "none";
 
-        document.getElementById("studentRaidBossImg").src = getPokemonArtworkUrl(data.bossId);
-        document.getElementById("studentRaidBossName").textContent = `👑 전설의 보스: ${data.bossName}`;
+        document.getElementById("studentRaidBossImg").src = getPokemonArtworkUrl(data.bossId,!!data.shiny);
+        document.getElementById("studentRaidBossName").textContent = `${data.shiny?'✨ 이로치 ':'👑 전설의 보스: '}${data.bossName}`;
         document.getElementById("studentRaidHpText").textContent = `${data.curHp} / ${data.maxHp} HP`;
         document.getElementById("studentRaidHpBar").style.width = `${(data.curHp / data.maxHp) * 100}%`;
         document.getElementById("studentRaidFormula").textContent = `${data.formula} = ?`;
@@ -5565,7 +5615,7 @@
         studentRaidInputVal = "";
         document.getElementById("studentRaidInputDisplay").textContent = "_";
         document.getElementById("studentRaidFeedback").style.display = "none";
-        if (data.finished) handleStudentIncomingData({ type: "RAID_VICTORY", raidId: data.raidId, bossId:data.bossId });
+        if (data.finished) handleStudentIncomingData({ type: "RAID_VICTORY", raidId: data.raidId, bossId:data.bossId, shiny:data.shiny });
       } else if (data.type === "RAID_HP_UPDATE") {
         if (data.raidId !== studentRaidSessionId) return;
         // 보스 실시간 체력 갱신

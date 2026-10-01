@@ -21,11 +21,11 @@ class Client {
 function flush(){let limit=10000;while(queue.length){assert.ok(--limit>0,'message loop');queue.shift()();}}
 function context(url, memory = new Map()){
  const elements=new Map(), intervals=new Map();let timer=0;
- const element=id=>{if(!elements.has(id))elements.set(id,{style:{},textContent:'',innerHTML:'',value:'',hidden:id==='studentDexModal',classList:{add(){},remove(){},contains(){return false;}},appendChild(){},remove(){},addEventListener(){},setAttribute(){},focus(){},querySelector:element,getContext(){return {};}});return elements.get(id);};
+ const element=id=>{if(!elements.has(id))elements.set(id,{style:{},textContent:'',innerHTML:'',value:'',hidden:id==='studentDexModal'||id==='studentMemoOverlay',handlers:{},classList:{add(){},remove(){},contains(){return false;}},appendChild(){},remove(){},addEventListener(type,fn){this.handlers[type]=fn;},setAttribute(){},focus(){},querySelector:element,getBoundingClientRect(){return {width:600,height:360,left:0,top:0};},setPointerCapture(){},getContext(){return {setTransform(){},clearRect(){},beginPath(){},moveTo(){},lineTo(){},arc(){},fill(){},stroke(){}};}});return elements.get(id);};
  const storage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,String(v)),removeItem:k=>memory.delete(k)};
  const c={console,URL,URLSearchParams,Date,Math,crypto:{randomUUID},navigator:{},location:new URL(url),localStorage:storage,sessionStorage:storage,
  document:{getElementById:element,querySelector:element,querySelectorAll:()=>[],createElement:element,addEventListener(){}},
- setTimeout:()=>++timer,clearTimeout(){},setInterval:fn=>{intervals.set(++timer,fn);return timer;},clearInterval:id=>intervals.delete(id),
+ setTimeout:()=>++timer,clearTimeout(){},setInterval:fn=>{intervals.set(++timer,fn);return timer;},clearInterval:id=>intervals.delete(id),requestAnimationFrame:fn=>fn(),
  addEventListener(){},alert:message=>c.alerts.push(message),alerts:[],Paho:{Client,Message:class{constructor(s){this.payloadString=s;}}}};
  c.window=c;c.innerWidth=1280;c.innerHeight=900;vm.createContext(c);vm.runInContext(script,c);
  c.memory=memory; c.run=code=>vm.runInContext(code,c);c.el=element;c.pulse=()=>[...intervals.values()].forEach(fn=>fn());
@@ -45,7 +45,7 @@ flush();assert.equal(host.run('connectedStudents.size'),30);assert.ok(students.e
 host.run('startRaidBattle()');flush();assert.ok(students.every(c=>c.run('isStudentInRaid')));
 assert.ok(host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.every(p=>p.choices.length===4 && !Object.hasOwn(p,"ansMain"))'),'raid phases ask for reasoning choices');
 const a=students[0];
-assert.equal(a.el('studentDexHeaderCount').textContent,'1/48');
+assert.equal(a.el('studentDexHeaderCount').textContent,'1/52');
 a.run('openStudentDex()');assert.equal(a.el('studentDexModal').hidden,false);
 assert.match(a.el('studentDexGrid').innerHTML,/피카츄/);
 a.run('setStudentDexFilter("caught")');assert.doesNotMatch(a.el('studentDexGrid').innerHTML,/미발견/);
@@ -129,14 +129,19 @@ const hostReload=context('http://localhost:8200/index.html',host.memory);assert.
 assert.ok(!html.includes('id="btnBgm"')&&!html.includes('id="btnVoice"')&&!html.includes('id="btnAudio"'));
 assert.equal(profileTab.run('sound.bgmMuted'),false);assert.equal(profileTab.run('voice.enabled'),true);
 // Reasoning bank, shuffled order, nickname progress, capture and strengthening.
-assert.equal(profileTab.run('Object.values(PROCESS_QUIZZES).flat().length'),36);
-assert.equal(profileTab.run('RAID_REASONING_QUIZZES.length'),8);
+assert.equal(profileTab.run('Object.values(PROCESS_QUIZZES).flat().length'),60);
+assert.equal(profileTab.run('RAID_REASONING_QUIZZES.length'),16);
+profileTab.run('renderRaidBossChoices()');
+assert.equal((profileTab.el('raidBossChoice').innerHTML.match(/<option /g)||[]).length,12,'six legendary bosses each have normal and shiny choices');
+assert.equal(profileTab.run('effectiveness("땅",483)'),1.5);
+assert.equal(profileTab.run('new Set(variedBattleQuizzes().map(q=>q.category)).size'),3,'each battle mixes three math question types');
+assert.ok(profileTab.run('Object.values(PROCESS_QUIZZES).flat().concat(RAID_REASONING_QUIZZES).every(q=>q.choices.length===4 && q.correct>=0 && q.correct<4 && new Set(q.choices).size===4)'));
 const named='가빈 나연 세은 주원 지언 서희 수은 보민 지우 희경 윤정 민수 건 도현 승준 예준 시원 재휘 태언 이찬 지호 수현'.split(' ');
 const stems=profileTab.run('Object.values(PROCESS_QUIZZES).flat().concat(RAID_REASONING_QUIZZES).map(q=>q.stem).join(" ")');
 assert.ok(named.every(name=>stems.includes(name)));
 assert.ok(!stems.includes('김가빈')&&!stems.includes('박세은'));
-const order=profileTab.run('Array.from({length:6},()=>nextSoloQuiz(1).id)');
-assert.equal(new Set(order).size,6,'stage questions form a shuffled nonrepeating round');
+const order=profileTab.run('Array.from({length:10},()=>nextSoloQuiz(1).id)');
+assert.equal(new Set(order).size,10,'stage questions form a shuffled nonrepeating round');
 const quizTab=context(join,new Map());quizTab.run('loadStudentProfile("퀴즈학생"); renderStudentSoloGame()');
 for(let i=0;i<3;i++)quizTab.run('chooseStudentSoloOption(currentSoloQuiz.correct);sendStudentSoloAnswer();sendStudentSoloAnswer()');
 assert.equal(quizTab.run('studentCaughtList.length'),1,'two correct explanations capture the first Pokemon');
@@ -153,6 +158,17 @@ assert.equal(quizTab.run('pokemonBattleStats(25,myStudentXP,activeStudentProfile
 const quizRestore=context(join,quizTab.memory);quizRestore.run('loadStudentProfile("퀴즈학생")');
 assert.equal(quizRestore.run('activeStudentProfile.power[25]'),1,'strengthening persists by nickname');
 quizRestore.run('showStudentDexDetail(25)');assert.match(quizRestore.el('studentDexDetail').innerHTML,/맞힌 답:/,'capture question survives reload');
+quizTab.run('openStudentMemo()');
+assert.equal(quizTab.el('studentMemoOverlay').hidden,false);
+assert.equal(quizTab.el('studentMemoProblem').textContent,quizTab.run('currentSoloQuiz.stem'));
+const memoCanvas=quizTab.el('studentMemoCanvas');
+memoCanvas.handlers.pointerdown({preventDefault(){},pointerId:1,currentTarget:memoCanvas,clientX:20,clientY:30});
+memoCanvas.handlers.pointermove({preventDefault(){},currentTarget:memoCanvas,clientX:80,clientY:100});
+memoCanvas.handlers.pointerup();
+assert.equal(quizTab.run('studentMemoStrokes.length'),1);
+quizTab.run('undoStudentMemo();closeStudentMemo()');
+assert.equal(quizTab.run('studentMemoStrokes.length'),0);
+assert.equal(quizTab.el('studentMemoOverlay').hidden,true);
 // Daily study grants tickets; a host-arbitrated friend battle consumes one and runs three reasoning rounds.
 host.run('showMapView()');flush();
 const b=students[1];
@@ -163,21 +179,47 @@ assert.ok(b.run('studentPvpInvite'));
 b.run('replyStudentPvp(true)');flush();
 assert.ok(a.run('studentPvpMatch')&&b.run('studentPvpMatch'));
 assert.equal(a.run('activeStudentProfile.pvpTickets'),0);
+assert.equal(host.run('[...pvpMatches.values()][0].hp[0]'),100,'both players start with equal HP');
+assert.equal(host.run('new Set([...pvpMatches.values()][0].quizzes.map(q=>q.category)).size'),3);
+assert.match(a.el('studentPvpTimer').textContent,/남은 시간/);
 for(let round=0;round<3&&a.run('studentPvpMatch');round++){
  const answerIndex=host.run('[...pvpMatches.values()][0].quizzes['+round+'].correct');
- a.run('chooseStudentPvpOption('+answerIndex+');submitStudentPvpAnswer()');
+ if(round===0)drop=(client,message)=>client===host.run('mqttHostClient')&&JSON.parse(message.payloadString).type==='PVP_ANSWER'&&JSON.parse(message.payloadString).studentId===a.run('myStudentId');
+ a.run('chooseStudentPvpOption('+answerIndex+');submitStudentPvpAnswer()');flush();
+ if(round===0){assert.equal(host.run('[...pvpMatches.values()][0].answers[0]'),null,'lost answer has not scored');drop=()=>false;a.pulse();flush();assert.equal(host.run('[...pvpMatches.values()][0].answers[0]'),answerIndex,'answer retry reaches host');}
  b.run('chooseStudentPvpOption('+answerIndex+');submitStudentPvpAnswer()');flush();
 }
 assert.equal(a.run('studentPvpMatch'),null);
 assert.equal(b.run('studentPvpMatch'),null);
 assert.match(a.el('studentPvpLog').textContent,/XP/);
+const pvpXp=a.run('myStudentXP');a.run('sendStudentPresence()');flush();
+assert.equal(a.run('myStudentXP'),pvpXp,'replayed battle result cannot award XP twice');
 for(const student of [a,b])student.run('activeStudentProfile.pvpTickets=1;studentCaughtList=[25,94];selectedStudentPokemon=25;saveStudentProfile();sendStudentPresence()');
 flush();a.el('studentPvpTarget').value=b.run('myStudentId');a.run('requestStudentPvp()');flush();b.run('replyStudentPvp(true)');flush();
+const matchId=a.run('studentPvpMatch.id');
+assert.equal(a.run('activeStudentProfile.pvpActiveMatch'),matchId);
+a.run('studentPvpMatch=null;studentPvpRound=null;sendStudentPresence()');flush();
+assert.equal(a.run('studentPvpMatch.id'),matchId,'active match returns after reconnect');
+assert.equal(a.run('activeStudentProfile.pvpTickets'),0,'reconnect does not consume another ticket');
 const wrongPvp=host.run('([ ...pvpMatches.values() ][0].quizzes[0].correct+1)%4');
 const rightPvp=host.run('[...pvpMatches.values()][0].quizzes[0].correct');
 a.run('chooseStudentPvpOption('+wrongPvp+');submitStudentPvpAnswer()');
 b.run('chooseStudentPvpOption('+rightPvp+');submitStudentPvpAnswer()');flush();
-assert.equal(a.run('studentCaughtList.length'),1,'a wrong battle answer makes one random caught Pokemon flee');
+assert.equal(a.run('studentCaughtList.length'),2,'a wrong friendly battle answer does not remove a caught Pokemon');
+host.el('raidBossChoice').value='2s';host.run('startRaidBattle()');flush();
+assert.equal(host.run('RAID_BOSSES[gameState.currentRaidBossIndex].bossId'),249);
+assert.equal(host.run('raidShiny'),true);
+assert.equal(host.run('new Set(RAID_BOSSES[gameState.currentRaidBossIndex].phases.map(q=>RAID_REASONING_QUIZZES.find(item=>item.id===q.id).category)).size'),3);
+assert.match(host.el('battlePokeImg').src,/official-artwork\/shiny\/249\.png$/);
+assert.match(a.el('studentRaidBossImg').src,/official-artwork\/shiny\/249\.png$/);
+a.run('activeStudentProfile.raidQualified.push("shiny-test");resolveStudentRaidCapture("shiny-test",249,0,true)');
+assert.ok(a.run('activeStudentProfile.shinyCaught.includes(249)'));
+const shinyRestore=context(join,a.memory);shinyRestore.run('loadStudentProfile("test0")');
+assert.ok(shinyRestore.run('activeStudentProfile.shinyCaught.includes(249)'),'shiny capture persists');
+const interrupted=context(join,new Map());
+interrupted.run('loadStudentProfile("이어하기");activeStudentProfile.pvpTickets=0;activeStudentProfile.pvpSpentMatches=["old-match"];activeStudentProfile.pvpActiveMatch="old-match";saveStudentProfile();handleStudentIncomingData({type:"PVP_SYNC",matchId:null})');
+assert.equal(interrupted.run('activeStudentProfile.pvpTickets'),1,'teacher restart returns a ticket after a reload');
+assert.equal(interrupted.run('activeStudentProfile.pvpActiveMatch'),'');
 const raidCatchTab=context(join,new Map());
 raidCatchTab.run('loadStudentProfile("레이드학생");activeStudentProfile.raidQualified=["round-1"];activeStudentProfile.raidAnswered["round-1"]=[{stem:"어떤 풀이가 맞을까요?",answer:"두 수에 함께 10을 곱한다",explanation:"몫이 같아요."}];resolveStudentRaidCapture("round-1",150,0);openStudentDex();showStudentDexDetail(150)');
 assert.ok(raidCatchTab.run('studentCaughtList.includes(150)'));

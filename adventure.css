@@ -190,3 +190,49 @@
 .pvp-score { text-align:center; font-weight:800; color:#facc15; font-size:18px; }
 .pvp-question { background:#0f172a; border:1px solid #8b5cf6; border-radius:12px; padding:18px; color:#fff; font-size:20px; font-weight:800; }
 .pvp-arena #studentPvpLog { color:#e9d5ff; font-weight:700; min-height:28px; }
+.pvp-timer { color:#fef08a; font-weight:900; text-align:center; }
+.pvp-score { display:flex; align-items:center; gap:10px; }
+.pvp-fighter { flex:1; min-width:0; display:flex; align-items:center; gap:9px; padding:8px; border:1px solid #64748b; border-radius:12px; background:#17243a; text-align:left; }
+.pvp-fighter img { width:64px; height:64px; object-fit:contain; }
+.pvp-fighter>div { flex:1; min-width:0; }
+.pvp-fighter strong,.pvp-fighter small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pvp-fighter strong { color:#fff; font-size:14px; }
+.pvp-fighter small { color:#cbd5e1; font-size:12px; }
+.pvp-versus { color:#facc15; font-weight:900; }
+.pvp-hp-track { height:10px; margin-top:5px; overflow:hidden; border-radius:10px; background:#071521; }
+.pvp-hp-track span { display:block; height:100%; background:linear-gradient(90deg,#16a34a,#86efac); transition:width .3s; }
+@media(max-width:679px) { .pvp-fighter img { width:44px; height:44px; } .pvp-fighter strong { font-size:12px; } }
+#studentRaidBox { position:relative; overflow:hidden; }
+.student-raid-hit-flash { position:absolute; inset:0; z-index:9; pointer-events:none; opacity:0; background:radial-gradient(circle,transparent 32%,#fb718566 100%); }
+.student-raid-hit-flash.active { animation:raidScreenFlash .55s ease-out; }
+@media(prefers-reduced-motion:reduce) { .student-raid-hit-flash.active { animation:none; } }
+
+/* Keep the full raid console reachable on shorter classroom displays. */
+#mainContent { min-height:0; }
+#viewBattle .battle-field,#viewBattle .battle-quiz-panel { min-height:0; overflow-y:auto; }
+#viewBattle .poke-stage-arena { min-height:0; }
+#viewBattle .theme-raid .poke-stage-arena { flex:1 1 180px; }
+#viewBattle .theme-raid .wild-pokemon-img { width:min(100%,340px); height:min(100%,340px); max-width:100%; max-height:100%; }
+#viewBattle .theme-raid .coop-raid-console { flex:0 0 auto; gap:6px; padding:8px 12px; margin-top:6px; }
+
+.raid-hit-flash { position:absolute; inset:0; z-index:24; pointer-events:none; opacity:0; background:radial-gradient(circle at 50% 52%,transparent 20%,#fb71858c 100%); }
+.raid-hit-flash.active { animation:raidScreenFlash .6s ease-out; }
+@keyframes raidScreenFlash { 0%{opacity:0} 18%{opacity:1} 100%{opacity:0} }
+@media(prefers-reduced-motion:reduce) { .raid-hit-flash.active { animation:none; } }
+
+.student-memo-button { border:2px solid #38bdf8; border-radius:12px; padding:8px 13px; background:#113044; color:#e0f2fe; font:inherit; font-weight:900; cursor:pointer; }
+.student-app-header { flex-wrap:wrap; }
+@media(max-width:679px) { .student-app-header>div:first-child { flex:1; } #studentConnStatus { text-align:right; } .student-memo-button,.student-dex-open { flex:1; min-width:0; font-size:13px; } }
+.student-memo-overlay[hidden] { display:none; }
+.student-memo-overlay { position:fixed; inset:0; z-index:1100; display:grid; place-items:center; padding:12px; background:#020617e8; }
+.student-memo-dialog { width:min(980px,100%); height:min(740px,calc(100dvh - 24px)); min-height:340px; display:flex; flex-direction:column; gap:10px; padding:14px; border:2px solid #38bdf8; border-radius:18px; background:#101e34; box-shadow:0 20px 60px #000b; }
+.student-memo-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+.student-memo-heading h2 { margin:0; color:#facc15; font-size:22px; }
+.student-memo-problem { color:#e2e8f0; font-size:15px; line-height:1.45; max-height:86px; overflow:auto; }
+.student-memo-tools { display:flex; flex-wrap:wrap; gap:7px; }
+.student-memo-tools button { min-height:38px; border:1px solid #64748b; border-radius:9px; padding:6px 12px; background:#1e293b; color:#fff; font:inherit; font-weight:800; cursor:pointer; }
+.student-memo-tools button[aria-pressed="true"] { background:#245479; border-color:#38bdf8; }
+.student-memo-tools .memo-close { margin-left:auto; background:#1d4ed8; border-color:#60a5fa; }
+.student-memo-paper { flex:1; min-height:0; border:1px solid #475569; border-radius:10px; overflow:hidden; background-color:#0b1324; background-image:linear-gradient(#ffffff16 1px,transparent 1px),linear-gradient(90deg,#ffffff16 1px,transparent 1px); background-size:28px 28px; }
+#studentMemoCanvas { width:100%; height:100%; display:block; touch-action:none; cursor:crosshair; }
+@media(max-width:679px) { .student-memo-dialog { padding:10px; } .student-memo-heading h2 { font-size:19px; } .student-memo-tools button { padding:5px 8px; } }
