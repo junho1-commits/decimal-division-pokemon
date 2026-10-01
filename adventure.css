@@ -271,3 +271,8 @@
 @media(min-width:900px) and (orientation:landscape) { #studentSoloOptions:has(.guided-practice) { max-height:clamp(160px,calc(100vh - 540px),430px); } }
 .division-header { display:flex; align-items:center; justify-content:flex-end; letter-spacing:0; }
 .division-number { display:grid; text-align:center; }
+
+.math-voice-controls { display:flex; gap:6px; flex-wrap:wrap; }
+.math-voice-controls button { padding:7px 10px; border:1px solid #527fa8; border-radius:8px; background:#17324a; color:white; font:inherit; font-size:13px; cursor:pointer; }
+.math-voice-controls button:disabled { opacity:.45; }
+@media(min-width:900px) and (orientation:landscape) { #studentSoloOptions:has(.guided-practice) { max-height:clamp(150px,calc(100vh - 585px),430px); } }

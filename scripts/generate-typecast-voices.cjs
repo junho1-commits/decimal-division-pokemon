@@ -14,7 +14,10 @@ const {STAGES_DATA, RAID_BOSSES, EVOLUTION_CHAINS} = vm.runInNewContext(
   html.slice(start, end) + '\n({STAGES_DATA, RAID_BOSSES, EVOLUTION_CHAINS})'
 );
 
+const voiceDir = path.join(root,'assets','voice');
+const savedManifest = JSON.parse(fs.readFileSync(path.join(voiceDir,'manifest.json'),'utf8'));
 const lines = new Set([
+  ...Object.keys(savedManifest.lines || {}),
   '가라, 몬스터볼!', '슈퍼볼 투척!', '하이퍼볼 투척!',
   '계산이 맞지 않습니다. 다시 풀어보세요!',
   '앗! 볼에서 빠져나왔다!',
@@ -37,10 +40,33 @@ for (const chain of Object.values(EVOLUTION_CHAINS)) {
   }
 }
 
+// Include learning prompts and each selectable method, preserving all existing event recordings.
+const practiceContext = {STAGES_DATA,RAID_BOSSES,EVOLUTION_CHAINS};
+vm.createContext(practiceContext);
+vm.runInContext(fs.readFileSync(path.join(root,'process-quizzes.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'guided-practice.js'),'utf8')+'\nthis.voicePractice={PROCESS_QUIZZES,GUIDED_QUIZZES,RAID_REASONING_QUIZZES};',practiceContext);
+const {PROCESS_QUIZZES,GUIDED_QUIZZES,RAID_REASONING_QUIZZES}=practiceContext.voicePractice;
+for (const quiz of [...Object.values(PROCESS_QUIZZES).flat(),...Object.values(GUIDED_QUIZZES).flat(),...RAID_REASONING_QUIZZES]) {
+  lines.add(quiz.stem); lines.add(quiz.explanation);
+  for(const method of quiz.methods || []) {lines.add(method.instruction);lines.add(method.explanation);}
+}
+for(const name of ['꼬렛','구구']) { lines.add(`야생의 ${name}가 나타났다!`);lines.add(`신난다! ${name}을 잡았다!`); }
+for(const text of ['정답을 하나 고른 뒤 풀이 이유를 확인하세요.','각 칸에 직접 입력하세요. 풀이가 길면 이 영역 안을 아래로 스크롤하세요.','아직 빈칸이 있어요. 풀이 과정을 모두 채워 주세요.','같은 포켓몬을 다시 잡으면 강화용 중복 수가 쌓입니다. 중복 두 마리로 한 번 강화할 수 있어요.'])lines.add(text);
+
 const manifest = Object.fromEntries([...lines].map(text => [text, crypto.createHash('sha256').update(text).digest('hex').slice(0,16)+'.wav']));
 const totalChars = [...lines].reduce((sum, text) => sum + text.length, 0);
 if (process.argv.includes('--dry-run')) {
-  console.log(`${lines.size} voice lines; ${totalChars} characters. No API request made.`);
+  const missing=Object.values(manifest).filter(file=>!fs.existsSync(path.join(voiceDir,file)));
+  const newChars=[...lines].filter(text=>!fs.existsSync(path.join(voiceDir,manifest[text]))).reduce((sum,text)=>sum+text.length,0);
+  console.log(JSON.stringify({voice:savedManifest.voice,totalLines:lines.size,missingFiles:missing.length,newCharacters:newChars,totalCharacters:totalChars,apiRequests:0}));
+  process.exit(0);
+}
+
+if(process.argv.includes('--sync-manifest')) {
+  const readyLines=Object.fromEntries(Object.entries(manifest).filter(([,file])=>fs.existsSync(path.join(voiceDir,file))));
+  const temporary=path.join(voiceDir,'manifest.pending.json');
+  fs.writeFileSync(temporary,JSON.stringify({voice:savedManifest.voice,lines:readyLines},null,2)+'\n');
+  fs.renameSync(temporary,path.join(voiceDir,'manifest.json'));
+  console.log(Object.keys(readyLines).length+' recorded lines indexed. No API request made.');
   process.exit(0);
 }
 
@@ -50,6 +76,8 @@ if (!apiKey) throw new Error('TYPECAST_API_KEY is not set in the process or Wind
 const base = 'https://api.typecast.ai';
 const auth = {'X-API-KEY':apiKey};
 async function chooseVoice() {
+  // Reuse the exact recorded character; never select a fresh recommendation on reruns.
+  if (savedManifest.voice?.id) return savedManifest.voice;
   if (process.env.TYPECAST_VOICE_ID) return {id:process.env.TYPECAST_VOICE_ID,name:'선택한 보이스'};
   const url = base + '/v1/voices/recommendations?query=' + encodeURIComponent('초등학교 수학 게임에서 밝고 친근하게 한국어로 안내하는 목소리');
   const response = await fetch(url, {headers:auth});
@@ -69,6 +97,10 @@ async function chooseVoice() {
   return voice;
 }
 
+function speechText(text) {
+  return text.replace(/(\d+)\/(\d+)/g,(_,n,d)=>`${d}분의 ${n}`).replace(/÷/g,' 나누기 ').replace(/×/g,' 곱하기 ').replace(/≈/g,' 약 ').replace(/=/g,' 는 ').replace(/㎡/g,'제곱미터').replace(/kg/g,'킬로그램').replace(/km/g,'킬로미터').replace(/cm/g,'센티미터').replace(/(\d)L/g,'$1리터').replace(/(\d)m/g,'$1미터').replace(/→/g,' 다음으로 ');
+}
+
 async function main() {
   const voice = await chooseVoice();
   if (process.argv.includes('--voice-check')) {
@@ -77,23 +109,48 @@ async function main() {
   }
   const dir = path.join(root, 'assets', 'voice');
   fs.mkdirSync(dir, {recursive:true});
-  let completed=0;
-  for (const [text, file] of Object.entries(manifest)) {
-    const target=path.join(dir,file);
-    if (!fs.existsSync(target)) {
-      const response=await fetch(base+'/v1/text-to-speech', {
-        method:'POST', headers:{...auth,'Content-Type':'application/json'},
-        body:JSON.stringify({voice_id:voice.id,text,model:'ssfm-v30',prompt:{emotion_type:'smart'},output:{audio_format:'wav'}})
-      });
-      if (!response.ok) throw new Error('Typecast synthesis failed (HTTP '+response.status+') at line '+(completed+1)+'.');
-      const audio=Buffer.from(await response.arrayBuffer());
-      if (audio.toString('ascii',0,4)!=='RIFF' || audio.length<1000) throw new Error('Typecast returned an unexpected audio format at line '+(completed+1)+'.');
-      fs.writeFileSync(target,audio);
-    }
-    completed++;
-    if (completed%10===0 || completed===lines.size) console.log(`${completed}/${lines.size} audio files ready`);
+  const entries=Object.entries(manifest);
+  let completed=0, next=0, failed=false;
+  let checkpointQueue=Promise.resolve();
+  function checkpoint() {
+    checkpointQueue=checkpointQueue.catch(()=>{}).then(async()=>{
+      const target=path.join(dir,'manifest.json'),temporary=path.join(dir,'manifest.pending.json');
+      const content=JSON.stringify({voice,lines:Object.fromEntries(entries.filter(([,file])=>fs.existsSync(path.join(dir,file))))},null,2)+'\n';
+      for(let attempt=0;attempt<6;attempt++) {
+        try {await fs.promises.writeFile(temporary,content);await fs.promises.rename(temporary,target);return;}
+        catch(error){if(attempt===5)throw error;await new Promise(resolve=>setTimeout(resolve,1000));}
+      }
+    });
+    return checkpointQueue;
   }
-  fs.writeFileSync(path.join(dir,'manifest.json'),JSON.stringify({voice,lines:manifest},null,2)+'\n');
+  async function worker() {
+    while(!failed && next<entries.length) {
+      const [text,file]=entries[next++],target=path.join(dir,file);
+      try {
+        if(!fs.existsSync(target)) {
+          let response;
+          for(let attempt=0;attempt<5;attempt++) {
+            response=await fetch(base+'/v1/text-to-speech', {
+              method:'POST',headers:{...auth,'Content-Type':'application/json'},
+              body:JSON.stringify({voice_id:voice.id,text:speechText(text),model:'ssfm-v30',prompt:{emotion_type:'smart'},output:{audio_format:'wav'}}),signal:AbortSignal.timeout(90000)
+            });
+            if(response.ok)break;
+            if(![429,500,502,503,504].includes(response.status) || attempt===4)throw new Error('Typecast synthesis failed (HTTP '+response.status+'). Completed files are saved for resume.');
+            await new Promise(resolve=>setTimeout(resolve,Math.min(60000,10000*(attempt+1))));
+          }
+          const audio=Buffer.from(await response.arrayBuffer());
+          if(audio.toString('ascii',0,4)!=='RIFF' || audio.length<1000)throw new Error('Unexpected audio format. Completed files are saved for resume.');
+          fs.writeFileSync(target,audio);
+        }
+        completed++;
+        if(completed%10===0 || completed===entries.length){await checkpoint();console.log(`${completed}/${entries.length} audio files ready`);}
+      } catch(error){failed=true;await checkpoint();throw error;}
+    }
+  }
+  const results=await Promise.allSettled(Array.from({length:3},()=>worker()));
+  const error=results.find(result=>result.status==='rejected');
+  if(error){await checkpoint();throw error.reason;}
+  await checkpoint();
   console.log('Voice:',voice.name,'— manifest and audio ready.');
 }
 main().catch(error=>{console.error(error.message);process.exitCode=1;});

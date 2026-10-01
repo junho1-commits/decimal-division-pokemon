@@ -2539,6 +2539,7 @@
         </div>
       </div>
 
+      <div class="math-voice-controls"><button type="button" onclick="listenStudentMath()">🔊 문제 듣기</button><button type="button" onclick="listenStudentMath('instruction')">풀이 안내 듣기</button><button type="button" id="studentExplanationVoice" onclick="listenStudentMath('explanation')" disabled>해설 듣기</button></div>
       <div id="studentSoloOptions" class="reason-options" role="group" aria-label="풀이 방법 선택"></div>
       <div id="studentTrainingProgress" class="training-progress" aria-live="polite"></div>
       <!-- 이전 숫자 입력창 -->
@@ -2652,6 +2653,7 @@
         </div>
       </div>
 
+      <div class="math-voice-controls"><button type="button" onclick="listenStudentMath()">🔊 문제 듣기</button></div>
       <div id="studentRaidOptions" class="reason-options" role="group" aria-label="레이드 풀이 선택"></div>
       <label class="raid-answer-entry" for="studentRaidAnswerInput">
         <span>✏️ 답 입력 (1~4)</span>
@@ -3804,6 +3806,8 @@
         this.synth = window.speechSynthesis;
         this.audio = null;
         this.audioNodes = null;
+        this.player = null;
+        this.mediaSource = null;
         this.lines = null;
         this.sequence = 0;
         this.ready = typeof fetch === 'function' ? fetch('assets/voice/manifest.json')
@@ -3825,6 +3829,18 @@
           }).catch(() => {}) : Promise.resolve();
       }
 
+      async unlock() {
+        try {
+          sound.init();
+          if(this.audio)return;
+          const sequence=this.sequence;
+          const player=this.player || (this.player=new Audio());
+          player.src='assets/voice/611ca1a2181d0d66.wav';player.muted=true;
+          await player.play();
+          if(sequence===this.sequence){player.pause();player.currentTime=0;player.muted=false;}
+        } catch(error) { console.warn('Audio activation will retry on the next listen action.'); }
+      }
+
       stopAudio() {
         if (this.audio) {
           this.audio.pause();
@@ -3841,7 +3857,7 @@
           sound.init();
           const context = sound.ctx;
           if (!context?.createMediaElementSource) return;
-          const source = context.createMediaElementSource(audio);
+          const source = this.mediaSource || (this.mediaSource=context.createMediaElementSource(audio));
           const gain = context.createGain();
           const limiter = context.createDynamicsCompressor();
           gain.gain.value = 8;
@@ -3869,7 +3885,8 @@
           if (sequence !== this.sequence || !this.enabled) return;
           const file = this.lines?.[text];
           if (file) {
-            const audio = new Audio('assets/voice/' + file);
+            const audio = this.player || (this.player=new Audio());
+            audio.src='assets/voice/' + file;audio.muted=false;audio.volume=1;
             this.audio = audio;
             this.boostAudio(audio);
             audio.addEventListener('ended', () => {

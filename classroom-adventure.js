@@ -24,6 +24,7 @@ let currentSoloQuiz = null;
 let soloQuizChoice = -1;
 let soloQuizQueue = {};
 let lastSoloQuizId = {};
+let lastStudentSpokenQuiz = '';
 let currentRaidQuiz = null;
 let raidQuizChoice = -1;
 let teacherSoloQuiz = null;
@@ -162,7 +163,7 @@ function loadStudentProfile(name) {
   for (const id of Array.isArray(saved.receivedResults) ? saved.receivedResults : []) receivedResults.add(id);
   for (const id of Array.isArray(saved.rewardedRaids) ? saved.rewardedRaids : []) rewardedRaids.add(id);
   pendingAnswer = null; studentFighter = null;
-  currentSoloQuiz = null; soloQuizChoice = -1; soloQuizQueue = {}; lastSoloQuizId = {};
+  currentSoloQuiz = null; soloQuizChoice = -1; soloQuizQueue = {}; lastSoloQuizId = {}; lastStudentSpokenQuiz='';
   saveStudentProfile();
 }
 function loseRandomStudentPokemon() {
@@ -234,6 +235,7 @@ joinClassroomBattle = function () {
   if (!input.value) { alert('닉네임을 입력해주세요!'); return; }
   if (activeStudentProfile && activeStudentProfile.name !== input.value) saveStudentProfile();
   loadStudentProfile(input.value);
+  voice.unlock();
   adventureBase.join();
 };
 initStudentSoloGame = function () { renderStudentStageTabs(); renderStudentSoloGame(); updateStudentHeaderStats(); };
@@ -277,7 +279,16 @@ renderStudentSoloGame = function () {
   document.getElementById('studentTrainingProgress').textContent='🔴 '+poke.name+' 포획: '+(activeStudentProfile?.captureSteps[poke.id]||0)+'/2개 정답 · 누적 '+captureCount(poke.id)+'마리 · 트레이너 Lv.'+trainerLevel(myStudentXP);
   document.getElementById('studentSoloSubmit').textContent=currentSoloQuiz.kind==='guided'?'풀이 과정 확인하기':'선택한 생각 확인하기';
   renderReasonOptions('studentSoloOptions',currentSoloQuiz,-1,'chooseStudentSoloOption');
+  document.getElementById('studentExplanationVoice').disabled=true;
+  if(studentReady && lastStudentSpokenQuiz!==currentSoloQuiz.id){lastStudentSpokenQuiz=currentSoloQuiz.id;voice.speak(currentSoloQuiz.stem);}
 };
+async function listenStudentMath(mode='question') {
+  await voice.unlock();
+  if(isStudentInRaid){voice.speak(document.getElementById('studentRaidQuestion').textContent);return;}
+  if(!currentSoloQuiz)return;
+  const text=mode==='instruction'?(currentSoloQuiz.kind==='guided'?guidedMethod(currentSoloQuiz).instruction:'정답을 하나 고른 뒤 풀이 이유를 확인하세요.'):mode==='explanation'?(soloCaptureBusy?(currentSoloQuiz.kind==='guided'?guidedMethod(currentSoloQuiz).explanation:currentSoloQuiz.explanation):''):currentSoloQuiz.stem;
+  if(text)voice.speak(text);
+}
 function chooseStudentSoloOption(index) {
   if(soloCaptureBusy || !currentSoloQuiz || currentSoloQuiz.kind==='guided' || index<0 || index>=currentSoloQuiz.choices.length)return;
   soloQuizChoice=index;
@@ -626,6 +637,7 @@ handleStudentIncomingData = function (data) {
       answerInput.value=''; answerInput.disabled=false;
       renderReasonOptions('studentRaidOptions',currentRaidQuiz,-1,'chooseStudentRaidOption');
       document.getElementById('studentRaidFormula').textContent='어떤 풀이가 맞을까요?';
+      voice.speak(document.getElementById('studentRaidQuestion').textContent);
     }
     renderStudentCollection(); return;
   }
@@ -732,6 +744,7 @@ sendStudentSoloAnswer = function () {
       activeStudentProfile.captureHistory[poke.id]=[...activeStudentProfile.captureEvidence[poke.id]];
       activeStudentProfile.captureEvidence[poke.id]=[];
       if(!selectedStudentPokemon) selectedStudentPokemon=poke.id;
+      voice.speak('신난다! '+poke.name+'을 잡았다!');
       reward=' 🎉 '+poke.name+' 포획! +100 XP · 누적 '+captureCount(poke.id)+'마리 · 강화용 중복 '+duplicateCount(poke.id)+'마리';
       const next=studentCurrentPokeIdx+1;
       if(first && stage.pokemons[next] && encounterLevel(stage.pokemons[next])<=trainerLevel(myStudentXP)) studentCurrentPokeIdx=next;
@@ -739,9 +752,10 @@ sendStudentSoloAnswer = function () {
     }else activeStudentProfile.captureSteps[poke.id]=steps;
     reward+=awardDailyStudyCorrect();
     saveStudentProfile(); updateStudentHeaderStats(); sendStudentPresence();
-  }else { sound.playError(); }
+  }else { sound.playError(); voice.speak('계산이 맞지 않습니다. 다시 풀어보세요!'); }
   fb.textContent=(correct?'✓ 이해했어요! +30 XP.':'다시 생각해 봐요.')+' '+currentSoloQuiz.explanation+reward;
   soloCaptureBusy=true;
+  document.getElementById('studentExplanationVoice').disabled=false;
   renderReasonOptions('studentSoloOptions',currentSoloQuiz,soloQuizChoice,'chooseStudentSoloOption',true);
   if(currentSoloQuiz.kind!=='guided') [...(document.getElementById('studentSoloOptions').children||[])].forEach((button,index)=>button.classList.add(index===currentSoloQuiz.correct?'correct':index===soloQuizChoice?'incorrect':''));
   document.getElementById('studentSoloSubmit').textContent='다음 생각 문제 →';
@@ -1108,3 +1122,7 @@ function setStudentMemoTool(tool){
 }
 function undoStudentMemo(){studentMemoStrokes.pop();studentMemoDraw();}
 function clearStudentMemo(){studentMemoStrokes=[];studentMemoCurrent=null;studentMemoDraw();}
+
+window.addEventListener('pointerdown',()=>{
+  if(new URLSearchParams(location.search).get('role')==='student')sound.init();
+},{passive:true});
