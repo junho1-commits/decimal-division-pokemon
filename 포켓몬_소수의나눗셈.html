@@ -2489,7 +2489,7 @@
         </div>
       </div>
 
-      <div class="profile-toolbar"><span id="studentSaveStatus" role="status">모험 기록 준비 중</span><div class="student-menu-actions"><details id="studentPvpMenu" class="student-pvp-menu"><summary>☰ 친구대전 목록</summary>      <section class="pvp-lobby" aria-label="친구 대전">
+      <div class="profile-toolbar"><span id="studentSaveStatus" role="status">모험 기록 준비 중</span><div class="student-menu-actions"><button type="button" onclick="document.getElementById('studentPokemonDialog').showModal()">🎒 내 포켓몬</button><details id="studentPvpMenu" class="student-pvp-menu"><summary>☰ 친구대전 목록</summary>      <section class="pvp-lobby" aria-label="친구 대전">
         <div><strong>⚔️ 친구 대전</strong><p id="studentPvpProgress">오늘 생각 퀴즈 정답 5개마다 대전권 1장</p></div>
         <label>상대 친구 <select id="studentPvpTarget"><option value="">접속한 친구를 기다리는 중</option></select></label>
         <button type="button" class="adventure-button" onclick="requestStudentPvp()">대전 신청</button>
@@ -2497,9 +2497,10 @@
         <div id="studentPvpInvite" class="pvp-invite" hidden></div>
       </section><button type="button" class="pvp-menu-close" onclick="document.getElementById('studentPvpMenu').open=false">목록 닫기</button></details><button type="button" onclick="switchStudentProfile()">닉네임 바꾸기</button></div></div>
 
+      <dialog id="studentPokemonDialog" class="student-pokemon-dialog" aria-label="내 포켓몬"><form method="dialog"><button class="adventure-button">닫기 ✕</button></form>      <section class="partner-collection"><h3>🎒 내 포켓몬</h3><p class="adventure-note">잡은 포켓몬을 선택하면 레이드·친구대전에 출전해요. 정답으로 모은 훈련 에너지로 강화할 수 있어요.</p><div id="studentCollection" class="partner-grid"></div></section></dialog>
       <div class="student-columns">
       <section class="student-context" aria-label="내 포켓몬과 학습 차시">
-      <details class="partner-collection" open><summary>🎒 내 포켓몬 · 출전할 친구 고르기</summary><p class="adventure-note">퀴즈 정답 2개로 포켓몬을 잡아요. 정답마다 훈련 에너지 1개를 받고, 3개를 모으면 해당 포켓몬의 [강화] 버튼을 누를 수 있어요. 강화한 포켓몬은 레이드에서 더 강해져요.</p><div id="studentCollection" class="partner-grid"></div></details>
+
       <!-- 차시 선택 탭 바 (1차시 ~ 6차시) -->
       <div>
         <div style="font-size: 12px; font-weight: 800; color: #94a3b8; margin-bottom: 4px;">학습할 차시 선택:</div>
@@ -2526,7 +2527,7 @@
         </div>
       </div>
 
-      <div id="studentEncounterChoices" class="encounter-choices" aria-label="포획할 포켓몬 선택"></div>
+      <details class="encounter-menu"><summary>🔴 잡을 포켓몬 바꾸기</summary><div id="studentEncounterChoices" class="encounter-choices" aria-label="포획할 포켓몬 선택"></div></details>
       </section>
       <section class="student-answer-panel" aria-label="문제 풀기">
       <!-- 나눗셈 퀴즈 수식 카드 -->
