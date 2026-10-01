@@ -10,6 +10,8 @@ const adventureBase = {
 const PROFILE_PREFIX = 'pokemon_student_profile_v2:';
 const PROFILE_INDEX = 'pokemon_student_names_v2';
 const CLASS_ROSTER_KEY = 'pokemon_class_roster_v1';
+const PVP_STUDY_PER_TICKET = 5;
+const RAID_CAPTURE_CHANCE = 0.35;
 let activeStudentProfile = null;
 let selectedStudentPokemon = 0;
 let studentFighter = null;
@@ -29,7 +31,8 @@ let adventureBattleLog = [];
 const raidFighters = new Map();
 const adventureCatalog = new Map(STAGES_DATA.flatMap(stage => stage.pokemons).map(poke => [poke.id, poke]));
 for (const boss of RAID_BOSSES) adventureCatalog.set(boss.bossId, {id:boss.bossId,name:boss.name.split(' ')[0],type:boss.type,typeBg:boss.typeBg,cp:3000});
-const studentDexEntries = STAGES_DATA.flatMap(stage => stage.pokemons.map(poke => ({...poke,stageId:stage.stageId,stageTitle:stage.title})));
+const studentDexEntries = STAGES_DATA.flatMap(stage => stage.pokemons.map(poke => ({...poke,stageId:stage.stageId,stageTitle:stage.title})))
+  .concat(RAID_BOSSES.map(boss => ({id:boss.bossId,name:boss.name.split(' ')[0],type:boss.type,stageId:'RAID',stageTitle:'전설 레이드'})));
 let studentDexFilter = 'all';
 const savedClassRoster = new Map();
 try {
@@ -44,7 +47,26 @@ function normalizeStudentName(name) { return String(name || '').normalize('NFKC'
 function profileStorageKey(name) { return PROFILE_PREFIX + encodeURIComponent(normalizeStudentName(name)); }
 function validCaught(ids) { return Array.isArray(ids) ? [...new Set(ids.filter(id => Number.isInteger(id) && adventureCatalog.has(id)))] : []; }
 function safeXP(value) { return Number.isFinite(Number(value)) ? Math.max(0, Math.min(1000000, Math.floor(Number(value)))) : 0; }
-function trainerLevel(xp) { return Math.min(30, 1 + Math.floor(safeXP(xp) / 300)); }
+function trainerLevel(xp) { return Math.min(50, 1 + Math.floor(safeXP(xp) / 300)); }
+function studyDayStamp() { return new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10); }
+function refreshDailyStudy(profile=activeStudentProfile) {
+  if (!profile) return;
+  if (profile.studyDay !== studyDayStamp()) {
+    profile.studyDay=studyDayStamp(); profile.studyCorrectToday=0; profile.pvpTickets=0;
+  }
+  profile.studyCorrectToday=safeXP(profile.studyCorrectToday);
+  profile.pvpTickets=Math.min(100,safeXP(profile.pvpTickets));
+}
+function awardDailyStudyCorrect() {
+  if (!activeStudentProfile) return '';
+  refreshDailyStudy();
+  const before=activeStudentProfile.studyCorrectToday++;
+  const earned=Math.floor(activeStudentProfile.studyCorrectToday/PVP_STUDY_PER_TICKET)-Math.floor(before/PVP_STUDY_PER_TICKET);
+  if (earned) activeStudentProfile.pvpTickets=Math.min(100,activeStudentProfile.pvpTickets+earned);
+  saveStudentProfile();
+  if (typeof renderStudentPvpStatus === 'function') renderStudentPvpStatus();
+  return earned ? ' 🎟️ 오늘의 공부로 대전권 1장을 얻었어요!' : '';
+}
 function savedProfileNames() {
   try { const names = JSON.parse(localStorage.getItem(PROFILE_INDEX) || '[]'); return Array.isArray(names) ? [...new Set(names.filter(n => typeof n === 'string').map(normalizeStudentName))] : []; }
   catch { return []; }
@@ -90,6 +112,11 @@ function loadStudentProfile(name) {
   saved.training = saved.training && typeof saved.training === 'object' ? saved.training : {};
   saved.power = saved.power && typeof saved.power === 'object' ? saved.power : {};
   saved.captureSteps = saved.captureSteps && typeof saved.captureSteps === 'object' ? saved.captureSteps : {};
+  saved.captureEvidence = saved.captureEvidence && typeof saved.captureEvidence === 'object' ? saved.captureEvidence : {};
+  saved.captureHistory = saved.captureHistory && typeof saved.captureHistory === 'object' ? saved.captureHistory : {};
+  saved.raidAnswered = saved.raidAnswered && typeof saved.raidAnswered === 'object' ? saved.raidAnswered : {};
+  saved.raidQualified = Array.isArray(saved.raidQualified) ? saved.raidQualified.filter(id=>typeof id==='string').slice(-100) : [];
+  refreshDailyStudy(saved);
   activeStudentProfile = saved;
   myStudentName = name;
   myStudentId = saved.id;
@@ -105,6 +132,35 @@ function loadStudentProfile(name) {
   pendingAnswer = null; studentFighter = null;
   currentSoloQuiz = null; soloQuizChoice = -1; soloQuizQueue = {}; lastSoloQuizId = {};
   saveStudentProfile();
+}
+function loseRandomStudentPokemon() {
+  if (!activeStudentProfile || !studentCaughtList.length) return '';
+  const index=Math.floor(Math.random()*studentCaughtList.length);
+  const id=studentCaughtList.splice(index,1)[0];
+  const name=adventureCatalog.get(id)?.name || '포켓몬';
+  delete activeStudentProfile.power[id];
+  delete activeStudentProfile.training[id];
+  delete activeStudentProfile.captureSteps[id];
+  delete activeStudentProfile.captureEvidence[id];
+  delete activeStudentProfile.captureHistory[id];
+  if (selectedStudentPokemon===id) { selectedStudentPokemon=studentCaughtList[0]||0; studentFighter=null; }
+  saveStudentProfile(); updateStudentHeaderStats(); sendStudentPresence();
+  return ' ⚠ '+name+'이(가) 달아났어요!';
+}
+function resolveStudentRaidCapture(raidId,bossId,roll=Math.random()) {
+  if (!activeStudentProfile?.raidQualified?.includes(raidId)) return '정답 공격에 참여하지 않아 이번에는 포획 기회가 없어요.';
+  if (!RAID_BOSSES.some(boss=>boss.bossId===bossId)) return '보스 정보를 확인할 수 없어 포획할 수 없었어요.';
+  const name=adventureCatalog.get(bossId).name;
+  if (studentCaughtList.includes(bossId)) {
+    activeStudentProfile.training[bossId]=(Number(activeStudentProfile.training[bossId])||0)+3;
+    return '이미 잡은 '+name+'입니다. 대신 강화 에너지 3개를 얻었어요!';
+  }
+  if (roll>=RAID_CAPTURE_CHANCE) return name+'이(가) 몬스터볼에서 빠져나왔어요. 다음 레이드에서 다시 도전하세요!';
+  studentCaughtList.push(bossId);
+  if (!selectedStudentPokemon) selectedStudentPokemon=bossId;
+  activeStudentProfile.captureHistory[bossId]=[...(activeStudentProfile.raidAnswered[raidId]||[])];
+  saveStudentProfile(); updateStudentHeaderStats(); sendStudentPresence();
+  return '🎉 '+name+' 포획 성공! 이제 레이드 파트너로 출전할 수 있어요.';
 }
 function renderSavedStudentProfiles() {
   const names = savedProfileNames();
@@ -194,7 +250,8 @@ function pokemonBattleStats(id, xp, power = 0) {
   const type = pokemon.type.split('/')[0], level = trainerLevel(xp);
   const moves = {전기:'10만볼트',불꽃:'화염방사',물:'물대포',풀:'덩굴채찍',얼음:'냉동빔',드래곤:'용의파동',에스퍼:'사이코키네시스',고스트:'섀도볼',격투:'파동탄',벌레:'시저크로스',비행:'에어슬래시',땅:'대지의힘',바위:'스톤에지',독:'독침',강철:'아이언헤드',악:'악의파동',페어리:'문포스',노말:'몸통박치기'};
   power = Math.max(0,Math.min(20,Math.floor(Number(power)||0)));
-  return {pokemonId:id,name:pokemon.name,type,move:moves[type] || '몸통박치기',level,power,
+  const cp=Math.round((pokemon.cp || 500) * (0.55 + level * 0.03) * (1 + power * 0.05));
+  return {pokemonId:id,name:pokemon.name,type,move:moves[type] || '몸통박치기',level,power,cp,
     damage:25 + Math.floor((pokemon.cp || 500) / 800) * 5 + (level - 1) * 2 + power * 4,maxHp:60 + level * 4 + power * 6};
 }
 function effectiveness(type, bossId) {
@@ -209,7 +266,7 @@ function renderStudentCollection() {
     const poke = pokemonBattleStats(id,myStudentXP,power), selected = id === selectedStudentPokemon;
     return '<div class="partner-choice" aria-pressed="' + selected + '"><button type="button" class="partner-select" onclick="selectStudentPartner(' + id + ')">' +
       '<img src="' + getPokemonArtworkUrl(id) + '" alt="' + escapeClassroomText(poke.name) + '" loading="lazy"><strong>' + escapeClassroomText(poke.name) +
-      '</strong><small>훈련 +' + power + ' · ' + escapeClassroomText(poke.type) + '</small><span class="selected-label">' + (selected ? '✓ 출전 파트너' : '출전 선택') + '</span></button>' +
+      '</strong><small>CP ' + poke.cp + ' · 강화 +' + power + ' · ' + escapeClassroomText(poke.type) + '</small><span class="selected-label">' + (selected ? '✓ 출전 파트너' : '출전 선택') + '</span></button>' +
       '<button type="button" class="strengthen-button" onclick="strengthenStudentPokemon(' + id + ')" ' + (energy < 3 || power >= 20 ? 'disabled' : '') + '>⚡ 강화 ' + energy + '/3</button></div>';
   }).join('');
   for (const id of ['studentCollection','studentRaidTeam']) {
@@ -224,7 +281,7 @@ function renderStudentPartner() {
   img.hidden = !stats;
   if (stats) { img.src = getPokemonArtworkUrl(stats.pokemonId); img.alt = stats.name; }
   document.getElementById('studentPartnerName').textContent = stats?.name || '먼저 포켓몬을 잡아주세요';
-  document.getElementById('studentPartnerLevel').textContent = stats ? 'Lv.' + stats.level + ' · 강화 +' + (stats.power||0) : '';
+  document.getElementById('studentPartnerLevel').textContent = stats ? 'Lv.' + stats.level + ' · CP ' + stats.cp + ' · 강화 +' + (stats.power||0) : '';
   const fighter = studentFighter?.pokemonId === selectedStudentPokemon ? studentFighter : null;
   const hp = fighter ? fighter.hp : stats?.maxHp || 0, maxHp = fighter?.maxHp || stats?.maxHp || 1;
   document.getElementById('studentPartnerHpBar').style.width = hp / maxHp * 100 + '%';
@@ -262,6 +319,9 @@ function recoverStudentPartner() {
 }
 updateStudentHeaderStats = function () {
   adventureBase.stats(); renderStudentCollection();
+  const level='⭐ Lv.'+trainerLevel(myStudentXP)+'/50 · '+myStudentXP+' XP';
+  document.getElementById('studentMyXP').textContent=level;
+  document.getElementById('studentRaidMyXP').textContent=level;
   document.getElementById('studentMyCaught').textContent = '🔴 도감 ' + studentCaughtList.length + '/' + studentDexEntries.length;
   renderStudentDex();
 };
@@ -299,15 +359,20 @@ function showStudentDexDetail(id) {
   const p=studentDexEntries.find(p=>p.id===id);
   if(!p)return;
   const caught=studentCaughtList.includes(id), detail=document.getElementById('studentDexDetail');
-  if(!caught){ detail.innerHTML='<strong>No. '+String(id).padStart(3,'0')+' · 미발견</strong><span>'+p.stageId+'차시 '+escapeClassroomText(p.stageTitle)+'에서 만날 수 있어요. 퀴즈를 풀어 포획해 보세요.</span>'; return; }
+  if(!caught){ detail.innerHTML='<strong>No. '+String(id).padStart(3,'0')+' · 미발견</strong><span>'+(p.stageId==='RAID'?'전설 레이드에 참여하면 만날 수 있어요.':p.stageId+'차시 '+escapeClassroomText(p.stageTitle)+'에서 만날 수 있어요. 퀴즈를 풀어 포획해 보세요.')+'</span>'; return; }
   const power=Math.max(0,Math.floor(Number(activeStudentProfile?.power[id])||0));
   const energy=Math.max(0,Math.floor(Number(activeStudentProfile?.training[id])||0));
-  detail.innerHTML='<img src="'+getPokemonArtworkUrl(id)+'" alt="'+escapeClassroomText(p.name)+'"><div><strong>No. '+String(id).padStart(3,'0')+' · '+escapeClassroomText(p.name)+'</strong><span>'+escapeClassroomText(p.type)+' · '+p.stageId+'차시 · 훈련 +'+power+' · 에너지 '+energy+'/3</span><span>'+(selectedStudentPokemon===id?'현재 레이드 출전 파트너':'내가 잡은 포켓몬')+'</span><button type="button" class="adventure-button" onclick="selectStudentPartner('+id+');showStudentDexDetail('+id+')">'+(selectedStudentPokemon===id?'✓ 출전 중':'레이드 파트너로 선택')+'</button></div>';
+  const stats=pokemonBattleStats(id,myStudentXP,power);
+  const history=Array.isArray(activeStudentProfile?.captureHistory[id])?activeStudentProfile.captureHistory[id]:[];
+  const questions=history.length ? history.map((item,index)=>'<li><strong>문제 '+(index+1)+':</strong> '+escapeClassroomText(item.stem)+(item.answer?'<br><b>맞힌 답:</b> '+escapeClassroomText(item.answer):'')+'<br><small>'+escapeClassroomText(item.explanation||'')+'</small></li>').join('') : '<li>기록 기능을 추가하기 전에 포획한 포켓몬이라 당시 맞힌 문제는 저장되어 있지 않아요.</li>';
+  detail.innerHTML='<img src="'+getPokemonArtworkUrl(id)+'" alt="'+escapeClassroomText(p.name)+'"><div><strong>No. '+String(id).padStart(3,'0')+' · '+escapeClassroomText(p.name)+'</strong><span>'+escapeClassroomText(p.type)+' · '+(p.stageId==='RAID'?'전설 레이드':p.stageId+'차시')+' · Lv.'+stats.level+' · CP '+stats.cp+'</span><span>강화 +'+power+' · 에너지 '+energy+'/3 · '+(selectedStudentPokemon===id?'현재 출전 파트너':'보유 중')+'</span><button type="button" class="adventure-button" onclick="selectStudentPartner('+id+');showStudentDexDetail('+id+')">'+(selectedStudentPokemon===id?'✓ 출전 중':'레이드 파트너로 선택')+'</button><section class="student-dex-questions"><b>📘 포획할 때 맞힌 문제</b><ol>'+questions+'</ol></section></div>';
 }
 window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!document.getElementById('studentDexModal').hidden)closeStudentDex();});
 sendStudentPresence = function () {
+  refreshDailyStudy();
   sendClassroomMessage(mqttStudentClient,'to_host',{type:'JOIN',studentId:myStudentId,name:myStudentName,
-    caught:studentCaughtList,selectedPokemon:selectedStudentPokemon,xp:myStudentXP,power:activeStudentProfile?.power[selectedStudentPokemon]||0});
+    caught:studentCaughtList,selectedPokemon:selectedStudentPokemon,xp:myStudentXP,power:activeStudentProfile?.power[selectedStudentPokemon]||0,
+    studyDay:activeStudentProfile?.studyDay,studyCorrectToday:activeStudentProfile?.studyCorrectToday||0,pvpTickets:activeStudentProfile?.pvpTickets||0});
 };
 function renderSavedClassRoster() {
   const target = document.getElementById('savedClassRoster');
@@ -440,7 +505,7 @@ handleStudentAnswerSubmit = function (data) {
   const damage = correct ? Math.round(fighter.damage * multiplier) : 0;
   const counter = active && !duplicate && eligible && !correct ? Math.min(12,fighter.hp) : 0;
   if (counter) fighter.hp -= counter;
-  const result = {type:'RESULT',requestId:data.requestId,problemId:data.problemId,isCorrect:correct,earnedXP:correct ? 100 : 0,
+  const result = {type:'RESULT',requestId:data.requestId,problemId:data.problemId,isCorrect:correct,isWrongAnswer:!!(active&&!duplicate&&eligible&&!correct),earnedXP:correct ? 100 : 0,
     pokemonId:data.pokemonId,damage,move:fighter?.move,multiplier,fighter:fighter ? {...fighter} : null,
     message:!active ? '문제가 바뀌었거나 레이드가 끝났습니다.' : duplicate ? '이미 공격했어요. 다음 문제를 기다리세요.' : !eligible ? '잡은 포켓몬을 선택하고 체력을 확인해주세요.' : counter ? '보스의 반격! HP −' + counter + (fighter.hp === 0 ? ' · 응원받고 회복하거나 포켓몬을 교체하세요.' : ' · 풀이 이유를 다시 살펴보세요.') : '',
     explanation:active ? phase.explanation : '',correctChoice:active ? phase.correct : -1};
@@ -510,6 +575,13 @@ handleStudentIncomingData = function (data) {
     const duplicate = receivedResults.has(data.requestId);
     adventureBase.incoming(data);
     if (!duplicate) {
+      if (data.isCorrect && data.problemId===studentProblemId && activeStudentProfile) {
+        const evidence=activeStudentProfile.raidAnswered[studentRaidSessionId]||[];
+        evidence.push({stem:document.getElementById('studentRaidQuestion').textContent,answer:currentRaidQuiz?.choices?.[Number(data.correctChoice)]||'',explanation:data.explanation||''});
+        activeStudentProfile.raidAnswered[studentRaidSessionId]=evidence.slice(-3);
+        if(!activeStudentProfile.raidQualified.includes(studentRaidSessionId)) activeStudentProfile.raidQualified.push(studentRaidSessionId);
+        activeStudentProfile.raidQualified=activeStudentProfile.raidQualified.slice(-100);
+      }
       if (data.problemId === studentProblemId && data.fighter?.pokemonId === selectedStudentPokemon) studentFighter = data.fighter;
       if (data.isCorrect && data.problemId === studentProblemId) document.getElementById('studentRaidFeedback').textContent = '✨ ' + (data.move || '공격') + '! 보스에게 ' + data.damage + ' 대미지 · +100 XP';
       else if (data.fighter && data.problemId === studentProblemId) animateBattleSprite('studentPartnerImg','hit');
@@ -526,6 +598,9 @@ handleStudentIncomingData = function (data) {
           document.getElementById('studentRaidOptions').children?.[Number(data.correctChoice)]?.classList.add('correct');
         }
       }
+      if (data.isWrongAnswer && data.problemId===studentProblemId) {
+        document.getElementById('studentRaidFeedback').textContent += loseRandomStudentPokemon();
+      }
       saveStudentProfile(); renderStudentCollection();
     }
     return;
@@ -535,6 +610,7 @@ handleStudentIncomingData = function (data) {
     adventureBase.incoming(data);
     if (first && activeStudentProfile) {
       activeStudentProfile.raidWins++;
+      document.getElementById('studentRaidCaptureResult').textContent=resolveStudentRaidCapture(data.raidId,data.bossId);
       saveStudentProfile(); renderStudentCollection();
     }
     return;
@@ -588,17 +664,22 @@ sendStudentSoloAnswer = function () {
     const trainingId=selectedStudentPokemon||poke.id;
     activeStudentProfile.training[trainingId]=(Number(activeStudentProfile.training[trainingId])||0)+1;
     const steps=(Number(activeStudentProfile.captureSteps[poke.id])||0)+1;
+    const evidence=Array.isArray(activeStudentProfile.captureEvidence[poke.id])?activeStudentProfile.captureEvidence[poke.id]:[];
+    evidence.push({stem:currentSoloQuiz.stem,answer:currentSoloQuiz.choices[currentSoloQuiz.correct],explanation:currentSoloQuiz.explanation});
+    activeStudentProfile.captureEvidence[poke.id]=evidence.slice(-2);
     if(steps>=2){
       activeStudentProfile.captureSteps[poke.id]=0;
       const first=!studentCaughtList.includes(poke.id);
-      if(first){studentCaughtList.push(poke.id);myStudentXP+=100;}
+      if(first){studentCaughtList.push(poke.id);myStudentXP+=100;activeStudentProfile.captureHistory[poke.id]=[...activeStudentProfile.captureEvidence[poke.id]];}
+      activeStudentProfile.captureEvidence[poke.id]=[];
       if(!selectedStudentPokemon) selectedStudentPokemon=poke.id;
       reward=first?' 🎉 '+poke.name+' 포획! +100 XP. 이제 레이드에 출전할 수 있어요.':' '+poke.name+' 훈련 완료!';
       studentCurrentPokeIdx=Math.min(studentCurrentPokeIdx+1,stage.pokemons.length-1);
       if(first)sendClassroomMessage(mqttStudentClient,'to_host',{type:'POKE_CAUGHT',studentId:myStudentId,name:myStudentName,pokeName:poke.name,stageId:stage.stageId});
     }else activeStudentProfile.captureSteps[poke.id]=steps;
+    reward+=awardDailyStudyCorrect();
     saveStudentProfile(); updateStudentHeaderStats(); sendStudentPresence();
-  }else sound.playError();
+  }else { sound.playError(); reward+=loseRandomStudentPokemon(); }
   fb.textContent=(correct?'✓ 이해했어요! +30 XP · 훈련 에너지 +1.':'다시 생각해 봐요.')+' '+currentSoloQuiz.explanation+reward;
   soloCaptureBusy=true;
   renderReasonOptions('studentSoloOptions',currentSoloQuiz,soloQuizChoice,'chooseStudentSoloOption',true);
@@ -621,3 +702,212 @@ window.addEventListener('keydown',event=>{
     if(isStudentInRaid)sendStudentRaidAnswer();else sendStudentSoloAnswer();
   }
 },true);
+
+// The teacher's existing MQTT room arbitrates friend battles.
+const pvpInvites = new Map();
+const pvpMatches = new Map();
+const pvpBusy = new Map();
+let pvpRoster = [];
+let studentPvpMatch = null;
+let studentPvpInvite = null;
+let studentPvpChoice = -1;
+let studentPvpRound = null;
+let studentPvpSettledRounds = new Set();
+function pvpSend(studentId, payload) { sendClassroomMessage(mqttHostClient,'to_student/'+studentId,payload); }
+function pvpValidStudent(id) {
+  const s=connectedStudents.get(id);
+  return s && Date.now()-s.lastSeen<20000 && s.studyDay===studyDayStamp() && s.pvpTickets>0 && s.caught?.includes(s.selectedPokemon) && !pvpBusy.has(id);
+}
+let lastPvpRosterSignature='';
+function pvpBroadcastRoster(joiningId='') {
+  const roster=[...connectedStudents.entries()].filter(([,s])=>Date.now()-s.lastSeen<20000).map(([id,s])=>({id,name:s.name,eligible:!!pvpValidStudent(id)}));
+  const packet={type:'PVP_ROSTER',roster}, signature=JSON.stringify(roster);
+  if(joiningId)pvpSend(joiningId,packet);
+  if(signature!==lastPvpRosterSignature){lastPvpRosterSignature=signature;sendClassroomMessage(mqttHostClient,'broadcast',packet);}
+}
+function pvpCloseInvite(inviteId, reason) {
+  const invite=pvpInvites.get(inviteId); if(!invite)return;
+  pvpInvites.delete(inviteId);
+  pvpSend(invite.from,{type:'PVP_NOTICE',message:reason});
+  pvpSend(invite.to,{type:'PVP_NOTICE',message:reason});
+}
+function pvpRoundPacket(match) {
+  const quiz=match.quizzes[match.round];
+  for(const id of match.ids) pvpSend(id,{type:'PVP_ROUND',matchId:match.id,round:match.round+1,total:match.quizzes.length,stem:quiz.stem,choices:quiz.choices,
+    hp:match.hp,players:match.players});
+  match.timer=setTimeout(()=>pvpResolveRound(match),60000);
+}
+function pvpFinish(match, reason='', refund=false) {
+  if(!pvpMatches.has(match.id))return;
+  clearTimeout(match.timer); pvpMatches.delete(match.id);
+  for(const id of match.ids) pvpBusy.delete(id);
+  const winner=match.hp[0]===match.hp[1] ? -1 : match.hp[0]>match.hp[1]?0:1;
+  for(let i=0;i<2;i++) {
+    if(refund && connectedStudents.has(match.ids[i])) connectedStudents.get(match.ids[i]).pvpTickets++;
+    pvpSend(match.ids[i],{type:'PVP_END',matchId:match.id,winner,players:match.players,refund,reason,
+      xp:refund?0:winner===i?120:40,hp:match.hp});
+  }
+  pvpBroadcastRoster();
+}
+function pvpResolveRound(match) {
+  if(!pvpMatches.has(match.id))return;
+  clearTimeout(match.timer);
+  const quiz=match.quizzes[match.round], hit=match.answers.map(answer=>answer===quiz.correct), damage=[0,0];
+  for(let i=0;i<2;i++) if(hit[i]) {
+    const attacker=match.stats[i], defender=match.stats[1-i];
+    damage[i]=Math.max(1,Math.round(attacker.damage*(attacker.cp>defender.cp?1.1:1)));
+  }
+  match.hp[0]=Math.max(0,match.hp[0]-damage[1]);match.hp[1]=Math.max(0,match.hp[1]-damage[0]);
+  for(let i=0;i<2;i++) pvpSend(match.ids[i],{type:'PVP_RESULT',matchId:match.id,round:match.round+1,correct:hit[i],
+    answered:match.answers[i]!==null,correctChoice:quiz.correct,explanation:quiz.explanation,ownDamage:damage[i],opponentDamage:damage[1-i],hp:match.hp});
+  if(match.hp.some(h=>h===0)||match.round===match.quizzes.length-1){pvpFinish(match);return;}
+  match.round++;match.answers=[null,null];pvpRoundPacket(match);
+}
+function pvpHostMessage(data) {
+  const sender=connectedStudents.get(data.studentId);
+  if(!sender || Date.now()-sender.lastSeen>20000)return;
+  if(data.type==='PVP_REQUEST') {
+    const target=data.targetId;
+    if(gameState.isRaidMode || target===data.studentId || !pvpValidStudent(data.studentId) || !pvpValidStudent(target)) {
+      pvpSend(data.studentId,{type:'PVP_NOTICE',message:'두 학생 모두 오늘 공부로 대전권을 얻고 포켓몬을 선택해야 해요.'});return;
+    }
+    if([...pvpInvites.values()].some(x=>x.from===data.studentId||x.to===data.studentId||x.from===target||x.to===target)) {
+      pvpSend(data.studentId,{type:'PVP_NOTICE',message:'이미 대전 신청을 기다리는 친구가 있어요.'});return;
+    }
+    const id=crypto.randomUUID(),invite={id,from:data.studentId,to:target};pvpInvites.set(id,invite);
+    pvpSend(target,{type:'PVP_INVITE',inviteId:id,fromId:data.studentId,fromName:sender.name});
+    pvpSend(data.studentId,{type:'PVP_NOTICE',message:connectedStudents.get(target).name+'에게 대전을 신청했어요.'});
+    setTimeout(()=>pvpCloseInvite(id,'대전 신청 시간이 지나 취소됐어요.'),45000);
+    return;
+  }
+  if(data.type==='PVP_REPLY') {
+    const invite=pvpInvites.get(data.inviteId);
+    if(!invite||invite.to!==data.studentId)return;
+    pvpInvites.delete(invite.id);
+    if(!data.accept){pvpSend(invite.from,{type:'PVP_NOTICE',message:sender.name+'이(가) 대전을 거절했어요.'});return;}
+    if(gameState.isRaidMode||!pvpValidStudent(invite.from)||!pvpValidStudent(invite.to)){
+      pvpSend(invite.from,{type:'PVP_NOTICE',message:'대전 조건이 바뀌어 시작하지 못했어요.'});
+      pvpSend(invite.to,{type:'PVP_NOTICE',message:'대전 조건이 바뀌어 시작하지 못했어요.'});return;
+    }
+    const ids=[invite.from,invite.to], students=ids.map(id=>connectedStudents.get(id));
+    const stats=students.map(s=>pokemonBattleStats(s.selectedPokemon,s.xp,s.power));
+    const match={id:crypto.randomUUID(),ids,players:students.map((s,i)=>({name:s.name,pokemonId:s.selectedPokemon,cp:stats[i].cp})),
+      stats,hp:stats.map(s=>s.maxHp),round:0,answers:[null,null],quizzes:shuffledQuizIndices(RAID_REASONING_QUIZZES.length).slice(0,3).map(i=>shuffledQuiz(RAID_REASONING_QUIZZES[i]))};
+    pvpMatches.set(match.id,match);
+    ids.forEach((id,i)=>{pvpBusy.set(id,match.id);students[i].pvpTickets--;pvpSend(id,{type:'PVP_START',matchId:match.id,players:match.players,seat:i,hp:match.hp});});
+    pvpBroadcastRoster();pvpRoundPacket(match);return;
+  }
+  if(data.type==='PVP_ANSWER') {
+    const match=pvpMatches.get(data.matchId),seat=match?.ids.indexOf(data.studentId);
+    if(!match||seat<0||data.round!==match.round+1||match.answers[seat]!==null||!Number.isInteger(data.choice)||data.choice<0||data.choice>3)return;
+    match.answers[seat]=data.choice;
+    if(match.answers.every(answer=>answer!==null))pvpResolveRound(match);
+  }
+}
+const adventureHostPvp=handleHostIncomingMessage;
+handleHostIncomingMessage=function(data){
+  if(!data)return;
+  if(data.type==='JOIN'){
+    adventureHostPvp(data);
+    const student=connectedStudents.get(data.studentId);
+    if(student){student.studyDay=data.studyDay===studyDayStamp()?data.studyDay:'';student.pvpTickets=student.studyDay?safeXP(data.pvpTickets):0;pvpBroadcastRoster(data.studentId);}
+    return;
+  }
+  if(data.type?.startsWith('PVP_')){pvpHostMessage(data);return;}
+  adventureHostPvp(data);
+};
+function renderStudentPvpStatus(){
+  if(!activeStudentProfile)return;
+  refreshDailyStudy();
+  document.getElementById('studentPvpProgress').textContent='오늘 생각 퀴즈 '+activeStudentProfile.studyCorrectToday+'개 정답 · 대전권 '+activeStudentProfile.pvpTickets+'장 (정답 5개마다 1장)';
+  const select=document.getElementById('studentPvpTarget'),current=select.value;
+  select.innerHTML='<option value="">친구 선택</option>'+pvpRoster.filter(p=>p.id!==myStudentId).map(p=>'<option value="'+escapeClassroomText(p.id)+'"'+(p.id===current?' selected':'')+'>'+escapeClassroomText(p.name)+(p.eligible?' · 대전 가능':' · 준비 중')+'</option>').join('');
+}
+function pvpNotice(message){document.getElementById('studentPvpNotice').textContent=message;document.getElementById('studentPvpLog').textContent=message;}
+function requestStudentPvp(){
+  refreshDailyStudy();
+  if(!studentReady||isStudentInRaid||studentPvpMatch){pvpNotice('지금은 대전을 신청할 수 없어요.');return;}
+  if(!activeStudentProfile.pvpTickets||!studentCaughtList.includes(selectedStudentPokemon)){pvpNotice('오늘 생각 퀴즈 5개를 맞히고 포켓몬을 선택해 주세요.');return;}
+  const targetId=document.getElementById('studentPvpTarget').value;
+  if(!targetId){pvpNotice('접속한 친구를 선택해 주세요.');return;}
+  sendStudentPresence();sendClassroomMessage(mqttStudentClient,'to_host',{type:'PVP_REQUEST',studentId:myStudentId,targetId});
+}
+function replyStudentPvp(accept){
+  if(!studentPvpInvite)return;
+  const inviteId=studentPvpInvite;studentPvpInvite=null;document.getElementById('studentPvpInvite').hidden=true;
+  sendStudentPresence();sendClassroomMessage(mqttStudentClient,'to_host',{type:'PVP_REPLY',studentId:myStudentId,inviteId,accept});
+}
+function chooseStudentPvpOption(index){
+  if(!studentPvpRound||studentPvpRound.sent)return;
+  studentPvpChoice=index;renderReasonOptions('studentPvpOptions',studentPvpRound,index,'chooseStudentPvpOption');
+}
+function submitStudentPvpAnswer(){
+  if(!studentPvpMatch||!studentPvpRound||studentPvpRound.sent)return;
+  if(studentPvpChoice<0){pvpNotice('풀이 생각을 하나 골라주세요.');return;}
+  studentPvpRound.sent=true;document.getElementById('studentPvpSubmit').disabled=true;
+  pvpNotice('친구의 답을 기다리는 중이에요.');
+  sendClassroomMessage(mqttStudentClient,'to_host',{type:'PVP_ANSWER',studentId:myStudentId,matchId:studentPvpMatch.id,round:studentPvpRound.round,choice:studentPvpChoice});
+}
+function returnFromStudentPvp(){
+  if(studentPvpMatch)return;
+  document.getElementById('studentPvpBox').style.display='none';document.getElementById('studentSoloBox').style.display='flex';
+  document.getElementById('studentPvpReturn').hidden=true;renderStudentPvpStatus();
+}
+function studentPvpIncoming(data){
+  if(data.type==='PVP_ROSTER'){pvpRoster=Array.isArray(data.roster)?data.roster:[];renderStudentPvpStatus();return;}
+  if(data.type==='PVP_NOTICE'){pvpNotice(data.message);studentPvpInvite=null;document.getElementById('studentPvpInvite').hidden=true;return;}
+  if(data.type==='PVP_INVITE'){
+    studentPvpInvite=data.inviteId;
+    const box=document.getElementById('studentPvpInvite');box.hidden=false;
+    box.innerHTML='<strong>'+escapeClassroomText(data.fromName)+'의 대전 신청</strong><button type="button" onclick="replyStudentPvp(true)">수락</button><button type="button" onclick="replyStudentPvp(false)">거절</button>';
+    return;
+  }
+  if(data.type==='PVP_START'){
+    if(studentPvpMatch?.id===data.matchId)return;
+    studentPvpMatch={id:data.matchId,seat:data.seat,players:data.players};studentPvpSettledRounds.clear();studentPvpInvite=null;
+    document.getElementById('studentPvpInvite').hidden=true;
+    refreshDailyStudy();activeStudentProfile.pvpTickets=Math.max(0,activeStudentProfile.pvpTickets-1);saveStudentProfile();sendStudentPresence();renderStudentPvpStatus();
+    document.getElementById('studentSoloBox').style.display='none';document.getElementById('studentPvpBox').style.display='flex';
+    document.getElementById('studentPvpReturn').hidden=true;pvpNotice('대전 시작! 생각 퀴즈 3문제로 승부해요.');return;
+  }
+  if(data.type==='PVP_ROUND'){
+    if(!studentPvpMatch||studentPvpMatch.id!==data.matchId)return;
+    studentPvpRound={round:data.round,choices:data.choices,sent:false};studentPvpChoice=-1;
+    const seat=studentPvpMatch.seat;
+    document.getElementById('studentPvpScore').textContent=data.players[seat].name+'의 '+adventureCatalog.get(data.players[seat].pokemonId).name+' CP '+data.players[seat].cp+' · HP '+data.hp[seat]+' / '+data.players[1-seat].name+' HP '+data.hp[1-seat];
+    document.getElementById('studentPvpQuestion').textContent='문제 '+data.round+'/'+data.total+' · '+data.stem;
+    renderReasonOptions('studentPvpOptions',studentPvpRound,-1,'chooseStudentPvpOption');
+    document.getElementById('studentPvpSubmit').disabled=false;return;
+  }
+  if(data.type==='PVP_RESULT'){
+    if(!studentPvpMatch||studentPvpMatch.id!==data.matchId||studentPvpSettledRounds.has(data.round))return;
+    studentPvpSettledRounds.add(data.round);
+    const escaped=data.answered&&!data.correct?loseRandomStudentPokemon():'';
+    const seat=studentPvpMatch.seat;
+    document.getElementById('studentPvpScore').textContent=studentPvpMatch.players[seat].name+' HP '+data.hp[seat]+' / '+studentPvpMatch.players[1-seat].name+' HP '+data.hp[1-seat];
+    pvpNotice((data.correct?'정답! 상대에게 '+data.ownDamage+' 대미지.':data.answered?'아쉬워요. 정답은 '+studentPvpRound.choices[data.correctChoice]+'입니다.':'시간 안에 답하지 못했어요.')+' '+data.explanation+escaped);
+    return;
+  }
+  if(data.type==='PVP_END'){
+    if(!studentPvpMatch||studentPvpMatch.id!==data.matchId)return;
+    const seat=studentPvpMatch.seat;
+    studentPvpMatch=null;studentPvpRound=null;
+    if(data.refund){activeStudentProfile.pvpTickets++;pvpNotice('레이드가 시작되어 대전이 중단됐어요. 대전권을 돌려드렸어요.');}
+    else{myStudentXP+=data.xp;pvpNotice((data.winner<0?'무승부':data.winner===seat?'승리!':'패배!')+' +'+data.xp+' XP. '+(data.reason||''));}
+    saveStudentProfile();sendStudentPresence();updateStudentHeaderStats();
+    document.getElementById('studentPvpSubmit').disabled=true;document.getElementById('studentPvpReturn').hidden=false;return;
+  }
+}
+const adventureStudentPvp=handleStudentIncomingData;
+handleStudentIncomingData=function(data){
+  if(!data)return;
+  if(data.type?.startsWith('PVP_')){studentPvpIncoming(data);return;}
+  adventureStudentPvp(data);
+  if(data.type==='JOIN_ACK')renderStudentPvpStatus();
+};
+const adventureStartRaidPvp=startRaidBattle;
+startRaidBattle=function(){
+  for(const invite of [...pvpInvites.keys()])pvpCloseInvite(invite,'레이드가 시작되어 대전 신청이 취소됐어요.');
+  for(const match of [...pvpMatches.values()])pvpFinish(match,'',true);
+  adventureStartRaidPvp();
+};

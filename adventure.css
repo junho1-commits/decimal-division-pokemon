@@ -89,10 +89,17 @@
 .student-dex-detail div { display:flex; flex-direction:column; align-items:start; }
 .student-dex-detail strong { color:#facc15; }
 .student-dex-detail span { font-size:13px; }
+.student-dex-detail>div { flex:1; min-width:0; }
+.student-dex-questions { width:100%; margin-top:9px; border-top:1px solid #475569; padding-top:8px; font-size:13px; }
+.student-dex-questions ol { margin:6px 0 0; padding-left:20px; }
+.student-dex-questions li { margin:5px 0; }
+.student-dex-questions li strong { color:#e0f2fe; }
+.student-dex-questions small { color:#a5b4fc; }
 .student-dex-empty { grid-column:1/-1; text-align:center; color:#cbd5e1; }
 .typecast-credit[hidden] { display:none; }
 .typecast-credit { position:fixed; z-index:999; right:8px; bottom:8px; max-width:min(75vw,580px); border:1px solid #64748b; border-radius:8px; padding:4px 8px; background:#0f172add; color:#cbd5e1; font-size:10px; line-height:1.4; }
 .typecast-credit a { color:#7dd3fc; }
+.raid-capture-result { border:1px solid #facc15; border-radius:12px; padding:12px; background:#3b2c18; color:#fef08a; font-weight:800; line-height:1.5; }
 .reason-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .reason-option { min-height:76px; border:2px solid #415675; background:#15263d; color:#eef6ff; border-radius:14px; padding:12px 14px; text-align:left; font:inherit; font-size:16px; line-height:1.45; cursor:pointer; touch-action:manipulation; }
 .reason-option:hover,.reason-option[aria-pressed="true"] { border-color:#facc15; background:#314154; }
@@ -170,3 +177,16 @@
   .student-context .partner-grid.compact { grid-template-columns:repeat(6,minmax(0,1fr)); max-height:130px; }
   .student-answer-panel .student-key-btn { min-height:58px; }
 }
+.pvp-lobby { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:12px; border:1px solid #7c3aed; border-radius:14px; background:#21143a; }
+.pvp-lobby strong { color:#ddd6fe; font-size:18px; }
+.pvp-lobby p { margin:3px 0; color:#e9d5ff; font-size:13px; }
+.pvp-lobby label { display:flex; align-items:center; gap:8px; color:#fff; font-weight:700; }
+.pvp-lobby select { max-width:220px; min-height:42px; border-radius:8px; padding:6px; background:#0f172a; color:#fff; border:1px solid #a78bfa; }
+.pvp-lobby #studentPvpNotice { flex-basis:100%; }
+.pvp-invite { flex-basis:100%; padding:10px; border-radius:10px; background:#3b2460; color:#fff; }
+.pvp-invite button { margin-left:8px; padding:8px 14px; border-radius:8px; border:0; font-weight:800; cursor:pointer; }
+.pvp-arena { gap:16px; }
+.pvp-arena h2 { color:#ddd6fe; text-align:center; margin:0; }
+.pvp-score { text-align:center; font-weight:800; color:#facc15; font-size:18px; }
+.pvp-question { background:#0f172a; border:1px solid #8b5cf6; border-radius:12px; padding:18px; color:#fff; font-size:20px; font-weight:800; }
+.pvp-arena #studentPvpLog { color:#e9d5ff; font-weight:700; min-height:28px; }
