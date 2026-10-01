@@ -71,6 +71,10 @@ async function chooseVoice() {
 
 async function main() {
   const voice = await chooseVoice();
+  if (process.argv.includes('--voice-check')) {
+    console.log('Recommended voice:',voice.name,'('+voice.id+'). No audio generated.');
+    return;
+  }
   const dir = path.join(root, 'assets', 'voice');
   fs.mkdirSync(dir, {recursive:true});
   let completed=0;

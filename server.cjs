@@ -31,12 +31,13 @@ function createServer() {
     if (name === '/') name = '/index.html';
     const allowed = ['/index.html', '/포켓몬_소수의나눗셈.html',
       '/소수의_나눗셈_문장제_5선.html', '/process-quizzes.js', '/classroom-adventure.js', '/adventure.css', '/vendor/paho-mqtt-1.1.0.min.js', '/vendor/qrcode-1.0.0.min.js'];
-    if (!allowed.includes(name) || !['GET', 'HEAD'].includes(req.method)) {
+    const voiceAsset = /^\/assets\/voice\/(?:manifest\.json|[a-f0-9]{16}\.wav)$/.test(name);
+    if ((!allowed.includes(name) && !voiceAsset) || !['GET', 'HEAD'].includes(req.method)) {
       res.writeHead(404).end(); return;
     }
     fs.readFile(path.join(__dirname, name.slice(1)), (error, content) => {
       if (error) { res.writeHead(404).end(); return; }
-      res.writeHead(200, {'Content-Type': name.endsWith('.js') ? 'text/javascript; charset=utf-8' : name.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/html; charset=utf-8',
+      res.writeHead(200, {'Content-Type': name.endsWith('.js') ? 'text/javascript; charset=utf-8' : name.endsWith('.css') ? 'text/css; charset=utf-8' : name.endsWith('.wav') ? 'audio/wav' : name.endsWith('.json') ? 'application/json; charset=utf-8' : 'text/html; charset=utf-8',
         'Cache-Control': 'no-store'});
       res.end(req.method === 'HEAD' ? undefined : content);
     });
