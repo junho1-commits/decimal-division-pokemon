@@ -1875,6 +1875,7 @@
   <!-- MQTT WebSocket 및 QR 라이브러리: 외부 서버 접속이 필요합니다. -->
   <script src="vendor/paho-mqtt-1.1.0.min.js"></script>
   <script src="vendor/qrcode-1.0.0.min.js"></script>
+  <link rel="stylesheet" href="adventure.css">
 </head>
 <body>
 
@@ -1921,21 +1922,16 @@
           <button class="btn-action memo-btn" onclick="openScratchpad()" id="btnScratchpad" title="펜으로 계산할 수 있는 모눈 메모장 (N)">
             <span>📝</span> 계산 메모장
           </button>
-          <button class="btn-action active-toggle" onclick="toggleBGM()" id="btnBgm" title="배경음악 켜기/끄기 (M)">
-            <span id="bgmIcon">🎵</span> BGM
-          </button>
-          <button class="btn-action active-toggle" onclick="toggleVoice()" id="btnVoice" title="한국어 음성 켜기/끄기">
-            <span id="voiceIcon">🗣️</span> 음성
-          </button>
-          <button class="btn-action" onclick="toggleAudio()" id="btnAudio" title="효과음 켜기/끄기">
-            <span id="audioIcon">🔊</span> 효과음
-          </button>
+
+
+
           <button class="btn-action pokedex-btn" onclick="showPokedexView()">
             <span>📖</span> 도감
           </button>
           <button class="btn-action multiplayer-btn" onclick="openMultiplayerModal()" id="btnMultiplayer" title="학생 스마트폰/크롬북 실시간 연동 (P)">
             <span>📡</span> 실시간 학생 참여
           </button>
+          <select id="raidBossChoice" aria-label="레이드 보스 선택" class="raid-boss-choice"><option value="0">뮤츠</option><option value="1">레쿠쟈</option></select>
           <button class="btn-action raid-btn" onclick="startRaidBattle()">
             <span>⚡</span> 전설 레이드
           </button>
@@ -2437,8 +2433,11 @@
       </div>
       <div>
         <label style="font-size: 14px; font-weight: 800; color: #94a3b8;">내 번호와 이름:</label>
-        <input type="text" id="studentJoinName" class="student-input" placeholder="예: 3번 홍길동" onkeydown="if(event.key==='Enter') joinClassroomBattle()">
+        <input type="text" id="studentJoinName" maxlength="30" list="savedStudentNames" class="student-input" placeholder="예: 3번 홍길동" onkeydown="if(event.key==='Enter') joinClassroomBattle()">
       </div>
+      <datalist id="savedStudentNames"></datalist>
+      <div id="savedStudentProfiles" class="saved-profiles"></div>
+      <p class="adventure-note">같은 기기·브라우저에서 같은 닉네임으로 들어오면 모험을 이어갑니다. 기록은 이 기기에 저장됩니다.</p>
       <button class="btn-student-primary" onclick="joinClassroomBattle()">
         🚀 모험 시작하기!
       </button>
@@ -2457,6 +2456,8 @@
         </div>
       </div>
 
+      <div class="profile-toolbar"><span id="studentSaveStatus" role="status">모험 기록 준비 중</span><button type="button" onclick="switchStudentProfile()">닉네임 바꾸기</button></div>
+      <details class="partner-collection" open><summary>🎒 내 포켓몬 · 출전할 친구 고르기</summary><div id="studentCollection" class="partner-grid"></div></details>
       <!-- 차시 선택 탭 바 (1차시 ~ 6차시) -->
       <div>
         <div style="font-size: 12px; font-weight: 800; color: #94a3b8; margin-bottom: 4px;">학습할 차시 선택:</div>
@@ -2534,7 +2535,7 @@
     <div class="student-box" id="studentRaidBox" style="display: none; border-color: #ef4444;">
       <!-- 비상 레이드 소환 배너 -->
       <div class="student-raid-alert-banner">
-        🚨 [긴급 보스전 소환] 선생님이 전설의 보스를 소환했습니다!<br>우리 반 전원 합동 레이저 공격!
+        🚨 [긴급 보스전 소환] 선생님이 전설의 보스를 소환했습니다!<br>내가 잡은 포켓몬과 함께 출전!
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -2563,6 +2564,18 @@
         </div>
       </div>
 
+      <section id="studentPartnerCard" class="partner-battle-card">
+        <div class="partner-battle-heading">MY PARTNER <span id="studentPartnerLevel"></span></div>
+        <div class="partner-battle-body"><img id="studentPartnerImg" alt="내 출전 포켓몬"><div>
+          <h3 id="studentPartnerName">출전 포켓몬을 골라주세요</h3><div id="studentPartnerMove"></div>
+          <div class="partner-hp-track"><div id="studentPartnerHpBar"></div></div><div id="studentPartnerHpText"></div>
+        </div></div>
+        <div id="studentRaidTeam" class="partner-grid compact"></div>
+        <button type="button" id="studentPartnerRecover" class="adventure-button" onclick="recoverStudentPartner()" hidden>💚 응원 받고 체력 회복</button>
+        <button type="button" id="studentGoCapture" class="adventure-button" onclick="goCaptureForRaid()" hidden>🌿 포켓몬 잡으러 가기</button>
+        <p class="adventure-note">정답이면 파트너가 기술을 사용해요. 틀리면 보스가 반격해요! 쓰러져도 회복하거나 친구를 교체할 수 있어요.</p>
+      </section>
+      <div id="studentBattleLog" class="battle-log" aria-live="polite">출전 준비!</div>
       <!-- 보스전 문제 수식 카드 -->
       <div class="student-formula-card" style="border-color: #ef4444;">
         <div style="font-size: 30px; font-weight: 900; color: #facc15; font-family: var(--font-game);" id="studentRaidFormula">
@@ -2601,8 +2614,8 @@
       </div>
 
       <!-- 보스 공격 발사 버튼 -->
-      <button class="btn-student-primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c);" onclick="sendStudentRaidAnswer()">
-        💥 칠판 보스에게 합동 레이저 발사!
+      <button class="btn-student-primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c);" id="studentRaidAttackButton" onclick="sendStudentRaidAnswer()">
+        ⚡ 파트너 기술로 공격!
       </button>
 
       <!-- 보스전 피드백 배너 -->
@@ -2714,7 +2727,7 @@
   <div class="modal-overlay" id="modalMultiplayer">
     <div class="modal-box" style="width: 740px; border-color: #38bdf8; box-shadow: 0 0 60px rgba(56, 189, 248, 0.5);">
       <div style="display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">
-        <div style="font-size: 16px; font-weight: 800; color: #38bdf8;">📡 PEERJS WEBRTC MULTIPLAYER</div>
+        <div style="font-size: 16px; font-weight: 800; color: #38bdf8;">📡 실시간 학급 포켓몬 배틀</div>
         <button class="btn-action" onclick="closeMultiplayerModal()">닫기 ✕</button>
       </div>
 
@@ -2758,6 +2771,7 @@
         </div>
       </div>
 
+      <details class="saved-roster"><summary>📚 이전에 참여한 닉네임</summary><div id="savedClassRoster"></div></details>
       <!-- 접속한 학생 목록 칩 박스 -->
       <div style="margin-top: 14px; text-align: left;">
         <div style="font-size: 15px; font-weight: 800; color: #94a3b8; margin-bottom: 6px;">참가한 학생 명단:</div>
@@ -5452,7 +5466,7 @@
         receivedResults.add(data.requestId);
         if (data.isCorrect) {
           myStudentXP += data.earnedXP;
-          try { localStorage.setItem("pokemon_student_xp", myStudentXP.toString()); } catch (e) {}
+          saveStudentProfile();
           updateStudentHeaderStats();
         }
         if (data.problemId !== studentProblemId) return;
@@ -5478,7 +5492,7 @@
         // 보스 토벌 성공 모달
         sound.playCatchSuccess();
         myStudentXP += 500;
-        try { localStorage.setItem("pokemon_student_xp", myStudentXP.toString()); } catch (e) {}
+        saveStudentProfile();
         updateStudentHeaderStats();
         document.getElementById("studentRaidVictoryModal").style.display = "flex";
       } else if (data.type === "RAID_END") {
@@ -5641,7 +5655,7 @@
       if (!studentRaidInputVal) { alert("계산 정답을 입력해주세요!"); return; }
       if (pendingAnswer) { alert("제출한 답의 확인을 기다리는 중입니다."); return; }
       pendingAnswer = { type: "ANSWER", studentId: myStudentId, name: myStudentName,
-        answer: studentRaidInputVal, problemId: studentProblemId,
+        answer: studentRaidInputVal, problemId: studentProblemId, pokemonId: selectedStudentPokemon,
         requestId: Date.now().toString(36) + Math.random().toString(36).slice(2) };
       sendClassroomMessage(mqttStudentClient, "to_host", pendingAnswer);
     }
@@ -5656,5 +5670,6 @@
     }
 
   </script>
+  <script src="classroom-adventure.js"></script>
 </body>
 </html>
