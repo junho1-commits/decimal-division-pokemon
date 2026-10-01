@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const {randomUUID} = require('node:crypto');
 const html = fs.readFileSync('index.html','utf8');
-const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n') + '\n' + fs.readFileSync('classroom-adventure.js','utf8');
+const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n') + '\n' + fs.readFileSync('process-quizzes.js','utf8') + '\n' + fs.readFileSync('classroom-adventure.js','utf8');
 const clients=[], queue=[];
 let drop=()=>false;
 class Client {
@@ -43,8 +43,9 @@ for(let i=0;i<30;i++){
 }
 flush();assert.equal(host.run('connectedStudents.size'),30);assert.ok(students.every(c=>c.run('studentReady')));
 host.run('startRaidBattle()');flush();assert.ok(students.every(c=>c.run('isStudentInRaid')));
+assert.ok(host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.every(p=>p.choices.length===4 && !Object.hasOwn(p,"ansMain"))'),'raid phases ask for reasoning choices');
 const a=students[0];
-function answer(student){const value=host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[gameState.currentRaidPhase].ansMain');student.run('studentRaidInputVal='+JSON.stringify(value)+'; sendStudentRaidAnswer()');}
+function answer(student){const value=host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[gameState.currentRaidPhase].correct');student.run('chooseStudentRaidOption('+value+'); sendStudentRaidAnswer()');}
 // Lost result: retry must return the same result without applying damage or XP twice.
 drop=(client,message)=>JSON.parse(message.payloadString).type==='RESULT';answer(a);const packet=a.run('JSON.stringify(pendingAnswer)');flush();assert.equal(host.run('raidHp'),2225);assert.equal(a.run('myStudentXP'),0);
 drop=()=>false;a.pulse();flush();assert.equal(host.run('raidHp'),2225);assert.equal(a.run('myStudentXP'),100);
@@ -57,7 +58,7 @@ assert.equal(host.run('gameState.currentRaidPhase'),1);assert.equal(host.run('ra
 assert.equal(a.el('studentRaidPhaseTag').textContent,'PHASE 2 / 3');
 host.run('handleHostIncomingMessage({...'+packet+',requestId:"late"})');flush();assert.equal(host.run('raidHp'),1500);
 // A dropped phase broadcast recovers on the next presence acknowledgement.
-a.run('studentRaidInputVal="123"');a.pulse();flush();assert.equal(a.run('studentRaidInputVal'),'123','same-state sync preserves input');
+a.run('chooseStudentRaidOption(1)');a.pulse();flush();assert.equal(a.run('raidQuizChoice'),1,'same-state sync preserves choice');
 a.run('mqttStudentClient.disconnect()');host.run('applyRaidDamage(750)');flush();
 a.run('connectStudentMQTT()');flush();assert.equal(a.el('studentRaidPhaseTag').textContent,'PHASE 3 / 3');assert.equal(a.run('studentReady'),true);
 // Finish and prove repeated victory/result messages cannot award duplicate rewards.
@@ -96,7 +97,7 @@ assert.match(restored.el('studentSaveStatus').textContent,/저장하지 못/);
 // Owned Pokemon, boss counterattack, revive, switching, and type effectiveness.
 a.run('studentCaughtList=[25,94]; selectedStudentPokemon=25; saveStudentProfile(); sendStudentPresence()');flush();
 host.run('startRaidBattle()');flush();
-for(let i=0;i<9 && a.run('studentFighter.hp')>0;i++){a.run('studentRaidInputVal="999";sendStudentRaidAnswer()');flush();}
+for(let i=0;i<9 && a.run('studentFighter.hp')>0;i++){const wrong=host.run('(RAID_BOSSES[gameState.currentRaidBossIndex].phases[gameState.currentRaidPhase].correct+1)%4');a.run('chooseStudentRaidOption('+wrong+');sendStudentRaidAnswer()');flush();}
 assert.equal(a.run('studentFighter.hp'),0);
 const injured=context(join,a.memory);injured.run('loadStudentProfile("test0")');
 const snapshot=host.run('JSON.stringify({type:"JOIN_ACK",state:raidSnapshot(),fighter:hostFighter('+JSON.stringify(a.run('myStudentId'))+')})');
@@ -111,5 +112,24 @@ assert.equal(host.run('savedClassRoster.size'),30);
 const hostReload=context('http://localhost:8200/index.html',host.memory);assert.equal(hostReload.run('savedClassRoster.size'),30);
 assert.ok(!html.includes('id="btnBgm"')&&!html.includes('id="btnVoice"')&&!html.includes('id="btnAudio"'));
 assert.equal(profileTab.run('sound.bgmMuted'),false);assert.equal(profileTab.run('voice.enabled'),true);
+// Reasoning bank, shuffled order, nickname progress, capture and strengthening.
+assert.equal(profileTab.run('Object.values(PROCESS_QUIZZES).flat().length'),36);
+assert.equal(profileTab.run('RAID_REASONING_QUIZZES.length'),8);
+const named='가빈 나연 세은 주원 지언 서희 수은 보민 지우 희경 윤정 민수 건 도현 승준 예준 시원 재휘 태언 이찬 지호 수현'.split(' ');
+const stems=profileTab.run('Object.values(PROCESS_QUIZZES).flat().concat(RAID_REASONING_QUIZZES).map(q=>q.stem).join(" ")');
+assert.ok(named.every(name=>stems.includes(name)));
+assert.ok(!stems.includes('김가빈')&&!stems.includes('박세은'));
+const order=profileTab.run('Array.from({length:6},()=>nextSoloQuiz(1).id)');
+assert.equal(new Set(order).size,6,'stage questions form a shuffled nonrepeating round');
+const quizTab=context(join,new Map());quizTab.run('loadStudentProfile("퀴즈학생"); renderStudentSoloGame()');
+for(let i=0;i<3;i++)quizTab.run('chooseStudentSoloOption(currentSoloQuiz.correct);sendStudentSoloAnswer();sendStudentSoloAnswer()');
+assert.equal(quizTab.run('studentCaughtList.length'),1,'two correct explanations capture the first Pokemon');
+assert.equal(quizTab.run('activeStudentProfile.training[25]'),3);
+const baseDamage=quizTab.run('pokemonBattleStats(25,myStudentXP,0).damage');
+quizTab.run('strengthenStudentPokemon(25)');
+assert.equal(quizTab.run('activeStudentProfile.power[25]'),1);
+assert.equal(quizTab.run('pokemonBattleStats(25,myStudentXP,activeStudentProfile.power[25]).damage'),baseDamage+4);
+const quizRestore=context(join,quizTab.memory);quizRestore.run('loadStudentProfile("퀴즈학생")');
+assert.equal(quizRestore.run('activeStudentProfile.power[25]'),1,'strengthening persists by nickname');
 console.log('PASS: nickname isolation/reload, legacy migration, saved trainer roster, storage failure feedback, owned partners, counterattack/revive, switching, type effectiveness, sound retained');
 console.log('PASS: 30 students, teacher ACK, QR/broker routing, dropped-result retry, duplicate answers/rewards, stale answers, phase/HP sync, reconnect, teacher loss, raid end, bundled API, matching HTML copies');

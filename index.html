@@ -2459,7 +2459,7 @@
       <div class="profile-toolbar"><span id="studentSaveStatus" role="status">모험 기록 준비 중</span><button type="button" onclick="switchStudentProfile()">닉네임 바꾸기</button></div>
       <div class="student-columns">
       <section class="student-context" aria-label="내 포켓몬과 학습 차시">
-      <details class="partner-collection" open><summary>🎒 내 포켓몬 · 출전할 친구 고르기</summary><div id="studentCollection" class="partner-grid"></div></details>
+      <details class="partner-collection" open><summary>🎒 내 포켓몬 · 출전할 친구 고르기</summary><p class="adventure-note">퀴즈 정답 2개로 포켓몬을 잡아요. 정답마다 훈련 에너지 1개를 받고, 3개를 모으면 해당 포켓몬의 [강화] 버튼을 누를 수 있어요. 강화한 포켓몬은 레이드에서 더 강해져요.</p><div id="studentCollection" class="partner-grid"></div></details>
       <!-- 차시 선택 탭 바 (1차시 ~ 6차시) -->
       <div>
         <div style="font-size: 12px; font-weight: 800; color: #94a3b8; margin-bottom: 4px;">학습할 차시 선택:</div>
@@ -2498,7 +2498,9 @@
         </div>
       </div>
 
-      <!-- 정답 입력창 -->
+      <div id="studentSoloOptions" class="reason-options" role="group" aria-label="풀이 방법 선택"></div>
+      <div id="studentTrainingProgress" class="training-progress" aria-live="polite"></div>
+      <!-- 이전 숫자 입력창 -->
       <div style="text-align: center;">
         <div style="font-size: 13px; font-weight: 800; color: #94a3b8; margin-bottom: 2px;">계산한 정답 몫:</div>
         <div id="studentSoloInputDisplay" style="font-size: 32px; font-weight: 900; color: #ffffff; background: #0f172a; padding: 8px; border-radius: 12px; border: 2px solid #38bdf8; min-height: 44px;">
@@ -2526,14 +2528,14 @@
       </div>
 
       <!-- 몬스터볼 던지기 버튼 -->
-      <button class="btn-student-primary" onclick="sendStudentSoloAnswer()">
-        ⚾ 몬스터볼 던져서 포획하기!
+      <button class="btn-student-primary" id="studentSoloSubmit" onclick="sendStudentSoloAnswer()">
+        선택한 생각 확인하기
       </button>
 
       <!-- 피드백 배너 -->
       <div id="studentSoloFeedback" style="display: none; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 800; text-align: center;">
       </div>
-      <p class="student-input-help">⌨ 숫자·소수점 입력 · Enter로 제출 · Backspace로 지우기 / 화면 키패드도 사용할 수 있어요.</p>
+      <p class="student-input-help">정답을 고른 뒤 이유를 확인하세요. 키보드 1~4번으로도 선택할 수 있어요.</p>
       </section>
       </div>
     </div>
@@ -2597,7 +2599,8 @@
         </div>
       </div>
 
-      <!-- 보스전 정답 입력창 -->
+      <div id="studentRaidOptions" class="reason-options" role="group" aria-label="레이드 풀이 선택"></div>
+      <!-- 이전 숫자 입력창 -->
       <div style="text-align: center;">
         <div style="font-size: 13px; font-weight: 800; color: #94a3b8; margin-bottom: 2px;">내가 계산한 공격 몫:</div>
         <div id="studentRaidInputDisplay" style="font-size: 32px; font-weight: 900; color: #ffffff; background: #0f172a; padding: 8px; border-radius: 12px; border: 2px solid #ef4444; min-height: 44px;">
@@ -2632,7 +2635,7 @@
       <!-- 보스전 피드백 배너 -->
       <div id="studentRaidFeedback" style="display: none; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 800; text-align: center;">
       </div>
-      <p class="student-input-help">⌨ 숫자·소수점 입력 · Enter로 기술 사용 · Backspace로 지우기</p>
+      <p class="student-input-help">계산 결과보다 풀이 과정과 오류를 살펴보세요. 키보드 1~4번으로도 선택할 수 있어요.</p>
       </section>
       </div>
     </div>
@@ -5684,6 +5687,7 @@
     }
 
   </script>
+  <script src="process-quizzes.js"></script>
   <script src="classroom-adventure.js"></script>
 </body>
 </html>

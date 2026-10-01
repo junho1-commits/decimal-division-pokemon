@@ -8,6 +8,12 @@
 .partner-collection summary { color:#c4e6ff; font-size:15px; font-weight:800; cursor:pointer; }
 .partner-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:10px; max-height:280px; overflow:auto; }
 .partner-choice { display:flex; flex-direction:column; align-items:center; gap:3px; position:relative; border:1px solid #3b526e; border-radius:12px; background:#102137; color:#e2e8f0; padding:8px 5px; font:inherit; cursor:pointer; min-width:0; }
+.partner-select { display:flex; flex-direction:column; align-items:center; gap:3px; border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; width:100%; }
+.strengthen-button:disabled { opacity:.55; cursor:default; }
+.teacher-reason-choice { display:block; width:100%; padding:8px 10px; margin:6px 0; border:1px solid #475569; border-radius:10px; background:#17263b; color:#e2e8f0; font:inherit; font-size:17px; line-height:1.35; text-align:left; cursor:pointer; }
+.teacher-reason-choice[aria-pressed="true"] { border-color:#facc15; background:#55451f; }
+.teacher-check-choice { width:100%; margin-top:8px; padding:10px; border:0; border-radius:10px; background:#facc15; color:#1f2937; font:inherit; font-size:18px; font-weight:900; cursor:pointer; }
+#quizFormulaBox:has(.teacher-reason-choice) { display:block; white-space:normal; font-size:16px; letter-spacing:0; }
 .partner-choice img { width:64px; height:64px; object-fit:contain; filter:drop-shadow(0 5px 6px #0007); }
 .partner-choice strong { font-size:13px; }
 .partner-choice small { color:#9eb4ce; font-size:10px; }
@@ -57,6 +63,17 @@
 #studentSoloQuestion, #studentRaidQuestion { font-size:16px !important; line-height:1.6; }
 #studentSoloFormula, #studentRaidFormula { font-size:clamp(30px,3vw,42px) !important; }
 .student-input-help { margin:0; color:#a5b4cf; font-size:12px; line-height:1.5; text-align:center; }
+.reason-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.reason-option { min-height:76px; border:2px solid #415675; background:#15263d; color:#eef6ff; border-radius:14px; padding:12px 14px; text-align:left; font:inherit; font-size:16px; line-height:1.45; cursor:pointer; touch-action:manipulation; }
+.reason-option:hover,.reason-option[aria-pressed="true"] { border-color:#facc15; background:#314154; }
+.reason-option:focus-visible { outline:3px solid #facc15; outline-offset:2px; }
+.reason-option:disabled { cursor:default; opacity:.75; }
+.reason-option.correct { border-color:#4ade80; background:#174632; }
+.reason-option.incorrect { border-color:#f87171; background:#4b2733; }
+.training-progress { color:#fde68a; font-size:14px; font-weight:800; text-align:center; }
+.strengthen-button { border:1px solid #facc15; background:#51411a; color:#fff0a5; border-radius:9px; font:inherit; font-size:12px; font-weight:800; padding:6px 8px; cursor:pointer; }
+#studentSoloBox .student-keypad-grid,#studentRaidBox .student-keypad-grid,#studentSoloInputDisplay,#studentRaidInputDisplay { display:none; }
+#studentSoloBox .student-answer-panel>div:has(>#studentSoloInputDisplay),#studentRaidBox .student-answer-panel>div:has(>#studentRaidInputDisplay) { display:none; }
 #studentRaidBox .student-raid-alert-banner { padding:8px; font-size:13px; }
 #studentRaidBox .partner-battle-card { padding:12px; }
 #studentRaidBox .partner-battle-body { min-height:88px; }
@@ -101,6 +118,7 @@
   .student-columns { grid-template-columns:1fr; gap:18px; }
   .student-answer-panel { padding-left:0; border-left:0; }
   .student-context .partner-grid { max-height:140px; grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .reason-options { grid-template-columns:1fr; }
 }
 
 @media (min-width:680px) and (max-width:899px) and (orientation:portrait) {

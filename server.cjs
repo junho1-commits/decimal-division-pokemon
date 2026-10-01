@@ -30,7 +30,7 @@ function createServer() {
     catch { res.writeHead(400).end(); return; }
     if (name === '/') name = '/index.html';
     const allowed = ['/index.html', '/포켓몬_소수의나눗셈.html',
-      '/소수의_나눗셈_문장제_5선.html', '/classroom-adventure.js', '/adventure.css', '/vendor/paho-mqtt-1.1.0.min.js', '/vendor/qrcode-1.0.0.min.js'];
+      '/소수의_나눗셈_문장제_5선.html', '/process-quizzes.js', '/classroom-adventure.js', '/adventure.css', '/vendor/paho-mqtt-1.1.0.min.js', '/vendor/qrcode-1.0.0.min.js'];
     if (!allowed.includes(name) || !['GET', 'HEAD'].includes(req.method)) {
       res.writeHead(404).end(); return;
     }
