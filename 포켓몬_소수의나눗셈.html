@@ -2489,14 +2489,14 @@
         </div>
       </div>
 
-      <div class="profile-toolbar"><span id="studentSaveStatus" role="status">모험 기록 준비 중</span><button type="button" onclick="switchStudentProfile()">닉네임 바꾸기</button></div>
-      <section class="pvp-lobby" aria-label="친구 대전">
+      <div class="profile-toolbar"><span id="studentSaveStatus" role="status">모험 기록 준비 중</span><div class="student-menu-actions"><details id="studentPvpMenu" class="student-pvp-menu"><summary>☰ 친구대전 목록</summary>      <section class="pvp-lobby" aria-label="친구 대전">
         <div><strong>⚔️ 친구 대전</strong><p id="studentPvpProgress">오늘 생각 퀴즈 정답 5개마다 대전권 1장</p></div>
         <label>상대 친구 <select id="studentPvpTarget"><option value="">접속한 친구를 기다리는 중</option></select></label>
         <button type="button" class="adventure-button" onclick="requestStudentPvp()">대전 신청</button>
         <p id="studentPvpNotice" role="status"></p>
         <div id="studentPvpInvite" class="pvp-invite" hidden></div>
-      </section>
+      </section><button type="button" class="pvp-menu-close" onclick="document.getElementById('studentPvpMenu').open=false">목록 닫기</button></details><button type="button" onclick="switchStudentProfile()">닉네임 바꾸기</button></div></div>
+
       <div class="student-columns">
       <section class="student-context" aria-label="내 포켓몬과 학습 차시">
       <details class="partner-collection" open><summary>🎒 내 포켓몬 · 출전할 친구 고르기</summary><p class="adventure-note">퀴즈 정답 2개로 포켓몬을 잡아요. 정답마다 훈련 에너지 1개를 받고, 3개를 모으면 해당 포켓몬의 [강화] 버튼을 누를 수 있어요. 강화한 포켓몬은 레이드에서 더 강해져요.</p><div id="studentCollection" class="partner-grid"></div></details>

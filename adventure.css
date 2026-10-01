@@ -276,3 +276,14 @@
 .math-voice-controls button { padding:7px 10px; border:1px solid #527fa8; border-radius:8px; background:#17324a; color:white; font:inherit; font-size:13px; cursor:pointer; }
 .math-voice-controls button:disabled { opacity:.45; }
 @media(min-width:900px) and (orientation:landscape) { #studentSoloOptions:has(.guided-practice) { max-height:clamp(150px,calc(100vh - 585px),430px); } }
+
+/* Keep friend matchmaking above the study area without taking up its height. */
+.student-menu-actions { display:flex; align-items:center; gap:8px; }
+.student-pvp-menu { position:relative; }
+.student-pvp-menu>summary { cursor:pointer; list-style:none; padding:9px 12px; border:1px solid #7c3aed; border-radius:10px; background:#21143a; color:#ede9fe; font-weight:800; white-space:nowrap; }
+.student-pvp-menu>summary::-webkit-details-marker { display:none; }
+.student-pvp-menu .pvp-lobby { position:absolute; right:0; top:calc(100% + 8px); width:min(430px,calc(100vw - 48px)); box-sizing:border-box; z-index:30; padding:18px 18px 62px; box-shadow:0 12px 36px #0009; }
+.pvp-menu-close { position:absolute; right:18px; top:calc(100% + 8px); transform:translateY(12px); z-index:31; }
+.student-pvp-menu .pvp-lobby>div:first-child { padding-top:36px; }
+@media(min-width:680px) { #studentSoloBox .student-columns { grid-template-columns:minmax(240px,.7fr) minmax(0,1.3fr); } }
+@media(max-width:679px) { .profile-toolbar { flex-wrap:wrap; } #studentSoloBox .student-answer-panel { order:-1; } }

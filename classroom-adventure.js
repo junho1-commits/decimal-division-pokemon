@@ -990,6 +990,7 @@ function studentPvpIncoming(data){
   if(data.type==='PVP_NOTICE'){pvpNotice(data.message);studentPvpInvite=null;document.getElementById('studentPvpInvite').hidden=true;return;}
   if(data.type==='PVP_INVITE'){
     studentPvpInvite=data.inviteId;
+    document.getElementById('studentPvpMenu').open=true;
     const box=document.getElementById('studentPvpInvite');box.hidden=false;
     box.innerHTML='<strong>'+escapeClassroomText(data.fromName)+'의 대전 신청</strong><button type="button" onclick="replyStudentPvp(true)">수락</button><button type="button" onclick="replyStudentPvp(false)">거절</button>';
     return;
