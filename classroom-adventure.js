@@ -256,7 +256,13 @@ function nextSoloQuiz(stageId) {
   if(!soloQuizQueue[key]?.length)soloQuizQueue[key]=shuffledQuizIndices(bank.length);
   const source=bank[soloQuizQueue[key].shift()];
   soloQuizQueue[turnKey]=(soloQuizQueue[turnKey]||0)+1;
-  const quiz=guided?{...source,methodIndex:Math.floor((soloQuizQueue[turnKey]-1)/2)%source.methods.length}:shuffledQuiz(source);
+  const methodKey='methods-'+stageId;
+  if(guided && !soloQuizQueue[methodKey]?.length){
+    const bag=source.methods.map((_,i)=>i);
+    for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}
+    soloQuizQueue[methodKey]=bag;
+  }
+  const quiz=guided?{...source,methodIndex:soloQuizQueue[methodKey].shift()}:shuffledQuiz(source);
   lastSoloQuizId[stageId]=quiz.id;
   return quiz;
 }

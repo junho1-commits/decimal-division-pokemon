@@ -301,3 +301,23 @@
 #studentSoloBox .student-poke-card img { display:block; margin:0 auto; width:160px; height:160px; }
 .student-menu-actions { flex-wrap:wrap; justify-content:flex-end; }
 @media(min-width:900px) and (orientation:landscape) { #studentSoloOptions:has(.guided-practice) { max-height:clamp(260px,calc(100vh - 410px),580px); } }
+
+.practice-method-label { align-self:flex-start; padding:8px 12px; border:1px solid #facc15; border-radius:8px; background:#155e75; color:white; font-weight:800; }
+.division-work { --division-cell:40px; width:max-content; max-width:100%; padding:8px 0; }
+.division-grid { display:grid; grid-template-columns:72px repeat(var(--division-cols),var(--division-cell)); gap:0; align-items:center; padding:0; justify-content:start; }
+.division-quotient { padding:0; }
+.division-header { border:0; font:24px monospace; }
+.division-digit { border-top:2px solid white; text-align:center; padding:5px 0; }
+.division-divisor { text-align:right; padding-right:8px; }
+.division-quotient>span { text-align:center; }
+.division-work .digit-input { width:36px; box-sizing:border-box; height:40px; padding:2px 0; font:24px monospace; }
+.division-step { text-align:left; border:0; padding:6px 0; gap:4px; }
+.division-step>small { max-width:calc(72px + var(--division-cols)*var(--division-cell)); white-space:normal; line-height:1.5; }
+.division-value { display:block; min-width:0; }
+.division-value .practice-input { width:100%; box-sizing:border-box; height:40px; font:24px monospace; text-align:left; letter-spacing:calc(var(--division-cell) - 1ch); padding:2px calc((var(--division-cell) - 1ch)/2); }
+.division-minus { grid-column:1; text-align:right; padding-right:8px; font-size:24px; }
+.division-difference { border:0; padding:0; }
+.division-difference .division-value { border-top:1px solid white; padding-top:5px; }
+.division-grid .quotient-point::after { right:-3px; bottom:4px; }
+.practice-row { flex-wrap:wrap; }
+@media(max-width:600px) { .division-work { --division-cell:36px; } .division-work .digit-input { width:32px; } }
