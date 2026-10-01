@@ -33,3 +33,81 @@
 #studentRaidAttackButton:disabled { opacity:.55; cursor:default; }
 @media(max-width:380px) { .partner-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .partner-battle-body>img { width:85px; height:85px; } .partner-battle-body { gap:10px; } }
 @media(prefers-reduced-motion:reduce) { #studentPartnerHpBar { transition:none; } }
+
+/* Chromebook and tablet workspace: game on the left, problems on the right. */
+#viewStudentController { padding:16px 24px; }
+.student-app-header { max-width:1280px; min-height:36px; padding-bottom:8px; margin-bottom:12px; gap:16px; }
+#studentSoloBox, #studentRaidBox { max-width:1280px; padding:18px; gap:12px; }
+#studentJoinBox { max-width:680px; margin-top:clamp(12px,6vh,70px); padding:32px; gap:20px; }
+#studentJoinBox .student-input { font-size:24px; padding:18px; }
+.student-columns { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; align-items:start; }
+.student-context, .student-answer-panel { display:flex; flex-direction:column; gap:12px; min-width:0; }
+.student-answer-panel { border-left:1px solid #3a4c65; padding-left:24px; }
+.student-context .partner-collection { order:5; }
+.student-context .partner-grid { grid-template-columns:repeat(4,minmax(0,1fr)); max-height:210px; }
+.student-context .partner-grid.compact { max-height:108px; }
+.student-context .student-poke-card img { width:100px; height:100px; }
+#studentRaidBox .student-poke-card img { width:76px; height:76px; }
+.student-stage-tabs { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); overflow:visible; }
+.student-stage-tab { min-width:0; min-height:44px; font-size:14px; }
+.student-answer-panel .student-keypad-grid { margin-top:0; gap:8px; }
+.student-answer-panel .student-key-btn { min-height:52px; padding:10px; font-size:25px; touch-action:manipulation; }
+.student-answer-panel .btn-student-primary { min-height:54px; padding:12px; font-size:20px; touch-action:manipulation; }
+.student-answer-panel .student-formula-card { padding:18px; }
+#studentSoloQuestion, #studentRaidQuestion { font-size:16px !important; line-height:1.6; }
+#studentSoloFormula, #studentRaidFormula { font-size:clamp(30px,3vw,42px) !important; }
+.student-input-help { margin:0; color:#a5b4cf; font-size:12px; line-height:1.5; text-align:center; }
+#studentRaidBox .student-raid-alert-banner { padding:8px; font-size:13px; }
+#studentRaidBox .partner-battle-card { padding:12px; }
+#studentRaidBox .partner-battle-body { min-height:88px; }
+#studentRaidBox .partner-battle-body>img { width:88px; height:88px; }
+#studentRaidBox .battle-log { min-height:0; font-size:12px; }
+#viewStudentController button:focus-visible { outline:3px solid #facc15; outline-offset:3px; }
+@media (min-width:900px) and (max-height:820px) {
+  #viewStudentController { padding:10px 20px; }
+  .student-app-header { margin-bottom:8px; }
+  #studentSoloBox,#studentRaidBox { padding:14px; gap:8px; }
+  .student-context,.student-answer-panel { gap:8px; }
+  .student-answer-panel .student-formula-card { padding:12px; }
+  .student-answer-panel .student-key-btn { min-height:44px; padding:6px; }
+  .student-answer-panel .btn-student-primary { min-height:46px; padding:8px; }
+  .student-answer-panel .student-keypad-grid { gap:6px; }
+  #studentSoloQuestion,#studentRaidQuestion { font-size:14px !important; }
+  .student-context .partner-grid { max-height:168px; }
+  .student-context .partner-grid.compact { max-height:136px; margin-top:6px; }
+  .compact .partner-choice { gap:1px; padding:5px; }
+  .compact .partner-choice img { width:30px; height:30px; }
+}
+@media (min-width:680px) and (max-width:899px) {
+  #viewStudentController { padding:14px; }
+  #studentSoloBox,#studentRaidBox { padding:14px; }
+  .student-columns { grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr); gap:14px; }
+  .student-answer-panel { padding-left:14px; }
+  .student-context .partner-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .student-context .student-poke-card { flex-direction:column; text-align:center; }
+  #studentRaidBox .student-poke-card { flex-direction:row; text-align:left; gap:8px; }
+  #studentRaidBox .student-poke-card img { width:56px; height:56px; }
+  .partner-battle-body { gap:8px; }
+  #studentRaidBox .partner-battle-body>img { width:64px; height:64px; }
+  #studentPartnerMove { font-size:12px; }
+  #studentPartnerName { font-size:17px; }
+  #studentSoloQuestion,#studentRaidQuestion { font-size:15px !important; }
+  .student-answer-panel .btn-student-primary { font-size:17px; }
+  .profile-toolbar { flex-wrap:wrap; }
+}
+@media (max-width:679px) {
+  #viewStudentController { padding:12px; }
+  #studentJoinBox { padding:20px; margin-top:12px; }
+  .student-columns { grid-template-columns:1fr; gap:18px; }
+  .student-answer-panel { padding-left:0; border-left:0; }
+  .student-context .partner-grid { max-height:140px; grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+
+@media (min-width:680px) and (max-width:899px) and (orientation:portrait) {
+  .student-columns { grid-template-columns:1fr; gap:18px; }
+  .student-answer-panel { border-left:0; border-top:1px solid #3a4c65; padding:18px 0 0; }
+  .student-context .student-poke-card { flex-direction:row; text-align:left; }
+  .student-context .partner-grid { grid-template-columns:repeat(5,minmax(0,1fr)); max-height:150px; }
+  .student-context .partner-grid.compact { grid-template-columns:repeat(6,minmax(0,1fr)); max-height:130px; }
+  .student-answer-panel .student-key-btn { min-height:58px; }
+}

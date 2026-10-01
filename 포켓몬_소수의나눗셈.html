@@ -1689,7 +1689,7 @@
     }
 
     /* =========================================================
-       학생용 모바일/태블릿 화면 (Student Controller View)
+       학생용 크롬북/패드 화면 (Student Controller View)
        ========================================================= */
     #viewStudentController {
       display: none;
@@ -2457,6 +2457,8 @@
       </div>
 
       <div class="profile-toolbar"><span id="studentSaveStatus" role="status">모험 기록 준비 중</span><button type="button" onclick="switchStudentProfile()">닉네임 바꾸기</button></div>
+      <div class="student-columns">
+      <section class="student-context" aria-label="내 포켓몬과 학습 차시">
       <details class="partner-collection" open><summary>🎒 내 포켓몬 · 출전할 친구 고르기</summary><div id="studentCollection" class="partner-grid"></div></details>
       <!-- 차시 선택 탭 바 (1차시 ~ 6차시) -->
       <div>
@@ -2484,6 +2486,8 @@
         </div>
       </div>
 
+      </section>
+      <section class="student-answer-panel" aria-label="문제 풀기">
       <!-- 나눗셈 퀴즈 수식 카드 -->
       <div class="student-formula-card">
         <div style="font-size: 30px; font-weight: 900; color: #facc15; font-family: var(--font-game);" id="studentSoloFormula">
@@ -2529,6 +2533,9 @@
       <!-- 피드백 배너 -->
       <div id="studentSoloFeedback" style="display: none; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 800; text-align: center;">
       </div>
+      <p class="student-input-help">⌨ 숫자·소수점 입력 · Enter로 제출 · Backspace로 지우기 / 화면 키패드도 사용할 수 있어요.</p>
+      </section>
+      </div>
     </div>
 
     <!-- 2단계 B: [실시간 협동 보스전 모드] (교사가 레이드 열면 자동 전환) -->
@@ -2547,6 +2554,8 @@
         </div>
       </div>
 
+      <div class="student-columns">
+      <section class="student-context" aria-label="보스와 출전 포켓몬">
       <!-- 전설 보스 정보 & 체력 게이지 -->
       <div class="student-poke-card" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.1);">
         <img id="studentRaidBossImg" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png" alt="보스">
@@ -2576,6 +2585,8 @@
         <p class="adventure-note">정답이면 파트너가 기술을 사용해요. 틀리면 보스가 반격해요! 쓰러져도 회복하거나 친구를 교체할 수 있어요.</p>
       </section>
       <div id="studentBattleLog" class="battle-log" aria-live="polite">출전 준비!</div>
+      </section>
+      <section class="student-answer-panel" aria-label="레이드 문제 풀기">
       <!-- 보스전 문제 수식 카드 -->
       <div class="student-formula-card" style="border-color: #ef4444;">
         <div style="font-size: 30px; font-weight: 900; color: #facc15; font-family: var(--font-game);" id="studentRaidFormula">
@@ -2620,6 +2631,9 @@
 
       <!-- 보스전 피드백 배너 -->
       <div id="studentRaidFeedback" style="display: none; padding: 10px; border-radius: 10px; font-size: 15px; font-weight: 800; text-align: center;">
+      </div>
+      <p class="student-input-help">⌨ 숫자·소수점 입력 · Enter로 기술 사용 · Backspace로 지우기</p>
+      </section>
       </div>
     </div>
 
