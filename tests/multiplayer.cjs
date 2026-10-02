@@ -143,7 +143,7 @@ assert.ok(!stems.includes('김가빈')&&!stems.includes('박세은'));
 const order=profileTab.run('Array.from({length:10},()=>nextSoloQuiz(1).id)');
 assert.equal(new Set(order).size,10,'stage questions form a shuffled nonrepeating round');
 function fillGuided(c,target,quizName,wrong=false) {
- c.run('guidedMethod('+quizName+').fields.forEach((f,i)=>document.getElementById(guidedInputId('+JSON.stringify(target)+',i)).value=String(Number(f.answer)'+(''+(wrong?'+(i===0?1:0)':''))+'))');
+ c.run('guidedMethod('+quizName+').fields.forEach((f,i)=>{const value=String(Number(f.answer)'+(wrong?'+(i===0?1:0)':'')+');const cells=guidedFieldInputs('+JSON.stringify(target)+',i);cells.forEach((cell,digit)=>cell.value=cells.length===1?value:value[digit]??"")})');
 }
 function completeSolo(c) {
  if(c.run('currentSoloQuiz.kind==="guided"'))fillGuided(c,'studentSoloOptions','currentSoloQuiz');

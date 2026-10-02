@@ -68,6 +68,34 @@ for(const [i,[a,b]] of [[6.3,2],[12.4,1.5],[24.65,3.8],[23.8,4.5],[14.3,2.5],[9.
 }
 function guidedMethod(quiz) { return quiz.methods[quiz.methodIndex??quiz.preferredMethod??0]; }
 function guidedInputId(target,index) { return target+'-field-'+index; }
+function guidedFieldInputs(target,index) {
+  const field=document.getElementById(guidedInputId(target,index));
+  return 'value' in field?[field]:[...field.querySelectorAll('input')];
+}
+function bindDivisionDigitInputs(target) {
+  document.querySelectorAll('#'+target+' .division-cell-input').forEach(cell=>{
+    cell.addEventListener('focus',()=>cell.select());
+    cell.addEventListener('input',()=>{
+      cell.value=cell.value.replace(/\D/g,'').slice(-1);
+      if(cell.value)cell.nextElementSibling?.focus();
+    });
+    cell.addEventListener('keydown',event=>{
+      if(event.key==='Backspace'&&!cell.value)cell.previousElementSibling?.focus();
+    });
+    cell.addEventListener('paste',event=>{
+      const digits=event.clipboardData.getData('text').replace(/\D/g,'');
+      if(!digits)return;
+      event.preventDefault();
+      let current=cell;
+      for(const digit of digits){
+        current.value=digit;
+        if(!current.nextElementSibling)break;
+        current=current.nextElementSibling;
+      }
+      current.focus();
+    });
+  });
+}
 function renderGuidedPractice(target,quiz,locked=false) {
   const m=guidedMethod(quiz), escape=escapeClassroomText;
   const input=(index,small=false)=>'<input class="practice-input '+(small?'digit-input':'')+'" id="'+guidedInputId(target,index)+'" inputmode="decimal" autocomplete="off" aria-label="'+escape(m.fields[index].label)+'" '+(locked?'disabled value="'+escape(m.fields[index].answer)+'"':'')+'>';
@@ -77,10 +105,15 @@ function renderGuidedPractice(target,quiz,locked=false) {
     const cols=m.digits.length;
     const grid='style="--division-cols:'+cols+'"';
     const pointClass=i=>i===m.point-1 && m.digits.length>m.point?'quotient-point':'';
-    const numberInput=(index,end)=>{const length=m.fields[index].answer.length;return '<span class="division-value" style="grid-column:'+(end+3-length)+' / '+(end+3)+'">'+input(index)+'</span>';};
+    const numberInput=(index,end)=>{
+      const field=m.fields[index], length=field.answer.length;
+      const cells=Array.from({length},(_,digit)=>'<input class="practice-input division-cell-input" inputmode="numeric" autocomplete="off" maxlength="1" aria-label="'+escape(field.label)+' '+(digit+1)+'번째 숫자" '+(locked?'disabled value="'+escape(field.answer[digit])+'"':'')+'>').join('');
+      return '<span class="division-value" id="'+guidedInputId(target,index)+'" style="grid-column:'+(end+3-length)+' / '+(end+3)+'">'+cells+'</span>';
+    };
     body='<div class="division-work" '+grid+'><div class="division-quotient division-grid">'+m.rows.map(r=>'<span class="'+pointClass(r.end)+'" style="grid-column:'+(r.end+2)+'">'+input(r.offset,true)+'</span>').join('')+'</div><div class="division-header division-grid"><span class="division-divisor">'+m.divisor+' ⟌</span>'+m.digits.split('').map((digit,index)=>'<span class="division-digit '+pointClass(index)+'" style="grid-column:'+(index+2)+'">'+digit+'</span>').join('')+'</div>'+m.rows.map((r,i)=>'<div class="division-step"><small>단계 '+(i+1)+' · 내려온 수 '+r.partial+' · '+m.divisor+' × 이 자리 몫</small><div class="division-product division-grid"><span class="division-minus">−</span>'+numberInput(r.offset+1,r.end)+'</div><div class="division-difference division-grid">'+numberInput(r.offset+2,r.end)+'</div><small>빼고 남은 수'+(i<m.rows.length-1?' → 다음 숫자 내리기':'')+'</small></div>').join('')+'</div>'+m.fields.slice(m.rows.length*3).map((field,j)=>'<label class="practice-row">'+escape(field.label)+input(m.rows.length*3+j)+'</label>').join('');
   } else body=m.fields.map((field,i)=>'<label class="practice-row">'+escape(field.label)+input(i)+'</label>').join('');
   document.getElementById(target).innerHTML='<div class="guided-practice"><div class="practice-method-label">이번 풀이: '+escape(m.name)+'</div><p>'+escape(m.instruction)+'</p><p class="practice-hint">풀이가 길면 이 영역 안을 아래로 스크롤하세요.</p>'+body+'<p class="practice-hint">각 칸에 직접 입력하세요. Enter로 확인 · 계산 메모장도 사용할 수 있어요.</p><div id="'+target+'-feedback" aria-live="polite"></div></div>';
+  if(m.type==='division'&&!locked)bindDivisionDigitInputs(target);
 }
 function choosePracticeMethod(target,index) {
   const quiz=target==='quizFormulaBox'?teacherSoloQuiz:currentSoloQuiz;
@@ -89,12 +122,13 @@ function choosePracticeMethod(target,index) {
   if(target==='quizFormulaBox')document.getElementById(target).innerHTML+='<button class="teacher-check-choice" onclick="checkTeacherSoloOption()">풀이 과정 확인하기</button>';
 }
 function assessGuidedPractice(target,quiz) {
-  const method=guidedMethod(quiz), values=method.fields.map((_,i)=>String(document.getElementById(guidedInputId(target,i)).value??'').trim());
-  if(values.some(v=>!v)) {document.getElementById(target+'-feedback').textContent='아직 빈칸이 있어요. 풀이 과정을 모두 채워 주세요.';return null;}
+  const method=guidedMethod(quiz), inputs=method.fields.map((_,i)=>guidedFieldInputs(target,i));
+  const values=inputs.map(cells=>cells.map(cell=>String(cell.value??'').trim()).join(''));
+  if(inputs.some(cells=>cells.some(cell=>!cell.value.trim()))) {document.getElementById(target+'-feedback').textContent='아직 빈칸이 있어요. 풀이 과정을 모두 채워 주세요.';return null;}
   const wrong=[];
   values.forEach((value,i)=>{
     const ok=/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(value) && Math.abs(Number(value)-Number(method.fields[i].answer))<1e-8;
-    document.getElementById(guidedInputId(target,i)).setAttribute('aria-invalid',String(!ok));
+    inputs[i].forEach(cell=>cell.setAttribute('aria-invalid',String(!ok)));
     if(!ok)wrong.push(method.fields[i].label+': '+method.fields[i].hint);
   });
   quiz.explanation=wrong.length?wrong.slice(0,3).join(' / '):method.explanation;
