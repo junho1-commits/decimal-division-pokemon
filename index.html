@@ -1875,7 +1875,7 @@
   <!-- MQTT WebSocket 및 QR 라이브러리: 외부 서버 접속이 필요합니다. -->
   <script src="vendor/paho-mqtt-1.1.0.min.js"></script>
   <script src="vendor/qrcode-1.0.0.min.js"></script>
-  <link rel="stylesheet" href="adventure.css?v=20261002-subject-home">
+  <link rel="stylesheet" href="adventure.css?v=20261002-course-catalog">
 </head>
 <body>
 
@@ -1883,7 +1883,7 @@
     <header class="learning-home-header"><a class="learning-home-brand" href="./">⚡ 포켓몬 학습 모험</a><nav><a href="student.html">학생 입장</a><a href="question-manager.html" target="_blank" rel="noopener">문제 관리</a></nav></header>
     <main class="learning-home-main">
       <section class="learning-home-hero"><p class="learning-home-eyebrow">우리 반이 함께하는 배움의 모험</p><h1 id="teacherHomeTitle">오늘은 어떤 과목을<br>모험해 볼까요?</h1><p>과목과 단원을 선택해 수업 방을 만들어요.<br>학생들은 방 코드로 입장하고, 문제를 풀며 포켓몬과 함께 성장해요.</p><div class="learning-home-tags"><span>🎒 개별 학습</span><span>⚡ 협동 레이드</span><span>🤝 친구 대전</span></div></section>
-      <section class="learning-home-subjects" aria-labelledby="homeSubjectsTitle"><div class="learning-home-section-title"><h2 id="homeSubjectsTitle">과목·단원 선택</h2><span id="homeSubjectCount"></span></div><div id="homeCourseCards" class="home-course-grid"></div></section>
+      <section class="learning-home-subjects" aria-labelledby="homeSubjectsTitle"><div class="learning-home-section-title"><h2 id="homeSubjectsTitle">과목·단원 선택</h2><span id="homeSubjectCount"></span></div><div class="home-catalog"><nav id="homeSubjectTabs" class="home-subject-tabs" aria-label="과목 선택"></nav><div class="home-unit-panel"><div class="home-unit-heading"><h3 id="homeUnitsTitle">단원 선택</h3><span id="homeResultsCount" aria-live="polite"></span></div><div class="home-unit-filters"><label class="home-search">단원 검색<input id="homeUnitSearch" type="search" placeholder="단원 이름이나 주제 검색" oninput="filterHomeCourses()"></label><label>학년<select id="homeGradeFilter" onchange="filterHomeCourses()"></select></label><label>학기<select id="homeTermFilter" onchange="filterHomeCourses()"></select></label></div><div id="homeCourseCards" class="home-course-grid"></div><div id="homeEmpty" class="home-empty" hidden>조건에 맞는 단원이 없어요.<button type="button" onclick="resetHomeFilters()">검색 조건 초기화</button></div><nav id="homePagination" class="home-pagination" aria-label="단원 목록 페이지"></nav></div></div></section>
       <section class="learning-home-footer"><div><h2>학생은 방 코드로 입장해요</h2><p>공통 학생 주소를 알려 주고, 만든 방의 숫자 8자리 코드를 공유하세요.</p><a href="student.html">학생 입장 화면 열기 ↗</a></div><div><h2>우리 수업에 맞는 문제</h2><p>문제와 정답·해설을 확인하거나 편집하고, 새로운 과목·단원을 추가할 수 있어요.</p><a href="question-manager.html" target="_blank" rel="noopener">문제 관리 열기 ↗</a></div></section>
       <div class="learning-home-resume"><p id="homeCurrentCourse"></p><button type="button" onclick="resumeTeacherWorkspace()">현재 수업 화면으로 →</button></div>
     </main>
@@ -5932,6 +5932,6 @@
   <script src="questions/social-6-2-2.js?v=20261002-courses"></script>
   <script src="questions/korean-6-2-4.js?v=20261002-courses"></script>
   <script src="course-library.js?v=20261002-courses"></script>
-  <script src="classroom-courses.js?v=20261002-subject-home"></script>
+  <script src="classroom-courses.js?v=20261002-course-catalog"></script>
 </body>
 </html>

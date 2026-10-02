@@ -207,17 +207,46 @@ submitEvolutionQuiz=function(){
 
 function chooseCourseEvolution(index){document.getElementById('evoQuizInput').value=String(index+1);submitEvolutionQuiz();}
 
+let homeSelectedSubject='',homeCoursePage=1;
+const HOME_PAGE_SIZE=8;
+function homeCourseMeta(course){
+  const match=course.title.match(/([1-6])\s*[-–]\s*([12])/);
+  return {grade:match?match[1]:'',term:match?match[2]:''};
+}
 function renderTeacherHome(){
   const courses=readCourses(),subjects=[...new Set(courses.map(c=>c.subject))];
+  if(!subjects.includes(homeSelectedSubject))homeSelectedSubject=subjects[0]||'';
   document.getElementById('homeSubjectCount').textContent=subjects.length+'과목 · '+courses.length+'단원';
   const icons={'수학':'🔢','사회':'🌏','국어':'📖','과학':'🔬','영어':'💬'};
-  document.getElementById('homeCourseCards').innerHTML=courses.map(course=>{
-    const count=course.sections.reduce((n,s)=>n+s.quizzes.length,0);
-    const color=course.subject==='수학'?'math':course.subject==='사회'?'social':course.subject==='국어'?'korean':'other';
-    return '<article class="home-course-card '+color+'"><div class="home-course-icon" aria-hidden="true">'+(icons[course.subject]||'📚')+'</div><span class="home-course-subject">'+escapeClassroomText(course.subject)+'</span><h3>'+escapeClassroomText(course.title)+'</h3><p>'+course.sections.length+'개 학습 묶음 · '+count+'문제'+(course.nativeMath?' + 계산 실습':'')+'</p><button type="button" onclick="startHomeCourse(&quot;'+course.id+'&quot;)">'+escapeClassroomText(course.subject)+' 수업 방 만들기 <span aria-hidden="true">→</span></button></article>';
-  }).join('');
+  document.getElementById('homeSubjectTabs').innerHTML=subjects.map((subject,index)=>'<button type="button" aria-pressed="'+(subject===homeSelectedSubject)+'" onclick="selectHomeSubject('+index+')"><span>'+ (icons[subject]||'📚')+' '+escapeClassroomText(subject)+'</span><small>'+courses.filter(c=>c.subject===subject).length+'단원</small></button>').join('');
+  for(const [id,key,label] of [['homeGradeFilter','grade','학년'],['homeTermFilter','term','학기']]){
+    const select=document.getElementById(id),value=select.value;
+    const values=[...new Set(courses.map(c=>homeCourseMeta(c)[key]).filter(Boolean))].sort();
+    select.innerHTML='<option value="">전체 '+label+'</option>'+values.map(v=>'<option value="'+v+'">'+v+label+'</option>').join('');
+    select.value=values.includes(value)?value:'';
+  }
+  renderHomeUnits();
   document.getElementById('homeCurrentCourse').parentElement.hidden=!teacherRoomOpened;
   document.getElementById('homeCurrentCourse').textContent='현재 수업: '+classroomCourse.subject+' · '+classroomCourse.title;
+}
+function selectHomeSubject(index){homeSelectedSubject=[...new Set(readCourses().map(c=>c.subject))][index]||'';homeCoursePage=1;renderTeacherHome();}
+function filterHomeCourses(){homeCoursePage=1;renderHomeUnits();}
+function resetHomeFilters(){for(const id of ['homeUnitSearch','homeGradeFilter','homeTermFilter'])document.getElementById(id).value='';filterHomeCourses();}
+function changeHomePage(delta){homeCoursePage+=delta;renderHomeUnits();}
+function renderHomeUnits(){
+  const query=document.getElementById('homeUnitSearch').value.trim().toLocaleLowerCase();
+  const grade=document.getElementById('homeGradeFilter').value,term=document.getElementById('homeTermFilter').value;
+  const courses=readCourses().filter(c=>{const meta=homeCourseMeta(c);return c.subject===homeSelectedSubject&&(!grade||meta.grade===grade)&&(!term||meta.term===term)&&(!query||(c.title+' '+c.sections.map(s=>s.title).join(' ')).toLocaleLowerCase().includes(query));});
+  const pages=Math.max(1,Math.ceil(courses.length/HOME_PAGE_SIZE));homeCoursePage=Math.max(1,Math.min(homeCoursePage,pages));
+  document.getElementById('homeUnitsTitle').textContent=homeSelectedSubject+' 단원 선택';
+  document.getElementById('homeResultsCount').textContent=courses.length+'개 단원';
+  document.getElementById('homeCourseCards').innerHTML=courses.slice((homeCoursePage-1)*HOME_PAGE_SIZE,homeCoursePage*HOME_PAGE_SIZE).map(course=>{
+    const count=course.sections.reduce((n,s)=>n+s.quizzes.length,0);
+    const color=course.subject==='수학'?'math':course.subject==='사회'?'social':course.subject==='국어'?'korean':'other';
+    return '<article class="home-course-card '+color+'"><h3>'+escapeClassroomText(course.title)+'</h3><p>'+course.sections.length+'개 학습 묶음 · '+count+'문제'+(course.nativeMath?' + 계산 실습':'')+'</p><button type="button" onclick="startHomeCourse(&quot;'+course.id+'&quot;)">수업 방 만들기 <span aria-hidden="true">→</span></button></article>';
+  }).join('');
+  document.getElementById('homeEmpty').hidden=courses.length!==0;
+  document.getElementById('homePagination').innerHTML=pages>1?'<button type="button" onclick="changeHomePage(-1)" '+(homeCoursePage===1?'disabled':'')+'>← 이전</button><span>'+homeCoursePage+' / '+pages+'</span><button type="button" onclick="changeHomePage(1)" '+(homeCoursePage===pages?'disabled':'')+'>다음 →</button>':'';
 }
 function showTeacherHome(){
   if(new URLSearchParams(location.search).get('role')==='student')return;
