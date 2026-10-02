@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>포켓몬 GO : 소수의 나눗셈 대모험 (6-2 수학 2단원 전단원)</title>
+  <title>포켓몬 학습 모험 · 과목별 퀴즈</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&family=Jua&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
@@ -1875,7 +1875,7 @@
   <!-- MQTT WebSocket 및 QR 라이브러리: 외부 서버 접속이 필요합니다. -->
   <script src="vendor/paho-mqtt-1.1.0.min.js"></script>
   <script src="vendor/qrcode-1.0.0.min.js"></script>
-  <link rel="stylesheet" href="adventure.css?v=20261002-division-cells">
+  <link rel="stylesheet" href="adventure.css?v=20261002-courses">
 </head>
 <body>
 
@@ -1899,7 +1899,7 @@
           </div>
           <div class="unit-indicator">
             <div class="title">
-              6-2 수학 2단원 <span>소수의 나눗셈 대모험</span>
+              <span id="teacherCourseTitle">포켓몬 학습 모험 · 과목별 퀴즈</span>
             </div>
             <div class="subtitle">문제를 풀고 몬스터볼을 던져 포켓몬 도감을 완성하자!</div>
           </div>
@@ -1948,7 +1948,7 @@
         <div id="viewMap" class="view-screen active">
           <div class="map-header">
             <h2>🌍 모험을 떠날 지역(차시)을 선택하세요!</h2>
-            <p>초원의 들판부터 전설의 보스 레이드까지, 6-2 수학 2단원 완전 정복</p>
+            <p>과목과 단원을 선택하고, 문제를 풀어 포켓몬과 함께 모험하세요.</p>
           </div>
 
           <div class="stage-grid">
@@ -2082,7 +2082,7 @@
                 <div class="stage-name" id="battleStageName">STAGE 1 · 초원의 들판 (1 / 6)</div>
               </div>
               <div class="poke-cp">
-                <div class="label">전투력 (수학 파워)</div>
+                <div class="label">전투력 (학습 파워)</div>
                 <div class="value" id="battlePokeCP">CP 480</div>
               </div>
             </div>
@@ -2348,7 +2348,7 @@
       <div class="modal-title" id="catchSuccessTitle">야생의 피카츄를 잡았다!</div>
       <img src="" id="catchSuccessImg" class="modal-catch-img" alt="잡은 포켓몬">
       <div class="modal-desc" id="catchSuccessDesc">
-        소수의 나눗셈 계산을 완벽하게 맞혔습니다!<br>포켓몬 도감에 등록되고 경험치를 획득했습니다.
+        학습 문제를 정확하게 해결했습니다!<br>포켓몬 도감에 등록되고 경험치를 획득했습니다.
       </div>
       <div class="modal-formula-review" id="catchSuccessFormula">
         4.8 ÷ 0.6 = 8
@@ -2389,7 +2389,7 @@
       <h3 style="font-size: 34px; font-family: var(--font-game); color: #ffffff; white-space: nowrap;" id="dexDetailName">피카츄</h3>
       <div style="display: flex; justify-content: center; gap: 8px; margin: 8px 0;" id="dexDetailTypes"></div>
       <div class="hint-step-box" style="margin-top: 14px;" id="dexDetailMathInfo">
-        해결한 수학 문제 기록
+        해결한 학습 문제 기록
       </div>
       <div id="dexEvolutionActionWrap" style="margin-top: 12px; display: none;">
         <button class="btn-evolution" id="btnDexEvolve" onclick="openEvolutionQuizFromDex()">
@@ -2418,7 +2418,7 @@
       <div id="studentConnStatus" style="font-size: 13px; font-weight: 800; color: #4ade80;">
         ● 연결 대기 중
       </div>
-      <button type="button" class="student-memo-button" onclick="openStudentMemo()">📝 계산 메모장</button>
+      <button type="button" class="student-memo-button" onclick="openStudentMemo()">📝 학습 메모장</button>
       <button type="button" class="student-dex-open" onclick="openStudentDex()">📖 내 도감 <span id="studentDexHeaderCount">0/52</span></button>
     </div>
 
@@ -2452,23 +2452,25 @@
       </div>
     </div>
 
+    <p id="classroomCourseBadge" class="classroom-course-badge">선생님이 만든 방의 과목과 단원이 표시됩니다.</p>
     <!-- 1단계: 이름 입력 및 입장 -->
     <div class="student-box" id="studentJoinBox">
       <h2 style="font-size: 26px; font-weight: 900; text-align: center; color: #38bdf8; margin: 0;">
         ⚡ 배틀 참가하기
       </h2>
       <div style="font-size: 15px; color: #cbd5e1; text-align: center;">
-        내 번호와 이름을 입력하고 포켓몬 모험을 시작하세요!
+        선생님의 방 코드와 내 번호·이름을 입력하세요!
       </div>
       <div>
         <label style="font-size: 14px; font-weight: 800; color: #94a3b8;">방 코드:</label>
-        <input type="text" id="studentJoinRoomCode" class="student-input" style="color: #facc15; font-size: 22px;" placeholder="방 코드" readonly>
+        <input type="text" id="studentJoinRoomCode" class="student-input" style="color: #facc15; font-size: 22px;" placeholder="숫자 8자리 방 코드" inputmode="numeric" autocomplete="off" maxlength="14">
       </div>
       <div>
         <label style="font-size: 14px; font-weight: 800; color: #94a3b8;">내 번호와 이름:</label>
         <input type="text" id="studentJoinName" maxlength="30" list="savedStudentNames" class="student-input" placeholder="예: 3번 홍길동" onkeydown="if(event.key==='Enter') joinClassroomBattle()">
       </div>
       <datalist id="savedStudentNames"></datalist>
+      <p id="studentJoinError" role="status" aria-live="polite" class="adventure-note"></p>
       <div id="savedStudentProfiles" class="saved-profiles"></div>
       <p class="adventure-note">같은 기기·브라우저에서 같은 닉네임으로 들어오면 모험을 이어갑니다. 기록은 이 기기에 저장됩니다.</p>
       <button class="btn-student-primary" onclick="joinClassroomBattle()">
@@ -2785,7 +2787,7 @@
         뮤츠 (Mewtwo) 생포 완료!
       </div>
       <div class="hint-step-box" style="margin: 14px 0; font-size: 19px; line-height: 1.6; text-align: center;">
-        🏆 <b>[모덕초 6학년]</b> 학급 전원이 소수의 나눗셈 합동 에너지로<br>
+        🏆 <b>[모덕초 6학년]</b> 학급 전원이 함께 모은 학습 에너지로<br>
         전설의 레이드 보스를 완벽히 격파했습니다! (전원 도감 등록 & +1000 XP)
       </div>
       <div style="display: flex; justify-content: center; gap: 14px; white-space: nowrap;">
@@ -2812,8 +2814,16 @@
         📡 실시간 학급 배틀 (학생 기기 연동)
       </h2>
       <p style="font-size: 17px; color: #cbd5e1; margin-bottom: 14px;">
-        학생들이 스마트폰, 태블릿, 크롬북 카메라로 아래 <b>QR 코드</b>를 찍으면 즉시 배틀에 참여합니다!
+        과목과 단원을 선택해 방을 만들고, 학생에게 방 코드 또는 QR·주소를 알려 주세요.
       </p>
+      <section class="classroom-room-builder" aria-label="수업 방 만들기">
+        <label>과목<select id="classroomSubject" onchange="renderCourseUnits()"></select></label>
+        <label>단원<select id="classroomUnit"></select></label>
+        <button type="button" class="adventure-button" onclick="createSubjectRoom()">➕ 선택한 단원으로 새 방 만들기</button>
+        <a href="question-manager.html" target="_blank" rel="noopener">📚 문제 관리</a>
+        <p>새 방을 만들면 이전 방의 학생들은 새 방 코드를 입력해 다시 입장합니다.</p>
+        <strong id="classroomCurrentCourse"></strong>
+      </section>
 
       <div style="display: flex; gap: 24px; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); padding: 18px; border-radius: 16px;">
         <!-- QR 코드 렌더링 박스 -->
@@ -2836,7 +2846,8 @@
               <button type="button" class="btn-modal primary" onclick="copyStudentJoinUrl()" style="font-size: 15px; padding: 8px 14px;">📋 학생 주소 복사</button>
               <span id="copyStudentUrlStatus" role="status" aria-live="polite" style="margin-left: 8px; font-size: 13px; color: #4ade80;"></span>
             </div>
-            <div style="margin-top: 6px; font-size: 12px; color: #94a3b8;">교사 화면을 새로고침하면 학생 주소가 바뀝니다.</div>
+            <div style="margin-top: 10px; font-size: 13px; color: #bae6fd;">방 코드 입력용 공통 학생 주소<br><a id="commonStudentUrl" href="student.html" target="_blank" rel="noopener"></a><br><button type="button" class="adventure-button" onclick="copyCommonStudentUrl()">📋 공통 학생 주소 복사</button></div>
+            <div style="margin-top: 6px; font-size: 12px; color: #94a3b8;">이 탭에서 새로고침해도 방 코드는 유지됩니다. 수업 중 교사 화면을 열어 두세요.</div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 16px; font-weight: 800; color: #4ade80;">● 실시간 연결 상태:</span>
@@ -4164,7 +4175,7 @@
         👑 전설의 보스: ${boss.name}
         <span class="poke-type-badge" style="background: ${boss.typeBg};">${boss.type}</span>
       `;
-      document.getElementById("battleStageName").textContent = `전설의 레이드 배틀 · 페이즈 ${gameState.currentRaidPhase + 1} / 3`;
+      document.getElementById("battleStageName").textContent = `전설의 레이드 배틀 · 페이즈 ${gameState.currentRaidPhase + 1} / ${boss.phases.length}`;
       document.getElementById("battlePokeCP").textContent = raidShiny ? '✨ 이로치 · CP ??????' : 'CP ??????';
 
       const curHp = raidHp;
@@ -4181,7 +4192,7 @@
       };
 
       document.getElementById("quizDifficultyTag").textContent = `🔥 FINAL RAID : 실생활 문장제 & 함정 극복`;
-      document.getElementById("quizQuestionIdx").textContent = `PHASE ${gameState.currentRaidPhase + 1} / 3`;
+      document.getElementById("quizQuestionIdx").textContent = `PHASE ${gameState.currentRaidPhase + 1} / ${boss.phases.length}`;
       document.getElementById("quizQuestionText").textContent = phaseData.question;
       document.getElementById("quizFormulaBox").textContent = `${phaseData.formula} = ?`;
 
@@ -4438,7 +4449,7 @@
           document.getElementById("catchSuccessTitle").textContent = `전설의 포켓몬 ${pokeName} 포획 성공!`;
           document.getElementById("catchSuccessImg").src = getPokemonArtworkUrl(pokeId);
           document.getElementById("catchSuccessDesc").innerHTML = `
-            학급의 완벽한 수학적 협동으로 전설의 보스를 잡았습니다!<br>
+            학급 친구들의 협동으로 전설의 보스를 잡았습니다!<br>
             대량의 경험치 <b>+${earnedXP * 2} XP</b> 획득!
           `;
           document.getElementById("catchSuccessFormula").textContent = formulaStr;
@@ -4459,7 +4470,7 @@
         document.getElementById("catchSuccessTitle").textContent = `야생의 ${pokeName}을(를) 잡았다!`;
         document.getElementById("catchSuccessImg").src = getPokemonArtworkUrl(pokeId);
         document.getElementById("catchSuccessDesc").innerHTML = `
-          소수의 나눗셈 계산을 완벽하게 맞혔습니다!<br>
+          학습 문제를 정확하게 해결했습니다!<br>
           도감 등록 완료! <b>+${earnedXP} XP</b> 획득!
         `;
         document.getElementById("catchSuccessFormula").textContent = formulaStr;
@@ -5194,7 +5205,7 @@
       const phase = boss.phases[gameState.currentRaidPhase];
       return { type: "RAID_START", raidId: raidSessionId, problemId: currentProblemId(),
         bossName: boss.name, bossId: boss.bossId, maxHp: boss.maxHp, curHp: raidHp,
-        formula: phase.formula, question: phase.question, phase: gameState.currentRaidPhase,
+        formula: phase.formula, question: phase.question, phase: gameState.currentRaidPhase, phaseCount:boss.phases.length,
         finished: raidFinished, shiny:raidShiny };
     }
 
@@ -5673,7 +5684,7 @@
         document.getElementById("studentRaidHpBar").style.width = `${(data.curHp / data.maxHp) * 100}%`;
         document.getElementById("studentRaidFormula").textContent = `${data.formula} = ?`;
         document.getElementById("studentRaidQuestion").textContent = data.question;
-        document.getElementById("studentRaidPhaseTag").textContent = `PHASE ${data.phase + 1} / 3`;
+        document.getElementById("studentRaidPhaseTag").textContent = `PHASE ${data.phase + 1} / ${data.phaseCount || 3}`;
 
         studentRaidInputVal = "";
         document.getElementById("studentRaidInputDisplay").textContent = "_";
@@ -5905,6 +5916,9 @@
   </script>
   <script src="process-quizzes.js"></script>
   <script src="guided-practice.js?v=20261002-division-cells"></script>
-  <script src="classroom-adventure.js"></script>
+  <script src="classroom-adventure.js?v=20261002-courses"></script>
+  <script src="questions/social-6-2-1.js?v=20261002-courses"></script>
+  <script src="course-library.js?v=20261002-courses"></script>
+  <script src="classroom-courses.js?v=20261002-courses"></script>
 </body>
 </html>

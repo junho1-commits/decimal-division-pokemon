@@ -499,6 +499,7 @@ handleHostIncomingMessage = function (data) {
     const student = {name:normalizeStudentName(data.name)||'학생',score:previous?.score||0,lastSeen:Date.now(),caught,
       selectedPokemon:caught.includes(data.selectedPokemon) ? data.selectedPokemon : caught[0] || 0,xp:safeXP(data.xp),power:Math.max(0,Math.min(20,Math.floor(Number(data.power)||0))),
       pendingRequestIds:Array.isArray(data.pendingRequestIds) ? data.pendingRequestIds.filter(id=>typeof id==='string' && id.length<=100).slice(-10) : [],
+      courseRevision:typeof data.courseRevision==='string'?data.courseRevision:'',
       shinySelected:!!data.shinySelected && caught.includes(data.selectedPokemon) && RAID_BOSSES.some(boss=>boss.bossId===data.selectedPokemon)};
     connectedStudents.set(data.studentId,student); updateConnectedStudentsUI(); rememberClassStudent(student);
     if (!previous) showAttackToast('👋 <b>' + escapeClassroomText(student.name) + '</b> · ' + (adventureCatalog.get(student.selectedPokemon)?.name || '첫 포켓몬 준비 중'),'#38bdf8');

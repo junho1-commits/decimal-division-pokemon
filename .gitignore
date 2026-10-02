@@ -8,3 +8,6 @@ Desktop.ini
 # Python cache if any
 __pycache__/
 *.pyc
+
+# Local source extraction and UI checks
+tmp/

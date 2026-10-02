@@ -1,4 +1,12 @@
 .adventure-note { margin:8px 0 0; font-size:12px; line-height:1.6; color:#a5b4cf; }
+.classroom-course-badge { width:100%;max-width:1280px;margin:0 0 12px;color:#bae6fd;font-size:15px;font-weight:800; }
+.classroom-room-builder { display:flex;flex-wrap:wrap;gap:12px;align-items:end;background:#102137;padding:16px;border-radius:14px;margin-bottom:18px; }
+.classroom-room-builder label { display:flex;flex-direction:column;gap:6px;color:#bae6fd;font-size:14px;flex:1;min-width:160px; }
+.classroom-room-builder select { min-height:48px;padding:10px;border-radius:9px;background:#1e334d;color:#fff;border:1px solid #64748b;font:inherit;max-width:100%; }
+.classroom-room-builder p,.classroom-room-builder strong { flex-basis:100%;margin:0;line-height:1.6;font-size:13px; }
+.classroom-room-builder a,#commonStudentUrl { color:#7dd3fc;word-break:break-all; }
+#studentJoinError { color:#fde68a;font-size:14px;line-height:1.6; }
+@media(max-width:800px){#modalMultiplayer .modal-box{max-width:calc(100vw - 24px);max-height:92dvh;overflow:auto}#modalMultiplayer h2{font-size:24px!important;white-space:normal!important}#modalMultiplayer .modal-box>div:has(#qrcodeCanvas){flex-wrap:wrap}#modalMultiplayer .modal-box>div:has(#qrcodeCanvas)>div{min-width:0!important;max-width:100%}.student-stage-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .saved-profiles { display:flex; gap:8px; flex-wrap:wrap; max-height:160px; overflow:auto; }
 .saved-profiles button,.profile-toolbar button,.adventure-button { border:1px solid #475569; background:#172b47; color:#e0f2fe; border-radius:10px; padding:9px 12px; font:inherit; cursor:pointer; }
 .saved-profiles button:hover,.adventure-button:hover { background:#21466b; }
@@ -348,3 +356,7 @@
 .division-grid .quotient-point::after { right:-3px; bottom:4px; }
 .practice-row { flex-wrap:wrap; }
 @media(max-width:600px) { .division-work { --division-cell:36px; } .division-work .digit-input { width:32px; } }
+
+#modalMultiplayer { padding:16px;box-sizing:border-box; }
+#modalMultiplayer .modal-box { max-height:calc(100dvh - 32px);overflow:auto; }
+#modalMultiplayer h2 { font-size:clamp(22px,3vw,30px)!important;white-space:normal!important; }

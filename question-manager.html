@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>과목·단원 문제 관리</title>
+<link rel="stylesheet" href="question-manager.css"></head><body>
+<header><div><p>포켓몬 학습 모험</p><h1>과목·단원 문제 관리</h1></div><a href="index.html">교사 게임으로</a></header>
+<main><section class="manager-toolbar">
+  <label>과목·단원<select id="managerCourse" onchange="selectManagedCourse()"></select></label>
+  <button onclick="addManagedCourse()">새 과목·단원</button>
+  <button onclick="exportManagedCourse()">단원 JSON 내보내기</button>
+  <label class="import-button">JSON 가져오기<input type="file" id="importCourse" accept=".json,application/json" onchange="importManagedCourse(this.files[0])"></label>
+</section>
+<p class="help">문제는 이 브라우저에 저장됩니다. 저장 후 교사 게임에서 해당 과목·단원으로 새 방을 만들면 학생에게 전달됩니다. 다른 기기에서는 JSON을 내보내고 가져오세요. 수학의 세로셈 실습은 별도 실습 문제 파일을 사용합니다.</p>
+<p id="managerStatus" role="status" aria-live="polite"></p>
+<section class="unit-meta"><label>과목<input id="managerSubject" maxlength="30"></label><label>단원 이름<input id="managerTitle" maxlength="120"></label><button onclick="saveManagedMetadata()">단원 이름 저장</button></section>
+<div class="manager-layout"><aside>
+  <label>학습 묶음<select id="managerSection" onchange="selectManagedSection()"></select></label>
+  <div class="section-actions"><button onclick="addManagedSection()">묶음 추가</button><button onclick="renameManagedSection()">묶음 이름 수정</button></div>
+  <label>문제 찾기<input id="managerSearch" type="search" oninput="renderManagedQuestions()" placeholder="질문이나 해설 검색"></label>
+  <button onclick="newManagedQuestion()">＋ 문제 추가</button><div id="managerQuestionList"></div>
+</aside><section class="question-editor"><h2 id="editorHeading">문제 편집</h2>
+  <form onsubmit="event.preventDefault();saveManagedQuestion()">
+    <label>질문<textarea id="editorStem" rows="4" maxlength="1500" required></textarea></label>
+    <fieldset><legend>보기 4개와 정답</legend><p class="help">정답인 보기 앞의 동그라미를 선택하세요. 게임에서는 보기 순서를 섞습니다.</p>
+      <label class="choice"><input type="radio" name="correct" value="0" required><input id="editorChoice0" maxlength="500" required aria-label="보기 1"></label>
+      <label class="choice"><input type="radio" name="correct" value="1"><input id="editorChoice1" maxlength="500" required aria-label="보기 2"></label>
+      <label class="choice"><input type="radio" name="correct" value="2"><input id="editorChoice2" maxlength="500" required aria-label="보기 3"></label>
+      <label class="choice"><input type="radio" name="correct" value="3"><input id="editorChoice3" maxlength="500" required aria-label="보기 4"></label>
+    </fieldset>
+    <label>정답 해설<textarea id="editorExplanation" rows="4" maxlength="2000" required></textarea></label>
+    <label>출처·교과서 쪽수<input id="editorSource" maxlength="200" placeholder="예: 교과서 34~35쪽"></label>
+    <div class="editor-actions"><button class="primary" type="submit">문제 저장</button><button type="button" onclick="deleteManagedQuestion()">선택한 문제 삭제</button></div>
+  </form>
+</section></div></main>
+<script src="process-quizzes.js"></script><script src="questions/social-6-2-1.js?v=20261002-courses"></script><script src="course-library.js?v=20261002-courses"></script><script src="question-manager.js?v=20261002-courses"></script>
+</body></html>
