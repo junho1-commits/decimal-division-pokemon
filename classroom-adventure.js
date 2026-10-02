@@ -27,6 +27,7 @@ let lastSoloQuizId = {};
 let lastStudentEncounter = '';
 let currentRaidQuiz = null;
 let raidQuizChoice = -1;
+const unconfirmedRaidRequests = new Set();
 let teacherSoloQuiz = null;
 let teacherSoloChoice = -1;
 let adventureBattleLog = [];
@@ -102,7 +103,8 @@ function saveStudentProfile() {
   if (!activeStudentProfile) return false;
   Object.assign(activeStudentProfile, {xp:myStudentXP,caught:validCaught(studentCaughtList),activePokemon:selectedStudentPokemon,
     stageId:studentCurrentStageId,pokeIdx:studentCurrentPokeIdx,updatedAt:Date.now(),
-    rewardedRaids:[...rewardedRaids].slice(-100),receivedResults:[...receivedResults].slice(-500)});
+    rewardedRaids:[...rewardedRaids].slice(-100),receivedResults:[...receivedResults].slice(-500),
+    unconfirmedRaidRequests:[...unconfirmedRaidRequests].slice(-10)});
   activeStudentProfile.stageProgress[studentCurrentStageId] = studentCurrentPokeIdx;
   const status = document.getElementById('studentSaveStatus');
   try {
@@ -159,9 +161,11 @@ function loadStudentProfile(name) {
   const stage = STAGES_DATA.find(stage => stage.stageId === saved.stageId) || STAGES_DATA[0];
   studentCurrentStageId = stage.stageId;
   studentCurrentPokeIdx = Math.max(0, Math.min(stage.pokemons.length - 1, Number.isInteger(saved.pokeIdx) ? saved.pokeIdx : 0));
-  receivedResults.clear(); rewardedRaids.clear();
+  receivedResults.clear(); rewardedRaids.clear(); unconfirmedRaidRequests.clear();
   for (const id of Array.isArray(saved.receivedResults) ? saved.receivedResults : []) receivedResults.add(id);
   for (const id of Array.isArray(saved.rewardedRaids) ? saved.rewardedRaids : []) rewardedRaids.add(id);
+  for (const id of Array.isArray(saved.unconfirmedRaidRequests) ? saved.unconfirmedRaidRequests : [])
+    if (typeof id==='string' && id.length<=100 && !receivedResults.has(id)) unconfirmedRaidRequests.add(id);
   pendingAnswer = null; studentFighter = null;
   currentSoloQuiz = null; soloQuizChoice = -1; soloQuizQueue = {}; lastSoloQuizId = {}; lastStudentEncounter='';
   saveStudentProfile();
@@ -350,8 +354,13 @@ function renderStudentPartner() {
   document.getElementById('studentGoCapture').hidden = !!stats;
   const attack = document.getElementById('studentRaidAttackButton');
   attack.disabled = !!stats && hp <= 0 || studentSolved || !!pendingAnswer || !studentReady || raidQuizChoice<0;
-  attack.textContent = studentSolved ? '✓ 풀이 완료 · 다음 문제 대기' : pendingAnswer ? '풀이 확인 중…' : raidQuizChoice<0 ? '✏️ 답을 고르거나 입력하세요' : stats ? '⚡ ' + stats.move + ' 사용!' : '🤝 풀이 제출 · 팀 응원!';
+  attack.textContent = !studentReady ? '🟡 선생님 연결 확인 중…' : studentSolved ? '✓ 풀이 완료 · 다음 문제 대기' : pendingAnswer ? '풀이 확인 중…' : raidQuizChoice<0 ? '✏️ 답을 고르거나 입력하세요' : stats ? '⚡ ' + stats.move + ' 사용!' : '🤝 풀이 제출 · 팀 응원!';
 }
+const baseSetStudentConnection=setStudentConnection;
+setStudentConnection=function (text,ready) {
+  baseSetStudentConnection(text,ready);
+  if (isStudentInRaid && activeStudentProfile) renderStudentPartner();
+};
 function selectStudentPartner(id) {
   if (!studentCaughtList.includes(id) || pendingAnswer) return;
   selectedStudentPokemon = id;
@@ -440,6 +449,7 @@ sendStudentPresence = function () {
   sendClassroomMessage(mqttStudentClient,'to_host',{type:'JOIN',studentId:myStudentId,name:myStudentName,
     caught:studentCaughtList,selectedPokemon:selectedStudentPokemon,xp:myStudentXP,power:activeStudentProfile?.power[selectedStudentPokemon]||0,
     shinySelected:!!activeStudentProfile?.shinyCaught?.includes(selectedStudentPokemon),
+    pendingRequestIds:[...unconfirmedRaidRequests].slice(-10),
     studyDay:activeStudentProfile?.studyDay,studyCorrectToday:activeStudentProfile?.studyCorrectToday||0,pvpTickets:activeStudentProfile?.pvpTickets||0});
 };
 function renderSavedClassRoster() {
@@ -468,8 +478,10 @@ function hostFighter(studentId) {
   return raidFighters.get(key);
 }
 function sendAdventureAck(studentId) {
+  const requestIds=connectedStudents.get(studentId)?.pendingRequestIds||[];
   sendClassroomMessage(mqttHostClient,'to_student/' + studentId,{type:'JOIN_ACK',state:raidSnapshot(),
-    solved:acceptedAnswers.has(studentId + ':' + currentProblemId()),fighter:gameState.isRaidMode ? hostFighter(studentId) : null});
+    solved:acceptedAnswers.has(studentId + ':' + currentProblemId()),fighter:gameState.isRaidMode ? hostFighter(studentId) : null,
+    answerResults:requestIds.map(id=>answerResults.get(studentId + ':' + id)).filter(Boolean)});
 }
 handleHostIncomingMessage = function (data) {
   if (!data || typeof data.studentId !== 'string' || !/^stu_[a-z0-9_]+$/i.test(data.studentId)) return;
@@ -477,6 +489,7 @@ handleHostIncomingMessage = function (data) {
     const previous = connectedStudents.get(data.studentId), caught = validCaught(data.caught);
     const student = {name:normalizeStudentName(data.name)||'학생',score:previous?.score||0,lastSeen:Date.now(),caught,
       selectedPokemon:caught.includes(data.selectedPokemon) ? data.selectedPokemon : caught[0] || 0,xp:safeXP(data.xp),power:Math.max(0,Math.min(20,Math.floor(Number(data.power)||0))),
+      pendingRequestIds:Array.isArray(data.pendingRequestIds) ? data.pendingRequestIds.filter(id=>typeof id==='string' && id.length<=100).slice(-10) : [],
       shinySelected:!!data.shinySelected && caught.includes(data.selectedPokemon) && RAID_BOSSES.some(boss=>boss.bossId===data.selectedPokemon)};
     connectedStudents.set(data.studentId,student); updateConnectedStudentsUI(); rememberClassStudent(student);
     if (!previous) showAttackToast('👋 <b>' + escapeClassroomText(student.name) + '</b> · ' + (adventureCatalog.get(student.selectedPokemon)?.name || '첫 포켓몬 준비 중'),'#38bdf8');
@@ -514,7 +527,7 @@ beginRaidSession = function () {
   });
   boss.maxHp = Math.max(100,participants * 25) * boss.phases.length;
   raidHp = boss.maxHp; raidFinished = false;
-  acceptedAnswers.clear(); answerResults.clear(); raidFighters.clear();
+  acceptedAnswers.clear(); raidFighters.clear();
 };
 raidSnapshot = function () {
   const state=adventureBase.raidSnapshot();
@@ -583,6 +596,7 @@ handleStudentAnswerSubmit = function (data) {
   const counter = active && !duplicate && eligible && !support && !correct ? Math.min(12,fighter.hp) : 0;
   if (counter) fighter.hp -= counter;
   const result = {type:'RESULT',requestId:data.requestId,problemId:data.problemId,isCorrect:correct,isWrongAnswer:!!(active&&!duplicate&&eligible&&!correct),earnedXP:correct ? 100 : 0,
+    raidId:raidSessionId,question:active ? phase.question : '',answerText:active ? phase.choices[phase.correct] : '',
     pokemonId:data.pokemonId,damage,move:support?'팀 응원':fighter?.move,multiplier,fighter:fighter ? {...fighter} : null,
     message:!active ? '문제가 바뀌었거나 레이드가 끝났습니다.' : duplicate ? '이미 풀이를 제출했어요. 다음 문제를 기다리세요.' : !eligible ? '출전 포켓몬의 체력을 확인해주세요.' : counter ? '보스의 반격! HP −' + counter + (fighter.hp === 0 ? ' · 응원받고 회복하거나 포켓몬을 교체하세요.' : ' · 풀이 이유를 다시 살펴보세요.') : '',
     explanation:active ? phase.explanation : '',correctChoice:active ? phase.correct : -1};
@@ -637,6 +651,8 @@ handleStudentIncomingData = function (data) {
   if (data.type === 'JOIN_ACK') {
     adventureBase.incoming(data);
     studentFighter = data.fighter || null;
+    if (data.solved && pendingAnswer?.problemId===studentProblemId) pendingAnswer=null;
+    for (const result of Array.isArray(data.answerResults) ? data.answerResults : []) handleStudentIncomingData(result);
     renderStudentPartner();
     return;
   }
@@ -646,6 +662,7 @@ handleStudentIncomingData = function (data) {
     if (studentRaidSessionId !== data.raidId) { studentFighter = null; adventureBattleLog = []; addStudentBattleLog('내 파트너와 함께 출전!'); }
     const firstRaid=studentRaidSessionId!==data.raidId;
     const previous=studentProblemId;
+    if (previous!==data.problemId && pendingAnswer?.problemId!==data.problemId) pendingAnswer=null;
     adventureBase.incoming(data);
     if(previous!==data.problemId || !currentRaidQuiz){
       currentRaidQuiz={choices:Array.isArray(data.choices)?data.choices:[]}; raidQuizChoice=-1;
@@ -658,14 +675,17 @@ handleStudentIncomingData = function (data) {
     renderStudentCollection(); return;
   }
   if (data.type === 'RESULT') {
+    const wasUnconfirmed=unconfirmedRaidRequests.delete(data.requestId);
     const duplicate = receivedResults.has(data.requestId);
     adventureBase.incoming(data);
+    if (duplicate && wasUnconfirmed) saveStudentProfile();
     if (!duplicate) {
-      if (data.isCorrect && data.problemId===studentProblemId && activeStudentProfile) {
-        const evidence=activeStudentProfile.raidAnswered[studentRaidSessionId]||[];
-        evidence.push({stem:document.getElementById('studentRaidQuestion').textContent,answer:currentRaidQuiz?.choices?.[Number(data.correctChoice)]||'',explanation:data.explanation||''});
-        activeStudentProfile.raidAnswered[studentRaidSessionId]=evidence.slice(-3);
-        if(!activeStudentProfile.raidQualified.includes(studentRaidSessionId)) activeStudentProfile.raidQualified.push(studentRaidSessionId);
+      if (data.isCorrect && data.raidId && activeStudentProfile) {
+        const evidence=activeStudentProfile.raidAnswered[data.raidId]||[];
+        evidence.push({stem:data.question||document.getElementById('studentRaidQuestion').textContent,
+          answer:data.answerText||currentRaidQuiz?.choices?.[Number(data.correctChoice)]||'',explanation:data.explanation||''});
+        activeStudentProfile.raidAnswered[data.raidId]=evidence.slice(-3);
+        if(!activeStudentProfile.raidQualified.includes(data.raidId)) activeStudentProfile.raidQualified.push(data.raidId);
         activeStudentProfile.raidQualified=activeStudentProfile.raidQualified.slice(-100);
       }
       if (data.problemId === studentProblemId && data.fighter?.pokemonId === selectedStudentPokemon) studentFighter = data.fighter;
@@ -715,7 +735,14 @@ sendStudentRaidAnswer = function () {
   sendStudentPresence();
   pendingAnswer={type:'ANSWER',studentId:myStudentId,name:myStudentName,answer:String(raidQuizChoice),problemId:studentProblemId,
     pokemonId:selectedStudentPokemon,requestId:Date.now().toString(36)+Math.random().toString(36).slice(2)};
-  sendClassroomMessage(mqttStudentClient,'to_host',pendingAnswer);
+  if (!sendClassroomMessage(mqttStudentClient,'to_host',pendingAnswer)) {
+    pendingAnswer=null;
+    setStudentConnection('🟡 답안을 보내지 못했어요 · 연결을 확인한 뒤 다시 눌러주세요',false);
+  } else {
+    unconfirmedRaidRequests.add(pendingAnswer.requestId);
+    while (unconfirmedRaidRequests.size>10) unconfirmedRaidRequests.delete(unconfirmedRaidRequests.values().next().value);
+    saveStudentProfile();
+  }
   renderStudentPartner();
 };
 function chooseStudentRaidOption(index) {

@@ -59,7 +59,11 @@ assert.equal(a.el('studentRaidAnswerInput').value,'2');
 function answer(student){const value=host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[gameState.currentRaidPhase].correct');student.run('chooseStudentRaidOption('+value+'); sendStudentRaidAnswer()');}
 // Lost result: retry must return the same result without applying damage or XP twice.
 drop=(client,message)=>JSON.parse(message.payloadString).type==='RESULT';answer(a);const packet=a.run('JSON.stringify(pendingAnswer)');flush();const firstRaidHp=host.run('raidHp');assert.ok(firstRaidHp<2250);assert.equal(a.run('myStudentXP'),0);
-drop=()=>false;a.pulse();flush();assert.equal(host.run('raidHp'),firstRaidHp);assert.equal(a.run('myStudentXP'),100);
+assert.equal(a.run('activeStudentProfile.unconfirmedRaidRequests.length'),1,'unfinished answer survives a page reload');
+// Presence acknowledgement restores the cached verdict even while RESULT packets are lost.
+a.pulse();flush();assert.equal(host.run('raidHp'),firstRaidHp);assert.equal(a.run('myStudentXP'),100);
+assert.equal(a.run('pendingAnswer'),null);assert.equal(a.run('unconfirmedRaidRequests.size'),0);
+drop=()=>false;a.pulse();flush();assert.equal(a.run('myStudentXP'),100);
 host.run('handleHostIncomingMessage('+packet+')');flush();assert.equal(host.run('raidHp'),firstRaidHp);assert.equal(a.run('myStudentXP'),100);
 // Different request for an already solved question is also rejected.
 host.run('handleHostIncomingMessage({...'+packet+',requestId:"another"})');flush();assert.equal(host.run('raidHp'),firstRaidHp);
@@ -70,8 +74,34 @@ assert.equal(a.el('studentRaidPhaseTag').textContent,'PHASE 2 / 3');
 host.run('handleHostIncomingMessage({...'+packet+',requestId:"late"})');flush();assert.equal(host.run('raidHp'),1500);
 // A dropped phase broadcast recovers on the next presence acknowledgement.
 a.run('chooseStudentRaidOption(1)');a.pulse();flush();assert.equal(a.run('raidQuizChoice'),1,'same-state sync preserves choice');
+// A missing verdict from the previous phase must not leave the next attack disabled.
+const phaseTwoStudent=students[1], phaseTwoClient=phaseTwoStudent.run('mqttStudentClient');
+drop=(client,message)=>client===phaseTwoClient && JSON.parse(message.payloadString).type==='RESULT';
+answer(phaseTwoStudent);flush();assert.ok(phaseTwoStudent.run('pendingAnswer'));
+const phaseTwoXp=phaseTwoStudent.run('myStudentXP');
 a.run('mqttStudentClient.disconnect()');host.run('applyRaidDamage(750)');flush();
+assert.equal(phaseTwoStudent.run('pendingAnswer'),null);
+assert.equal(phaseTwoStudent.run('studentProblemId'),host.run('currentProblemId()'));
+phaseTwoStudent.run('chooseStudentRaidOption(1)');
+assert.equal(phaseTwoStudent.el('studentRaidAttackButton').disabled,false);
+drop=()=>false;phaseTwoStudent.pulse();flush();
+assert.equal(phaseTwoStudent.run('myStudentXP'),phaseTwoXp+100,'late verdict still grants the earned XP');
+assert.equal(phaseTwoStudent.run('unconfirmedRaidRequests.size'),0);
 a.run('connectStudentMQTT()');flush();assert.equal(a.el('studentRaidPhaseTag').textContent,'PHASE 3 / 3');assert.equal(a.run('studentReady'),true);
+// A transport send error releases the button and shows the disconnected state.
+phaseTwoStudent.run('mqttStudentClient.originalSend=mqttStudentClient.send;mqttStudentClient.send=()=>{throw Error("send failed")};sendStudentRaidAnswer();mqttStudentClient.send=mqttStudentClient.originalSend');
+assert.equal(phaseTwoStudent.run('pendingAnswer'),null);
+assert.equal(phaseTwoStudent.run('studentReady'),false);
+assert.match(phaseTwoStudent.el('studentRaidAttackButton').textContent,/연결 확인/);
+phaseTwoStudent.pulse();flush();assert.equal(phaseTwoStudent.run('studentReady'),true);
+// If the submitted ANSWER itself is lost, the next pulse sends the same request again.
+const hpBeforeLostAnswer=host.run('raidHp');
+drop=(client,message)=>client===host.run('mqttHostClient') && JSON.parse(message.payloadString).type==='ANSWER' && JSON.parse(message.payloadString).studentId===phaseTwoStudent.run('myStudentId');
+answer(phaseTwoStudent);flush();assert.equal(host.run('raidHp'),hpBeforeLostAnswer);
+assert.ok(phaseTwoStudent.run('pendingAnswer'));
+drop=()=>false;phaseTwoStudent.pulse();flush();
+assert.ok(host.run('raidHp')<hpBeforeLostAnswer);
+assert.equal(phaseTwoStudent.run('pendingAnswer'),null);
 // Finish and prove repeated victory/result messages cannot award duplicate rewards.
 for(let i=0;i<30;i++){answer(students[i]);flush();}
 assert.equal(host.run('raidHp'),0);assert.equal(host.run('raidFinished'),true);const xp=a.run('myStudentXP');
