@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>usage video stage</title>
+<style>
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:radial-gradient(ellipse at 50% 0,#13203f,#060913 70%);color:#fff;font-family:'Malgun Gothic','Noto Sans KR',sans-serif}
+.panel{position:absolute;left:0;top:0;transform-origin:0 0;transition:transform .8s ease,left .8s ease,top .8s ease,opacity .5s;border-radius:18px;overflow:hidden;background:#0b1220;opacity:0;pointer-events:none}
+.panel.on{opacity:1}
+#tp{width:1600px;height:900px;box-shadow:0 0 0 5px #38bdf8,0 24px 60px #000b}
+#sp{width:1280px;height:720px;box-shadow:0 0 0 5px #f472b6,0 24px 60px #000b}
+iframe{border:0;width:100%;height:100%;display:block;background:#0b1220}
+.lab{position:absolute;font-size:28px;font-weight:800;padding:6px 20px;border-radius:999px;transition:left .8s ease,top .8s ease,opacity .5s;opacity:0;white-space:nowrap}
+.lab.on{opacity:1}
+#tl{background:#0c4a6e;color:#bae6fd;border:2px solid #38bdf8}
+#sl{background:#831843;color:#fbcfe8;border:2px solid #f472b6}
+#top{position:absolute;left:0;top:0;width:1920px;height:84px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;box-sizing:border-box;background:linear-gradient(#000a,#0000)}
+#ttl{font-size:30px;font-weight:800;color:#fde68a}
+#step{font-size:28px;font-weight:800;color:#fff;background:#4338ca;padding:6px 20px;border-radius:999px;transition:opacity .3s}
+#capwrap{position:absolute;left:0;bottom:0;width:1920px;height:128px;background:linear-gradient(#0000,#000d 35%);display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:18px 120px 6px}
+#cap{word-break:keep-all;font-size:40px;font-weight:700;line-height:1.3;text-align:center;text-shadow:0 2px 6px #000;max-width:1680px}
+#credit{position:absolute;right:20px;bottom:8px;font-size:15px;color:#94a3b8}
+#cover{position:absolute;inset:0;background:#0b1220;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;color:#f9a8d4;z-index:5;transition:opacity .4s;text-align:center;line-height:1.5}
+#cover.off{opacity:0;pointer-events:none}
+#card{position:absolute;inset:0;background:#060913e8;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;transition:opacity .6s;text-align:center}
+#card.off{opacity:0;pointer-events:none}
+#card h1{font-size:76px;margin:0 0 20px;color:#fde047;text-shadow:0 4px 0 #b45309}
+#card p{font-size:38px;margin:6px 0;color:#e2e8f0}
+</style></head><body>
+<div id="top"><div id="ttl">🎮 포켓몬 소수의 나눗셈 대모험 · 사용 방법</div><div id="step"></div></div>
+<div id="tl" class="lab">👩‍🏫 교사 화면 · 전자칠판</div><div id="sl" class="lab">🧑‍🎓 학생 화면 · 크롬북/패드</div>
+<div id="tp" class="panel"><iframe id="t" name="t"></iframe></div>
+<div id="sp" class="panel"><iframe id="s" name="s"></iframe><div id="cover">학생 기기 대기 중</div></div>
+<div id="capwrap"><div id="cap"></div></div><div id="credit"></div>
+<div id="card"><h1>포켓몬 소수의 나눗셈 대모험</h1><p>6학년 2학기 수학 2단원</p><p>선생님 사용법 + 학생 사용법</p></div>
+<script>
+const MODES={
+ T:{t:{s:.9,l:240,y:150},s:null},
+ S:{t:null,s:{s:1.12,l:243,y:146}},
+ TS:{t:{s:.5875,l:14,y:300},s:{s:.734,l:966,y:300}}
+};
+function place(el,lab,p){
+  if(!p){el.classList.remove('on');lab.classList.remove('on');return;}
+  el.style.transform='scale('+p.s+')';el.style.left=p.l+'px';el.style.top=p.y+'px';el.classList.add('on');
+  lab.style.left=p.l+'px';lab.style.top=(p.y-52)+'px';lab.classList.add('on');
+}
+function setLayout(m){const c=MODES[m];place(tp,tl,c.t);place(sp,sl,c.s);}
+function setCaption(t){cap.textContent=t;}
+function setStep(t){step.textContent=t;step.style.opacity=t?1:0;}
+function setCover(t){if(t){cover.textContent=t;cover.classList.remove('off');}else cover.classList.add('off');}
+function setCard(on){card.classList.toggle('off',!on);}
+credit.textContent=new URLSearchParams(location.search).get('credit')||'';
+</script></body></html>
