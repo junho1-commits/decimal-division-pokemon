@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const {randomUUID,webcrypto} = require('node:crypto');
 const html = fs.readFileSync('index.html','utf8');
-const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n') + '\n' + ['process-quizzes.js','guided-practice.js','classroom-adventure.js','questions/social-6-2-1.js','course-library.js','classroom-courses.js'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
+const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n') + '\n' + ['process-quizzes.js','guided-practice.js','classroom-adventure.js','questions/social-6-2-1.js','questions/korean-6-2-4.js','course-library.js','classroom-courses.js'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
 const clients=[], queue=[];
 let drop=()=>false;
 class Client {
@@ -390,6 +390,35 @@ assert.equal(editedStudent.run('classroomCourse.sections[0].quizzes[0].stem'),'�
 const stableCode=courseHost.run('hostRoomCode');courseHost.run('mqttHostClient.onConnectionLost=()=>{};mqttHostClient.disconnect()');
 const courseReload=context('https://school.example/index.html',courseHost.memory);courseReload.run('initMultiplayerSystem()');flush();assert.equal(courseReload.run('hostRoomCode'),stableCode);assert.equal(courseReload.run('currentHostBrokerIdx'),1);assert.equal(courseReload.run('classroomCourse.id'),'social-6-2-1');
 console.log('PASS: 30 code-only social joins, broker routing, 60 source-backed questions, section variety, social raids, edited bank delivery, closed-room return, stable teacher refresh');
+
+const koreanHost=context('https://school.example/index.html?broker=1');
+koreanHost.run('initMultiplayerSystem()');flush();
+koreanHost.el('classroomUnit').value='korean-6-2-4';koreanHost.run('createSubjectRoom()');flush();
+const koreanCode=koreanHost.run('hostRoomCode');assert.match(koreanCode,/^2[0-9]{7}$/);
+assert.equal(koreanHost.run('classroomCourse.id'),'korean-6-2-4');
+assert.equal(koreanHost.run('classroomCourse.sections.reduce((n,s)=>n+s.quizzes.length,0)'),60);
+const koreanStudents=[];
+for(let i=0;i<5;i++){
+ const student=context('https://school.example/index.html?role=student');
+ student.run('initMultiplayerSystem()');student.el('studentJoinRoomCode').value=koreanCode;student.el('studentJoinName').value='국어학생'+i;
+ student.run('joinClassroomBattle()');koreanStudents.push(student);
+}
+flush();assert.equal(koreanHost.run('connectedStudents.size'),5);
+for(const student of koreanStudents){
+ assert.equal(student.run('studentReady'),true);assert.equal(student.run('classroomCourse.id'),'korean-6-2-4');
+ assert.match(student.run('currentSoloQuiz.id'),/^korean-4-/);
+ assert.ok(student.el('classroomCourseBadge').textContent.includes('국어'));
+ student.run("soloQuizQueue={}");
+ for(let section=1;section<=6;section++){
+  const ids=student.run('JSON.stringify(Array.from({length:10},()=>nextSoloQuiz('+section+').id))');
+  assert.equal(new Set(JSON.parse(ids)).size,10);
+ }
+}
+koreanHost.run('startRaidBattle()');flush();
+assert.ok(koreanHost.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.every(p=>p.id.startsWith("korean-4-"))'));
+const koreanA=koreanStudents[0];koreanA.run('chooseStudentRaidOption('+koreanHost.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[0].correct')+');sendStudentRaidAnswer()');flush();
+assert.equal(koreanA.run('myStudentXP'),100);
+console.log('PASS: Korean 6-2 Unit 4 room creation, joins, solo quizzes, 60 questions, and raid battle verified');
 
 const mathRoomHost=context('https://school.example/index.html');mathRoomHost.run('initMultiplayerSystem()');flush();
 const mathRoomCode=mathRoomHost.run('hostRoomCode');mathRoomHost.run('mqttHostClient.onConnectionLost=()=>{};mqttHostClient.disconnect()');
