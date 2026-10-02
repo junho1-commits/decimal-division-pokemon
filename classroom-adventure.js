@@ -334,7 +334,16 @@ function renderStudentCollection() {
   }).join('');
   for (const id of ['studentCollection','studentRaidTeam']) {
     const el = document.getElementById(id);
-    el.innerHTML = cards || '<p class="adventure-note">아직 잡은 포켓몬이 없어요. 차시 문제를 풀어 첫 파트너를 만나세요!</p>';
+    const scrollTop=el.scrollTop;
+    const choices=id==='studentRaidTeam' ? studentCaughtList.map(pokemonId=>{
+      const poke=pokemonBattleStats(pokemonId,myStudentXP,activeStudentProfile?.power[pokemonId]);
+      const selected=pokemonId===selectedStudentPokemon;
+      return '<button type="button" class="partner-choice raid-partner-select" aria-pressed="'+selected+'" onclick="selectStudentPartner('+pokemonId+')">'+
+        '<img src="'+studentArtworkUrl(pokemonId)+'" alt="" loading="lazy"><strong>'+escapeClassroomText(poke.name)+'</strong>'+
+        '<small>CP '+poke.cp+' · '+escapeClassroomText(poke.type)+'</small><span class="selected-label">'+(selected?'✓ 출전 중':'터치하여 출전')+'</span></button>';
+    }).join('') : cards;
+    el.innerHTML = choices || '<p class="adventure-note">아직 잡은 포켓몬이 없어요. 차시 문제를 풀어 첫 파트너를 만나세요!</p>';
+    el.scrollTop=scrollTop;
   }
   renderStudentPartner();
 }

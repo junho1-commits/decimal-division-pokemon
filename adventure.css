@@ -23,6 +23,22 @@
 .partner-choice .selected-label { color:#67e8f9; font-size:10px; font-weight:900; }
 .partner-grid.compact { grid-template-columns:repeat(4,minmax(0,1fr)); max-height:150px; }
 .compact .partner-choice img { width:52px; height:52px; }
+/* Raid choices have their own touch layout, independent of compact inventory cards. */
+#studentRaidTeam.partner-grid.compact {
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  max-height:320px; max-height:clamp(180px,35dvh,320px);
+  gap:10px; padding:4px; overflow-y:auto; touch-action:pan-y;
+  scrollbar-gutter:stable; -webkit-overflow-scrolling:touch;
+}
+#studentRaidTeam .raid-partner-select {
+  min-height:144px; padding:10px 8px; gap:5px;
+  touch-action:manipulation; border-width:2px;
+}
+#studentRaidTeam .raid-partner-select img { width:64px; height:64px; pointer-events:none; }
+#studentRaidTeam .raid-partner-select strong { font-size:15px; }
+#studentRaidTeam .raid-partner-select small { font-size:12px; line-height:1.4; }
+#studentRaidTeam .selected-label { font-size:12px; color:#bae6fd; }
+#studentRaidTeam .raid-partner-select[aria-pressed="true"] { border-color:#67e8f9; }
 .partner-battle-card { border:1px solid #3b82a4; border-radius:18px; background:radial-gradient(ellipse at 15% 60%,#1c5961 0,transparent 60%),linear-gradient(120deg,#10283b,#132139); padding:14px; position:relative; overflow:hidden; }
 .partner-battle-heading { display:flex; justify-content:space-between; color:#67e8f9; font-size:11px; letter-spacing:2px; font-weight:900; }
 .partner-battle-body { display:flex; align-items:center; gap:18px; min-height:110px; }
