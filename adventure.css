@@ -360,3 +360,39 @@
 #modalMultiplayer { padding:16px;box-sizing:border-box; }
 #modalMultiplayer .modal-box { max-height:calc(100dvh - 32px);overflow:auto; }
 #modalMultiplayer h2 { font-size:clamp(22px,3vw,30px)!important;white-space:normal!important; }
+
+/* Subject-first teacher landing page, independent of the scaled battle canvas. */
+.teacher-home[hidden]{display:none}
+.teacher-home{position:fixed;inset:0;z-index:30;overflow-y:auto;overflow-x:hidden;background:radial-gradient(ellipse at 85% 5%,#183948 0,transparent 45%),#0b1422;color:#edf5fb;}
+.learning-home-header{height:auto;white-space:normal;max-width:1200px;margin:auto;padding:26px 32px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #2c3e52;}
+.learning-home-brand{font-size:22px;font-weight:900;text-decoration:none;color:#facc15;}
+.learning-home-header nav{display:flex;gap:12px;}
+.learning-home-header nav a{font-size:14px;text-decoration:none;color:#c8e2f1;padding:10px 14px;border:1px solid #385368;border-radius:10px;}
+.learning-home-main{max-width:1160px;margin:auto;padding:42px 32px 36px;}
+.learning-home-hero{padding-bottom:34px;}
+.learning-home-eyebrow{font-size:14px;font-weight:800;color:#79dcc9;letter-spacing:1px;margin:0 0 16px;}
+.learning-home-hero h1{font-size:clamp(36px,4.6vw,58px);line-height:1.2;letter-spacing:-2px;margin:0 0 18px;}
+.learning-home-hero>p:not(.learning-home-eyebrow){font-size:17px;line-height:1.8;color:#a9bfd1;margin:0;}
+.learning-home-tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;}
+.learning-home-tags span{font-size:13px;color:#d5e4ed;padding:8px 12px;border-radius:30px;background:#1b2c3e;}
+.learning-home-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;}
+.learning-home-section-title h2{font-size:21px;margin:0;}
+.learning-home-section-title>span{font-size:13px;color:#9db8cc;}
+.home-course-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;}
+.home-course-card{--course-color:#a78bfa;background:#15243a;border:1px solid #324358;border-top:4px solid var(--course-color);border-radius:18px;padding:24px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0;}
+.home-course-card.math{--course-color:#60a5fa}.home-course-card.social{--course-color:#5eead4}.home-course-card.korean{--course-color:#fbbf24}
+.home-course-icon{font-size:36px;line-height:1.2;margin-bottom:4px;}
+.home-course-subject{font-size:24px;font-weight:900;color:var(--course-color);}
+.home-course-card h3{font-size:15px;line-height:1.6;font-weight:700;margin:0;word-break:keep-all;}
+.home-course-card p{font-size:12px;color:#9eb9cd;line-height:1.6;margin:0 0 12px;}
+.home-course-card button{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;margin-top:auto;min-height:48px;border:1px solid #43617b;border-radius:10px;padding:12px 14px;background:#20364c;color:#fff;font:inherit;font-size:14px;font-weight:800;cursor:pointer;touch-action:manipulation;}
+.home-course-card button:hover{background:#2c4861;border-color:var(--course-color);}
+.teacher-home button:focus-visible,.teacher-home a:focus-visible{outline:3px solid #facc15;outline-offset:3px;}
+.learning-home-footer{display:grid;grid-template-columns:1fr 1fr;gap:24px;border-top:1px solid #2e4154;margin-top:34px;padding-top:28px;}
+.learning-home-footer h2{font-size:16px;margin:0 0 10px;}
+.learning-home-footer p{font-size:13px;color:#9eb8cb;line-height:1.8;margin:0 0 12px;}
+.learning-home-footer a{font-size:13px;color:#7dd3fc;}
+.learning-home-resume{margin-top:26px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;background:#132237;border:1px solid #334b65;border-radius:12px;}
+.learning-home-resume[hidden]{display:none}.learning-home-resume p{font-size:13px;color:#b9cbdc;margin:0;}.learning-home-resume button{border:0;border-radius:9px;padding:12px 16px;background:#284760;color:#fff;cursor:pointer;font:inherit;font-size:13px;}
+@media(max-width:900px){.learning-home-header{padding:20px 24px}.learning-home-main{padding:30px 24px}.home-course-grid{gap:12px}.home-course-card{padding:18px}.learning-home-hero h1{font-size:44px}}
+@media(max-width:640px){.learning-home-header{flex-wrap:wrap;padding:18px}.learning-home-brand{font-size:20px}.learning-home-header nav{width:100%}.learning-home-main{padding:28px 18px}.learning-home-hero h1{font-size:36px}.learning-home-hero>p:not(.learning-home-eyebrow){font-size:15px}.home-course-grid{grid-template-columns:1fr}.home-course-card{gap:8px}.home-course-icon{font-size:30px}.learning-home-footer{grid-template-columns:1fr;gap:24px}.learning-home-resume{flex-wrap:wrap}}

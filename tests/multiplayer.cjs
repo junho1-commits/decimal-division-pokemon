@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const {randomUUID,webcrypto} = require('node:crypto');
 const html = fs.readFileSync('index.html','utf8');
-const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n') + '\n' + ['process-quizzes.js','guided-practice.js','classroom-adventure.js','questions/social-6-2-1.js','questions/korean-6-2-4.js','course-library.js','classroom-courses.js'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
+const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n') + '\n' + ['process-quizzes.js','guided-practice.js','classroom-adventure.js','questions/social-6-2-1.js','questions/social-6-2-2.js','questions/korean-6-2-4.js','course-library.js','classroom-courses.js'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
 const clients=[], queue=[];
 let drop=()=>false;
 class Client {
@@ -21,7 +21,7 @@ class Client {
 function flush(){let limit=10000;while(queue.length){assert.ok(--limit>0,'message loop');queue.shift()();}}
 function context(url, memory = new Map()){
  const elements=new Map(), intervals=new Map();let timer=0;
- const element=id=>{if(!elements.has(id))elements.set(id,{style:{},textContent:'',innerHTML:'',value:'',hidden:id==='studentDexModal'||id==='studentMemoOverlay',handlers:{},classList:{add(){},remove(){},contains(){return false;}},appendChild(){},remove(){},addEventListener(type,fn){this.handlers[type]=fn;},setAttribute(){},focus(){},querySelector:element,getBoundingClientRect(){return {width:600,height:360,left:0,top:0};},setPointerCapture(){},getContext(){return {setTransform(){},clearRect(){},beginPath(){},moveTo(){},lineTo(){},arc(){},fill(){},stroke(){}};}});return elements.get(id);};
+ const element=id=>{if(!elements.has(id))elements.set(id,{style:{},parentElement:{hidden:false,style:{}},textContent:'',innerHTML:'',value:'',hidden:id==='studentDexModal'||id==='studentMemoOverlay',handlers:{},classList:{add(){},remove(){},contains(){return false;}},appendChild(){},remove(){},addEventListener(type,fn){this.handlers[type]=fn;},setAttribute(){},focus(){},querySelector:element,getBoundingClientRect(){return {width:600,height:360,left:0,top:0};},setPointerCapture(){},getContext(){return {setTransform(){},clearRect(){},beginPath(){},moveTo(){},lineTo(){},arc(){},fill(){},stroke(){}};}});return elements.get(id);};
  const storage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,String(v)),removeItem:k=>memory.delete(k)};
  const c={console,URL,URLSearchParams,Date,Math,crypto:{randomUUID,getRandomValues:array=>webcrypto.getRandomValues(array)},navigator:{},location:new URL(url),localStorage:storage,sessionStorage:storage,
  document:{getElementById:element,querySelector:element,querySelectorAll:()=>[],createElement:element,addEventListener(){}},
@@ -419,6 +419,35 @@ assert.ok(koreanHost.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.eve
 const koreanA=koreanStudents[0];koreanA.run('chooseStudentRaidOption('+koreanHost.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[0].correct')+');sendStudentRaidAnswer()');flush();
 assert.equal(koreanA.run('myStudentXP'),100);
 console.log('PASS: Korean 6-2 Unit 4 room creation, joins, solo quizzes, 60 questions, and raid battle verified');
+
+const social2Host=context('https://school.example/index.html?broker=1');
+social2Host.run('initMultiplayerSystem()');flush();
+social2Host.el('classroomUnit').value='social-6-2-2';social2Host.run('createSubjectRoom()');flush();
+const social2Code=social2Host.run('hostRoomCode');assert.match(social2Code,/^2[0-9]{7}$/);
+assert.equal(social2Host.run('classroomCourse.id'),'social-6-2-2');
+assert.equal(social2Host.run('classroomCourse.sections.reduce((n,s)=>n+s.quizzes.length,0)'),60);
+const social2Students=[];
+for(let i=0;i<5;i++){
+ const student=context('https://school.example/index.html?role=student');
+ student.run('initMultiplayerSystem()');student.el('studentJoinRoomCode').value=social2Code;student.el('studentJoinName').value='사회2학생'+i;
+ student.run('joinClassroomBattle()');social2Students.push(student);
+}
+flush();assert.equal(social2Host.run('connectedStudents.size'),5);
+for(const student of social2Students){
+ assert.equal(student.run('studentReady'),true);assert.equal(student.run('classroomCourse.id'),'social-6-2-2');
+ assert.match(student.run('currentSoloQuiz.id'),/^social-2-/);
+ assert.ok(student.el('classroomCourseBadge').textContent.includes('사회'));
+ student.run("soloQuizQueue={}");
+ for(let section=1;section<=6;section++){
+  const ids=student.run('JSON.stringify(Array.from({length:10},()=>nextSoloQuiz('+section+').id))');
+  assert.equal(new Set(JSON.parse(ids)).size,10);
+ }
+}
+social2Host.run('startRaidBattle()');flush();
+assert.ok(social2Host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.every(p=>p.id.startsWith("social-2-"))'));
+const social2A=social2Students[0];social2A.run('chooseStudentRaidOption('+social2Host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[0].correct')+');sendStudentRaidAnswer()');flush();
+assert.equal(social2A.run('myStudentXP'),100);
+console.log('PASS: Social Studies 6-2 Unit 2 room creation, joins, solo quizzes, 60 questions, and raid battle verified');
 
 const mathRoomHost=context('https://school.example/index.html');mathRoomHost.run('initMultiplayerSystem()');flush();
 const mathRoomCode=mathRoomHost.run('hostRoomCode');mathRoomHost.run('mqttHostClient.onConnectionLost=()=>{};mqttHostClient.disconnect()');

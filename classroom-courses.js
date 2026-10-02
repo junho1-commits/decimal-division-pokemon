@@ -1,4 +1,5 @@
 /* Subject/room layer. Keeps Pokemon profiles shared while choosing a room's curriculum. */
+let teacherRoomOpened=false;
 const mathStageLabels=STAGES_DATA.map(stage=>({title:stage.title,concept:stage.concept}));
 const originalNextSoloQuiz=nextSoloQuiz, originalBattleQuizzes=variedBattleQuizzes;
 let classroomCourse=readCourses()[0], classroomRevision=courseRevision(classroomCourse);
@@ -86,8 +87,9 @@ function createSubjectRoom(){
   if(mqttHostClient){mqttHostClient.onConnectionLost=()=>{};if(mqttHostClient.isConnected())mqttHostClient.disconnect();}
   hostRoomCode=generateClassroomCode();connectedStudents.clear();raidFighters.clear();acceptedAnswers.clear();answerResults.clear();
   applyClassroomCourse(course);classroomCourse=JSON.parse(JSON.stringify(course));classroomRevision=courseRevision(classroomCourse);
-  try{sessionStorage.setItem('pokemon_current_room',JSON.stringify({code:hostRoomCode,broker:currentHostBrokerIdx,course:classroomCourse}));}catch(error){}
-  initHostMQTT();openMultiplayerModal();showMapView();
+  teacherRoomOpened=true;
+  try{sessionStorage.setItem('pokemon_current_room',JSON.stringify({code:hostRoomCode,broker:currentHostBrokerIdx,course:classroomCourse,opened:teacherRoomOpened}));}catch(error){}
+  showTeacherWorkspace();initHostMQTT();openMultiplayerModal();showMapView();
 }
 const coursesInit=initMultiplayerSystem;
 initMultiplayerSystem=function(){
@@ -96,15 +98,16 @@ initMultiplayerSystem=function(){
     try {
       const saved=JSON.parse(sessionStorage.getItem('pokemon_current_room')||'null');
       if(saved&&/^[1-2][0-9]{7}$/.test(saved.code)&&MQTT_BROKERS[saved.broker]){
-        validateCourse(saved.course);hostRoomCode=saved.code;currentHostBrokerIdx=saved.broker;applyClassroomCourse(saved.course);
+        teacherRoomOpened=!!saved.opened;validateCourse(saved.course);hostRoomCode=saved.code;currentHostBrokerIdx=saved.broker;applyClassroomCourse(saved.course);
       }else hostRoomCode=generateClassroomCode();
     }catch(error){hostRoomCode=generateClassroomCode();}
-    try{sessionStorage.setItem('pokemon_current_room',JSON.stringify({code:hostRoomCode,broker:currentHostBrokerIdx,course:classroomCourse}));}catch(error){}
+    try{sessionStorage.setItem('pokemon_current_room',JSON.stringify({code:hostRoomCode,broker:currentHostBrokerIdx,course:classroomCourse,opened:teacherRoomOpened}));}catch(error){}
   }
   coursesInit();
   if(student&&!params.get('room'))document.getElementById('studentJoinRoomCode').value='';
   renderCourseSelectors();updateClassroomRoomUi();
   if(student)document.getElementById('classroomCourseBadge').textContent='방에 입장하면 선생님이 선택한 과목·단원이 표시됩니다.';
+  else showTeacherHome();
 };
 const coursesModal=openMultiplayerModal;
 openMultiplayerModal=function(){renderCourseSelectors();coursesModal();updateClassroomRoomUi();};
@@ -203,3 +206,33 @@ submitEvolutionQuiz=function(){
 };
 
 function chooseCourseEvolution(index){document.getElementById('evoQuizInput').value=String(index+1);submitEvolutionQuiz();}
+
+function renderTeacherHome(){
+  const courses=readCourses(),subjects=[...new Set(courses.map(c=>c.subject))];
+  document.getElementById('homeSubjectCount').textContent=subjects.length+'과목 · '+courses.length+'단원';
+  const icons={'수학':'🔢','사회':'🌏','국어':'📖','과학':'🔬','영어':'💬'};
+  document.getElementById('homeCourseCards').innerHTML=courses.map(course=>{
+    const count=course.sections.reduce((n,s)=>n+s.quizzes.length,0);
+    const color=course.subject==='수학'?'math':course.subject==='사회'?'social':course.subject==='국어'?'korean':'other';
+    return '<article class="home-course-card '+color+'"><div class="home-course-icon" aria-hidden="true">'+(icons[course.subject]||'📚')+'</div><span class="home-course-subject">'+escapeClassroomText(course.subject)+'</span><h3>'+escapeClassroomText(course.title)+'</h3><p>'+course.sections.length+'개 학습 묶음 · '+count+'문제'+(course.nativeMath?' + 계산 실습':'')+'</p><button type="button" onclick="startHomeCourse(&quot;'+course.id+'&quot;)">'+escapeClassroomText(course.subject)+' 수업 방 만들기 <span aria-hidden="true">→</span></button></article>';
+  }).join('');
+  document.getElementById('homeCurrentCourse').parentElement.hidden=!teacherRoomOpened;
+  document.getElementById('homeCurrentCourse').textContent='현재 수업: '+classroomCourse.subject+' · '+classroomCourse.title;
+}
+function showTeacherHome(){
+  if(new URLSearchParams(location.search).get('role')==='student')return;
+  renderTeacherHome();document.getElementById('teacherHome').hidden=false;
+  document.getElementById('stage').style.display='none';
+  document.title='포켓몬 학습 모험 · 과목 선택';
+}
+function showTeacherWorkspace(){
+  document.getElementById('teacherHome').hidden=true;
+  document.getElementById('stage').style.display='';resizeViewport();
+  document.title='포켓몬 학습 모험 · '+classroomCourse.subject;
+}
+function resumeTeacherWorkspace(){showTeacherWorkspace();}
+function startHomeCourse(courseId){
+  const course=readCourses().find(c=>c.id===courseId);if(!course)return;
+  renderCourseSelectors();document.getElementById('classroomSubject').value=course.subject;renderCourseUnits();
+  document.getElementById('classroomUnit').value=courseId;createSubjectRoom();
+}
