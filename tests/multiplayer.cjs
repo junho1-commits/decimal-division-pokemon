@@ -3,7 +3,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const {randomUUID,webcrypto} = require('node:crypto');
 const html = fs.readFileSync('index.html','utf8');
-const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n') + '\n' + ['process-quizzes.js','guided-practice.js','classroom-adventure.js','questions/social-6-2-1.js','questions/social-6-2-2.js','questions/korean-6-2-4.js','course-library.js','classroom-courses.js'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
+const script = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n') + '\n' + ['process-quizzes.js','guided-practice.js','classroom-adventure.js',...require('../questions/manifest.js').map(file=>'questions/'+file),'course-library.js','classroom-courses.js','learning-records.js'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
 const clients=[], queue=[];
 let drop=()=>false;
 class Client {
@@ -449,8 +449,97 @@ const social2A=social2Students[0];social2A.run('chooseStudentRaidOption('+social
 assert.equal(social2A.run('myStudentXP'),100);
 console.log('PASS: Social Studies 6-2 Unit 2 room creation, joins, solo quizzes, 60 questions, and raid battle verified');
 
+const korean3Host=context('https://school.example/index.html?broker=1');
+korean3Host.run('initMultiplayerSystem()');flush();
+korean3Host.el('classroomUnit').value='korean-6-2-3';korean3Host.run('createSubjectRoom()');flush();
+const korean3Code=korean3Host.run('hostRoomCode');assert.match(korean3Code,/^2[0-9]{7}$/);
+assert.equal(korean3Host.run('classroomCourse.id'),'korean-6-2-3');
+assert.equal(korean3Host.run('classroomCourse.sections.reduce((n,s)=>n+s.quizzes.length,0)'),60);
+const korean3Students=[];
+for(let i=0;i<5;i++){
+ const student=context('https://school.example/index.html?role=student');
+ student.run('initMultiplayerSystem()');student.el('studentJoinRoomCode').value=korean3Code;student.el('studentJoinName').value='국어3학생'+i;
+ student.run('joinClassroomBattle()');korean3Students.push(student);
+}
+flush();assert.equal(korean3Host.run('connectedStudents.size'),5);
+for(const student of korean3Students){
+ assert.equal(student.run('studentReady'),true);assert.equal(student.run('classroomCourse.id'),'korean-6-2-3');
+ assert.match(student.run('currentSoloQuiz.id'),/^korean-3-/);
+ assert.ok(student.el('classroomCourseBadge').textContent.includes('국어'));
+ student.run("soloQuizQueue={}");
+ for(let section=1;section<=6;section++){
+  const ids=student.run('JSON.stringify(Array.from({length:10},()=>nextSoloQuiz('+section+').id))');
+  assert.equal(new Set(JSON.parse(ids)).size,10);
+ }
+}
+korean3Host.run('startRaidBattle()');flush();
+assert.ok(korean3Host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.every(p=>p.id.startsWith("korean-3-"))'));
+const korean3A=korean3Students[0];korean3A.run('chooseStudentRaidOption('+korean3Host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[0].correct')+');sendStudentRaidAnswer()');flush();
+assert.equal(korean3A.run('myStudentXP'),100);
+console.log('PASS: Korean 6-2 Unit 3 room creation, joins, solo quizzes, 60 questions, and raid battle verified');
+
+const math4Host=context('https://school.example/index.html?broker=1');
+math4Host.run('initMultiplayerSystem()');flush();
+math4Host.el('classroomUnit').value='math-6-2-4';math4Host.run('createSubjectRoom()');flush();
+const math4Code=math4Host.run('hostRoomCode');assert.match(math4Code,/^2[0-9]{7}$/);
+assert.equal(math4Host.run('classroomCourse.id'),'math-6-2-4');
+assert.equal(math4Host.run('classroomCourse.sections.reduce((n,s)=>n+s.quizzes.length,0)'),60);
+const math4Students=[];
+for(let i=0;i<5;i++){
+ const student=context('https://school.example/index.html?role=student');
+ student.run('initMultiplayerSystem()');student.el('studentJoinRoomCode').value=math4Code;student.el('studentJoinName').value='수학4학생'+i;
+ student.run('joinClassroomBattle()');math4Students.push(student);
+}
+flush();assert.equal(math4Host.run('connectedStudents.size'),5);
+for(const student of math4Students){
+ assert.equal(student.run('studentReady'),true);assert.equal(student.run('classroomCourse.id'),'math-6-2-4');
+ assert.match(student.run('currentSoloQuiz.id'),/^math-4-/);
+ assert.ok(student.el('classroomCourseBadge').textContent.includes('수학'));
+ student.run("soloQuizQueue={}");
+ for(let section=1;section<=6;section++){
+  const ids=student.run('JSON.stringify(Array.from({length:10},()=>nextSoloQuiz('+section+').id))');
+  assert.equal(new Set(JSON.parse(ids)).size,10);
+ }
+}
+math4Host.run('startRaidBattle()');flush();
+assert.ok(math4Host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.every(p=>p.id.startsWith("math-4-"))'));
+const math4A=math4Students[0];math4A.run('chooseStudentRaidOption('+math4Host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[0].correct')+');sendStudentRaidAnswer()');flush();
+assert.equal(math4A.run('myStudentXP'),100);
+console.log('PASS: Math 6-2 Unit 4 room creation, joins, solo quizzes, 60 questions, and raid battle verified');
+
+const math1Host=context('https://school.example/index.html?broker=1');
+math1Host.run('initMultiplayerSystem()');flush();
+math1Host.el('classroomUnit').value='math-6-2-1';math1Host.run('createSubjectRoom()');flush();
+const math1Code=math1Host.run('hostRoomCode');assert.match(math1Code,/^2[0-9]{7}$/);
+assert.equal(math1Host.run('classroomCourse.id'),'math-6-2-1');
+assert.equal(math1Host.run('classroomCourse.sections.reduce((n,s)=>n+s.quizzes.length,0)'),60);
+const math1Students=[];
+for(let i=0;i<5;i++){
+ const student=context('https://school.example/index.html?role=student');
+ student.run('initMultiplayerSystem()');student.el('studentJoinRoomCode').value=math1Code;student.el('studentJoinName').value='수학1학생'+i;
+ student.run('joinClassroomBattle()');math1Students.push(student);
+}
+flush();assert.equal(math1Host.run('connectedStudents.size'),5);
+for(const student of math1Students){
+ assert.equal(student.run('studentReady'),true);assert.equal(student.run('classroomCourse.id'),'math-6-2-1');
+ assert.match(student.run('currentSoloQuiz.id'),/^math-1-/);
+ assert.ok(student.el('classroomCourseBadge').textContent.includes('수학'));
+ student.run("soloQuizQueue={}");
+ for(let section=1;section<=6;section++){
+  const ids=student.run('JSON.stringify(Array.from({length:10},()=>nextSoloQuiz('+section+').id))');
+  assert.equal(new Set(JSON.parse(ids)).size,10);
+ }
+}
+math1Host.run('startRaidBattle()');flush();
+assert.ok(math1Host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.every(p=>p.id.startsWith("math-1-"))'));
+const math1A=math1Students[0];math1A.run('chooseStudentRaidOption('+math1Host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[0].correct')+');sendStudentRaidAnswer()');flush();
+assert.equal(math1A.run('myStudentXP'),100);
+console.log('PASS: Math 6-2 Unit 1 room creation, joins, solo quizzes, 60 questions, and raid battle verified');
+
 const mathRoomHost=context('https://school.example/index.html');mathRoomHost.run('initMultiplayerSystem()');flush();
 const mathRoomCode=mathRoomHost.run('hostRoomCode');mathRoomHost.run('mqttHostClient.onConnectionLost=()=>{};mqttHostClient.disconnect()');
 const mathRoomReload=context('https://school.example/index.html',mathRoomHost.memory);mathRoomReload.run('initMultiplayerSystem()');flush();assert.equal(mathRoomReload.run('hostRoomCode'),mathRoomCode);
 mathRoomReload.run('readCourses().forEach(validateCourse)');
 console.log('PASS: built-in math question library validation and persistent math room code');
+
+module.exports={context,flush};

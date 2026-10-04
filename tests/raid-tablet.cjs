@@ -10,7 +10,7 @@ const {createServer}=require('../server.cjs');
     for(const [width,height] of [[600,960],[800,1280],[1280,800],[1024,600],[390,844]]) {
       const page=await browser.newPage({viewport:{width,height},hasTouch:true});
       await page.route('**/*',route=>route.request().url().startsWith('http://127.0.0.1')?route.continue():route.abort());
-      await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'domcontentloaded'});
+      await page.goto('http://127.0.0.1:'+server.address().port+'/index.html?role=student',{waitUntil:'domcontentloaded'});
       await page.evaluate(()=>{
         document.getElementById('stage').style.display='none';
         document.getElementById('viewStudentController').style.display='flex';

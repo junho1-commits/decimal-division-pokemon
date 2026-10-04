@@ -3,6 +3,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const questionFiles = require('./questions/manifest.js');
 const dgram = require('node:dgram');
 const {execFile} = require('node:child_process');
 
@@ -31,7 +32,7 @@ function createServer() {
     if (name === '/') name = '/index.html';
     const allowed = ['/index.html', '/포켓몬_소수의나눗셈.html',
       '/소수의_나눗셈_문장제_5선.html', '/process-quizzes.js', '/guided-practice.js', '/classroom-adventure.js', '/adventure.css', '/vendor/paho-mqtt-1.1.0.min.js', '/vendor/qrcode-1.0.0.min.js',
-      '/student.html','/question-manager.html','/question-manager.css','/question-manager.js','/course-library.js','/classroom-courses.js','/questions/social-6-2-1.js','/questions/social-6-2-2.js','/questions/korean-6-2-4.js'];
+      '/student.html','/question-manager.html','/question-manager.css','/question-manager.js','/course-library.js','/classroom-courses.js','/learning-records.js','/questions/manifest.js','/questions/load.js',...questionFiles.map(file=>'/questions/'+file)];
     const voiceAsset = /^\/assets\/voice\/(?:manifest\.json|[a-f0-9]{16}\.wav)$/.test(name);
     if ((!allowed.includes(name) && !voiceAsset) || !['GET', 'HEAD'].includes(req.method)) {
       res.writeHead(404).end(); return;

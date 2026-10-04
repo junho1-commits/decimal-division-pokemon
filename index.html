@@ -1880,7 +1880,7 @@
 <body>
 
   <section id="teacherHome" class="teacher-home" hidden aria-labelledby="teacherHomeTitle">
-    <header class="learning-home-header"><a class="learning-home-brand" href="./">⚡ 포켓몬 학습 모험</a><nav><a href="student.html">학생 입장</a><a href="question-manager.html" target="_blank" rel="noopener">문제 관리</a></nav></header>
+    <header class="learning-home-header"><a class="learning-home-brand" href="./">⚡ 포켓몬 학습 모험</a><nav><button type="button" onclick="openLearningRecords()">학습 기록</button><a href="student.html">학생 입장</a><a href="question-manager.html" target="_blank" rel="noopener">문제 관리</a></nav></header>
     <main class="learning-home-main">
       <section class="learning-home-hero"><p class="learning-home-eyebrow">우리 반이 함께하는 배움의 모험</p><h1 id="teacherHomeTitle">오늘은 어떤 과목을<br>모험해 볼까요?</h1><p>과목과 단원을 선택해 수업 방을 만들어요.<br>학생들은 방 코드로 입장하고, 문제를 풀며 포켓몬과 함께 성장해요.</p><div class="learning-home-tags"><span>🎒 개별 학습</span><span>⚡ 협동 레이드</span><span>🤝 친구 대전</span></div></section>
       <section class="learning-home-subjects" aria-labelledby="homeSubjectsTitle"><div class="learning-home-section-title"><h2 id="homeSubjectsTitle">과목·단원 선택</h2><span id="homeSubjectCount"></span></div><div class="home-catalog"><nav id="homeSubjectTabs" class="home-subject-tabs" aria-label="과목 선택"></nav><div class="home-unit-panel"><div class="home-unit-heading"><h3 id="homeUnitsTitle">단원 선택</h3><span id="homeResultsCount" aria-live="polite"></span></div><div class="home-unit-filters"><label class="home-search">단원 검색<input id="homeUnitSearch" type="search" placeholder="단원 이름이나 주제 검색" oninput="filterHomeCourses()"></label><label>학년<select id="homeGradeFilter" onchange="filterHomeCourses()"></select></label><label>학기<select id="homeTermFilter" onchange="filterHomeCourses()"></select></label></div><div id="homeCourseCards" class="home-course-grid"></div><div id="homeEmpty" class="home-empty" hidden>조건에 맞는 단원이 없어요.<button type="button" onclick="resetHomeFilters()">검색 조건 초기화</button></div><nav id="homePagination" class="home-pagination" aria-label="단원 목록 페이지"></nav></div></div></section>
@@ -1889,6 +1889,16 @@
     </main>
   </section>
 
+  <section id="learningRecordsPanel" class="learning-records-panel" role="dialog" aria-modal="true" aria-labelledby="learningRecordsTitle" hidden>
+    <div class="learning-records-dialog"><div class="learning-records-heading"><h2 id="learningRecordsTitle">학습 기록</h2><button type="button" onclick="closeLearningRecords()">닫기 ✕</button></div>
+    <p>이 교사 브라우저에 저장된 기록입니다. 개별 학습은 학생 기기에서, 레이드·대전은 교사 기기에서 판정합니다.</p>
+    <div class="learning-records-controls"><label>단원<select id="learningRecordCourse" onchange="renderLearningRecords()"></select></label><button type="button" onclick="downloadLearningCsv()">선택 단원 CSV 내보내기</button></div>
+    <p id="learningRecordSummary" aria-live="polite"></p><p id="learningRecordStorageStatus" role="status"></p>
+    <h3>단원별 정답률</h3><div id="learningCourseTable" class="learning-table-wrap"></div>
+    <h3>학생별 현황</h3><div id="learningStudentTable" class="learning-table-wrap"></div>
+    <h3>정답률이 낮은 문항 · 60% 미만</h3><div id="learningWeakTable" class="learning-table-wrap"></div>
+    <h3>문항별 정답률</h3><div id="learningQuestionTable" class="learning-table-wrap"></div></div>
+  </section>
   <!-- 전체화면 16:9 뷰포트 컨테이너 -->
   <div id="stage">
     <div id="viewport">
@@ -1929,7 +1939,7 @@
         </div>
 
         <div class="top-actions">
-          <button type="button" class="btn-action" onclick="showTeacherHome()">📚 과목 선택</button>
+          <button type="button" class="btn-action" onclick="showTeacherHome()">📚 과목 선택</button><button type="button" class="btn-action" onclick="openLearningRecords()">📊 학습 기록</button>
           <button class="btn-action memo-btn" onclick="openScratchpad()" id="btnScratchpad" title="펜으로 생각을 정리하는 모눈 메모장 (N)">
             <span>📝</span> 학습 메모장
           </button>
@@ -2584,6 +2594,7 @@
       </div>
 
       <!-- 몬스터볼 던지기 버튼 -->
+      <button type="button" class="learning-review-button" id="studentReviewButton" onclick="toggleLearningReview()">오답 복습</button><p id="studentReviewStatus" class="learning-review-status" aria-live="polite"></p>
       <button class="btn-student-primary" id="studentSoloSubmit" onclick="sendStudentSoloAnswer()">
         선택한 생각 확인하기
       </button>
@@ -5928,10 +5939,9 @@
   <script src="process-quizzes.js"></script>
   <script src="guided-practice.js?v=20261002-division-cells"></script>
   <script src="classroom-adventure.js?v=20261002-courses"></script>
-  <script src="questions/social-6-2-1.js?v=20261002-courses"></script>
-  <script src="questions/social-6-2-2.js?v=20261002-courses"></script>
-  <script src="questions/korean-6-2-4.js?v=20261002-courses"></script>
+  <script src="questions/manifest.js?v=20261002-manifest"></script><script src="questions/load.js?v=20261002-manifest"></script>
   <script src="course-library.js?v=20261002-courses"></script>
   <script src="classroom-courses.js?v=20261002-course-catalog"></script>
+  <script src="learning-records.js?v=20261002-records"></script>
 </body>
 </html>

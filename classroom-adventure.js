@@ -541,7 +541,7 @@ beginRaidSession = function () {
 };
 raidSnapshot = function () {
   const state=adventureBase.raidSnapshot();
-  if(state.type==='RAID_START') state.choices=[...RAID_BOSSES[gameState.currentRaidBossIndex].phases[gameState.currentRaidPhase].choices];
+  if(state.type==='RAID_START'){const phase=RAID_BOSSES[gameState.currentRaidBossIndex].phases[gameState.currentRaidPhase];state.choices=[...phase.choices];state.questionId=phase.id;}
   return state;
 };
 loadCurrentRaidBattle = function () {
@@ -610,6 +610,7 @@ handleStudentAnswerSubmit = function (data) {
     pokemonId:data.pokemonId,damage,move:support?'팀 응원':fighter?.move,multiplier,fighter:fighter ? {...fighter} : null,
     message:!active ? '문제가 바뀌었거나 레이드가 끝났습니다.' : duplicate ? '이미 풀이를 제출했어요. 다음 문제를 기다리세요.' : !eligible ? '출전 포켓몬의 체력을 확인해주세요.' : counter ? '보스의 반격! HP −' + counter + (fighter.hp === 0 ? ' · 응원받고 회복하거나 포켓몬을 교체하세요.' : ' · 풀이 이유를 다시 살펴보세요.') : '',
     explanation:active ? phase.explanation : '',correctChoice:active ? phase.correct : -1};
+  if((correct||result.isWrongAnswer)&&typeof recordHostLearning==='function')recordHostLearning(data.studentId,phase,Number(value),correct,'raid',data.requestId,data.elapsedMs);
   answerResults.set(cacheKey,result);
   if (answerResults.size > 3000) answerResults.delete(answerResults.keys().next().value);
   if (correct) acceptedAnswers.add(key);
@@ -744,7 +745,7 @@ sendStudentRaidAnswer = function () {
   // Update the host before sending the attack on the same ordered MQTT connection.
   sendStudentPresence();
   pendingAnswer={type:'ANSWER',studentId:myStudentId,name:myStudentName,answer:String(raidQuizChoice),problemId:studentProblemId,
-    pokemonId:selectedStudentPokemon,requestId:Date.now().toString(36)+Math.random().toString(36).slice(2)};
+    pokemonId:selectedStudentPokemon,elapsedMs:typeof learningElapsed==='function'?learningElapsed('raid'):0,requestId:Date.now().toString(36)+Math.random().toString(36).slice(2)};
   if (!sendClassroomMessage(mqttStudentClient,'to_host',pendingAnswer)) {
     pendingAnswer=null;
     setStudentConnection('🟡 답안을 보내지 못했어요 · 연결을 확인한 뒤 다시 눌러주세요',false);
@@ -783,6 +784,7 @@ sendStudentSoloAnswer = function () {
   if(encounterLevel(poke)>trainerLevel(myStudentXP)){currentSoloQuiz=null;renderStudentSoloGame();return;}
   const correct=currentSoloQuiz.kind==='guided'?assessGuidedPractice('studentSoloOptions',currentSoloQuiz):soloQuizChoice===currentSoloQuiz.correct;
   if(correct===null)return;
+  if(typeof recordSoloLearning==='function')recordSoloLearning(currentSoloQuiz,correct,soloQuizChoice);
   const fb=document.getElementById('studentSoloFeedback'); fb.style.display='block';
   fb.style.background=correct?'#143c2b':'#451d29'; fb.style.color=correct?'#86efac':'#fecaca';
   let reward='';
@@ -875,7 +877,7 @@ function pvpRoundPacket(match) {
 }
 function pvpSendRound(match,id){
   const quiz=match.quizzes[match.round],seat=match.ids.indexOf(id);
-  pvpSend(id,{type:'PVP_ROUND',matchId:match.id,round:match.round+1,total:match.quizzes.length,stem:quiz.stem,choices:quiz.choices,
+  pvpSend(id,{type:'PVP_ROUND',matchId:match.id,round:match.round+1,total:match.quizzes.length,questionId:quiz.id,stem:quiz.stem,choices:quiz.choices,
     hp:match.hp,players:match.players,answered:match.answers[seat]!==null,remainingMs:Math.max(0,match.deadline-Date.now())});
 }
 function pvpFinish(match, reason='', refund=false) {
@@ -941,6 +943,7 @@ function pvpHostMessage(data) {
     if(!match||seat<0||data.round!==match.round+1||!Number.isInteger(data.choice)||data.choice<0||data.choice>3)return;
     if(match.answers[seat]!==null){pvpSend(data.studentId,{type:'PVP_ANSWER_ACK',matchId:match.id,round:data.round});return;}
     match.answers[seat]=data.choice;
+    if(typeof recordHostLearning==='function')recordHostLearning(data.studentId,match.quizzes[match.round],data.choice,data.choice===match.quizzes[match.round].correct,'pvp',match.id+':'+data.round+':'+seat,data.elapsedMs);
     pvpSend(data.studentId,{type:'PVP_ANSWER_ACK',matchId:match.id,round:data.round});
     if(match.answers.every(answer=>answer!==null))pvpResolveRound(match);
   }
@@ -1019,7 +1022,7 @@ function submitStudentPvpAnswer(){
   if(studentPvpChoice<0){pvpNotice('풀이 생각을 하나 골라주세요.');return;}
   studentPvpRound.sent=true;document.getElementById('studentPvpSubmit').disabled=true;
   pvpNotice('친구의 답을 기다리는 중이에요.');
-  studentPvpPendingAnswer={type:'PVP_ANSWER',studentId:myStudentId,matchId:studentPvpMatch.id,round:studentPvpRound.round,choice:studentPvpChoice};
+  studentPvpPendingAnswer={type:'PVP_ANSWER',studentId:myStudentId,matchId:studentPvpMatch.id,round:studentPvpRound.round,choice:studentPvpChoice,elapsedMs:typeof learningElapsed==='function'?learningElapsed('pvp'):0};
   sendClassroomMessage(mqttStudentClient,'to_host',studentPvpPendingAnswer);
   clearInterval(studentPvpRetryTimer);
   studentPvpRetryTimer=setInterval(()=>{if(studentReady&&studentPvpPendingAnswer)sendClassroomMessage(mqttStudentClient,'to_host',studentPvpPendingAnswer);},3000);
