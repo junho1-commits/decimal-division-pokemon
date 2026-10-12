@@ -5180,8 +5180,10 @@
       { host: "broker.emqx.io", port: 8084, path: "/mqtt", desc: "EMQX Cloud" },
       { host: "broker.hivemq.com", port: 8884, path: "/mqtt", desc: "HiveMQ Cloud" }
     ];
-    const brokerParam = Number(new URLSearchParams(location.search).get("broker"));
-    const selectedBrokerIdx = Number.isInteger(brokerParam) && brokerParam >= 0 && brokerParam < MQTT_BROKERS.length ? brokerParam : 0;
+    const DEFAULT_BROKER_IDX = 1; // EMQX(0)는 2026-10 현재 MQTT 연결이 실패하여 HiveMQ(1)를 기본값으로 사용
+    const brokerRaw = new URLSearchParams(location.search).get("broker");
+    const brokerParam = brokerRaw === null || brokerRaw === "" ? NaN : Number(brokerRaw);
+    const selectedBrokerIdx = Number.isInteger(brokerParam) && brokerParam >= 0 && brokerParam < MQTT_BROKERS.length ? brokerParam : DEFAULT_BROKER_IDX;
     let currentHostBrokerIdx = selectedBrokerIdx;
     let currentStudentBrokerIdx = selectedBrokerIdx;
     let mqttHostClient = null;
