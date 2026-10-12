@@ -5196,6 +5196,24 @@
     let connectedStudents = new Map(); // studentId -> { name, score, lastSeen }
     let hostRetryTimer, studentRetryTimer, classroomPulseTimer;
     let hostReady = false, studentReady = false, lastTeacherAck = 0;
+    // 서버 자동 전환: 같은 서버로 연속 실패하거나 교사 응답이 없으면 다음 서버로 옮긴다.
+    const BROKER_FAILOVER_AFTER = 2, STUDENT_NO_ACK_MS = 12000;
+    let hostFailCount = 0, studentFailCount = 0, studentConnectedAt = 0;
+    function persistHostBroker() {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem("pokemon_current_room") || "null");
+        if (saved) { saved.broker = currentHostBrokerIdx; sessionStorage.setItem("pokemon_current_room", JSON.stringify(saved)); }
+      } catch (e) {}
+    }
+    function failoverStudentBroker(reason) {
+      if (MQTT_BROKERS.length < 2) return false;
+      currentStudentBrokerIdx = (currentStudentBrokerIdx + 1) % MQTT_BROKERS.length;
+      studentFailCount = 0; studentConnectedAt = 0;
+      setStudentConnection("🟡 " + reason + " · " + MQTT_BROKERS[currentStudentBrokerIdx].desc + " 서버로 전환 중...", false);
+      clearTimeout(studentRetryTimer);
+      studentRetryTimer = setTimeout(connectStudentMQTT, 500);
+      return true;
+    }
     let raidSessionId = "", raidHp = 0, raidFinished = false;
     let studentProblemId = "", studentRaidSessionId = "", studentSolved = false;
     let pendingAnswer = null;
@@ -5290,6 +5308,7 @@
           if (Date.now() - lastTeacherAck > 15000) {
             setStudentConnection("🟡 선생님 응답 대기 · 교사 화면과 방 코드를 확인하세요", false);
           }
+          if (studentConnectedAt && Date.now() - Math.max(lastTeacherAck, studentConnectedAt) > STUDENT_NO_ACK_MS && failoverStudentBroker("선생님 응답 없음")) return;
           sendStudentPresence();
           if (studentReady && pendingAnswer) sendClassroomMessage(mqttStudentClient, "to_host", pendingAnswer);
         } else {
@@ -5362,7 +5381,12 @@
       const retry = () => {
         if (mqttHostClient !== client) return;
         hostReady = false;
-        badge.textContent = "서버 연결 실패 · 같은 서버로 재시도 중 (학교망 확인)";
+        if (++hostFailCount >= BROKER_FAILOVER_AFTER && MQTT_BROKERS.length > 1) {
+          currentHostBrokerIdx = (currentHostBrokerIdx + 1) % MQTT_BROKERS.length;
+          hostFailCount = 0;
+          persistHostBroker();
+        }
+        badge.textContent = "서버 연결 실패 · " + MQTT_BROKERS[currentHostBrokerIdx].desc + " 서버로 재시도 중 (학교망 확인)";
         clearTimeout(hostRetryTimer);
         hostRetryTimer = setTimeout(initHostMQTT, 4000);
       };
@@ -5376,6 +5400,7 @@
           onSuccess: () => client.subscribe(getTopicPrefix() + "/to_host", { qos: 1,
             onSuccess: () => {
               hostReady = true;
+              hostFailCount = 0;
               badge.textContent = "학생 참여 준비 완료 🟢";
               startClassroomPulse(false);
             }, onFailure: retry }), onFailure: retry });
@@ -5639,6 +5664,7 @@
       const client = mqttStudentClient = new Paho.Client(broker.host, broker.port, broker.path, myStudentId + "_" + Math.random().toString(36).slice(2, 7));
       const retry = () => {
         if (mqttStudentClient !== client) return;
+        if (++studentFailCount >= BROKER_FAILOVER_AFTER && failoverStudentBroker("서버 연결 실패")) return;
         setStudentConnection("🟡 서버 재연결 중 · 학교망 또는 인터넷을 확인하세요", false);
         clearTimeout(studentRetryTimer);
         studentRetryTimer = setTimeout(connectStudentMQTT, 4000);
@@ -5655,6 +5681,8 @@
               if (--remaining) return;
               setStudentConnection("🟡 선생님 참가 확인 대기 중...", false);
               lastTeacherAck = 0;
+              studentFailCount = 0;
+              studentConnectedAt = Date.now();
               startClassroomPulse(true);
               sendStudentPresence();
             };
