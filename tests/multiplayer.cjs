@@ -536,6 +536,35 @@ const math1A=math1Students[0];math1A.run('chooseStudentRaidOption('+math1Host.ru
 assert.equal(math1A.run('myStudentXP'),100);
 console.log('PASS: Math 6-2 Unit 1 room creation, joins, solo quizzes, 60 questions, and raid battle verified');
 
+const math5Host=context('https://school.example/index.html?broker=1');
+math5Host.run('initMultiplayerSystem()');flush();
+math5Host.el('classroomUnit').value='math-6-2-5';math5Host.run('createSubjectRoom()');flush();
+const math5Code=math5Host.run('hostRoomCode');assert.match(math5Code,/^2[0-9]{7}$/);
+assert.equal(math5Host.run('classroomCourse.id'),'math-6-2-5');
+assert.equal(math5Host.run('classroomCourse.sections.reduce((n,s)=>n+s.quizzes.length,0)'),60);
+const math5Students=[];
+for(let i=0;i<5;i++){
+ const student=context('https://school.example/index.html?role=student');
+ student.run('initMultiplayerSystem()');student.el('studentJoinRoomCode').value=math5Code;student.el('studentJoinName').value='수학5학생'+i;
+ student.run('joinClassroomBattle()');math5Students.push(student);
+}
+flush();assert.equal(math5Host.run('connectedStudents.size'),5);
+for(const student of math5Students){
+ assert.equal(student.run('studentReady'),true);assert.equal(student.run('classroomCourse.id'),'math-6-2-5');
+ assert.match(student.run('currentSoloQuiz.id'),/^math-5-/);
+ assert.ok(student.el('classroomCourseBadge').textContent.includes('수학'));
+ student.run("soloQuizQueue={}");
+ for(let section=1;section<=6;section++){
+  const ids=student.run('JSON.stringify(Array.from({length:10},()=>nextSoloQuiz('+section+').id))');
+  assert.equal(new Set(JSON.parse(ids)).size,10);
+ }
+}
+math5Host.run('startRaidBattle()');flush();
+assert.ok(math5Host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases.every(p=>p.id.startsWith("math-5-"))'));
+const math5A=math5Students[0];math5A.run('chooseStudentRaidOption('+math5Host.run('RAID_BOSSES[gameState.currentRaidBossIndex].phases[0].correct')+');sendStudentRaidAnswer()');flush();
+assert.equal(math5A.run('myStudentXP'),100);
+console.log('PASS: Math 6-2 Unit 5 room creation, joins, solo quizzes, 60 questions, and raid battle verified');
+
 const mathRoomHost=context('https://school.example/index.html');mathRoomHost.run('initMultiplayerSystem()');flush();
 const mathRoomCode=mathRoomHost.run('hostRoomCode');mathRoomHost.run('mqttHostClient.onConnectionLost=()=>{};mqttHostClient.disconnect()');
 const mathRoomReload=context('https://school.example/index.html',mathRoomHost.memory);mathRoomReload.run('initMultiplayerSystem()');flush();assert.equal(mathRoomReload.run('hostRoomCode'),mathRoomCode);
